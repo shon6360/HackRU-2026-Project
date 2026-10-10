@@ -1,6 +1,6 @@
 # Three-minute demo script
 
-Record at 1440 × 900 or larger. Start the server first (`python -m concord serve`) and open
+Record at 1440 × 900 or larger. Start the server first (`python -m backend serve`) and open
 http://127.0.0.1:8040 signed in as Maya. Each step has a link that reproduces the screen, in case a click
 goes wrong while recording.
 

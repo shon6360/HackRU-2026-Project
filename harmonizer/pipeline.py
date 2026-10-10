@@ -1,6 +1,6 @@
 """Build everything from the feeds: bronze -> silver -> master -> gold, quality, catalog, role marts.
 
-    python -m concord build
+    python -m harmonizer build
 
 Layers
   bronze  the exports exactly as received (every value a string) plus where each row came from

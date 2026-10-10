@@ -13,7 +13,7 @@ entry point and must stay runnable as written from a clean clone.
 ## Keeping them true
 
 These files quote results by hand. Nothing checks them. After any change to the simulation, the
-models, the quality rules or the thresholds, run `python -m concord build` and compare its
+models, the quality rules or the thresholds, run `python -m harmonizer build` and compare its
 summary with what is written:
 
 | Figure | Where it is quoted |

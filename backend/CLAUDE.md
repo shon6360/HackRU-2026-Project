@@ -1,65 +1,28 @@
-# concord package
+# Back end
 
-Read `../CLAUDE.md` first for commands and the rules that must not be broken.
+The read side: answers questions from what the harmonizer left in `build/`, and serves the JSON
+API and the front end. Read `../CLAUDE.md` first for commands and the rules that must not be
+broken.
+
+```bash
+python -m backend serve [--host H --port P]     # default 127.0.0.1:8040
+python -m backend ask "Which sites are we late paying?" --role finance
+```
 
 ## Modules
 
 | Module | Role |
 |---|---|
-| `__main__.py` | CLI: `build`, `serve`, `ask`. Imports lazily so `build` does not need FastAPI. `serve` and `ask` build first when there is no warehouse |
-| `config.py` | Loads `.env` on import, then paths, `LAYERS`, `LINEAGE_COLUMNS`, `ID_MAPS`, `snapshot_date()`, `platform_now()`, `role_db()` |
-| `models.py` | Loads `models/**/*.sql`: parses the `-- @` header, reads dependencies out of the SQL with sqlglot, orders topologically |
-| `pipeline.py` | `build()`: bronze load, run models, quality, catalog (`meta.*`), role databases |
-| `quality.py` | `RULES`, `FEED_RULES`, `run()`, `score_answer_key()` |
-| `policy.py` | `TAGS`, `ROLES`, and four small functions. The whole access policy |
+| `__main__.py` | CLI: `serve`, `ask`. Both run the harmonizer's build first when there is no warehouse |
 | `engine.py` | `catalog()`, `preflight()`, `execute()`, `upstream_graph()`, `answer_context()`, `trace()` |
 | `ask.py` | `VETTED` questions, matching, the Gemini call, `ask()` |
 | `server.py` | FastAPI app: a thin JSON API over the engine, plus the static front end |
 
-Imports point one way. `pipeline` uses `config`, `policy`, `quality` and `models`; `engine`
-uses `config` and `policy`; `ask` uses `engine`; `server` uses `ask`, `engine`, `policy` and
-`quality`. `pipeline` and `engine` do not import each other: the write side and the read side
-meet only through the files in `build/`.
-
-## pipeline.py: the build
-
-`build()` deletes `build/*.duckdb*` and recreates everything, in this order:
-
-1. `gold.snapshot` (one row, the snapshot date).
-2. `_load_bronze`: for every `feeds/*/_manifest.json`, every listed file becomes
-   `bronze.<system>_<snake(file stem)>`. CSV columns are snake-cased from the header
-   (`State/Province` -> `state_province`, `VendorID` -> `vendorid`, `Doc No` -> `doc_no`) and
-   loaded as text with `parallel=false`, so `_src_row` is the line number in the file. A JSON
-   file becomes one `raw` VARCHAR column: one row per element of `results` if the document has
-   that key, otherwise one row for the whole document.
-3. `_run_models`: executes `models/macros.sql`, then `CREATE TABLE <schema>.<name> AS <sql>`
-   for each model in dependency order.
-4. `quality.run`: fills `dq.rules` and `dq.failures`.
-5. `_write_catalog`: `meta.feeds`, `meta.datasets`, `meta.columns` (null %, distinct count,
-   min, max, four most common values per column), `meta.lineage` (src, dst edges).
-6. `_build_role_marts`: for each role, a fresh database with the four layer schemas. Denied
-   tables are skipped; masked columns are written as `CAST(NULL AS <type>)`.
-
-`meta` and `dq` exist only in the warehouse, never in a role database.
-
-A model's steward and source system come from the feed whose `owner` string equals the model's
-`@owner` exactly. No match means steward "Data Stewardship".
-
-`gold.snapshot` is created and cataloged in Python, not by a model file.
-
-## policy.py
-
-```
-table  carries a tag the role lacks -> the table does not exist for that role
-column carries a tag the role lacks -> the column is NULL for that role
-```
-
-Tags: `patient_level`, `unblinded`, `financial`. Roles and grants: `clinops` (Maya:
-patient_level, financial), `biostat` (Arjun: patient_level, unblinded), `finance` (Dana:
-financial). There are no other rules, no row filters and no special cases. Keep it that way:
-the policy is meant to be explainable in one sentence.
-
-Policy is applied when the role databases are built, so a policy change needs `build`.
+Imports point one way. `engine` uses `config` and `policy` from the harmonizer; `ask` uses
+`engine`; `server` uses `ask`, `engine`, and the harmonizer's `policy` and `quality`. The back
+end imports `harmonizer.config`, `harmonizer.policy` and `harmonizer.quality` and nothing else
+from there, and it never writes to `build/`: the two sides meet only through those files. The
+one exception is `__main__.py`, which calls `harmonizer.pipeline.build()` on first use.
 
 ## engine.py
 
@@ -97,7 +60,7 @@ withheld blocks instead of hiding them.
 ## ask.py
 
 The key (`GEMINI_API_KEY`) and the model id (`CONCORD_MODEL`) come from the environment, which
-`config.py` fills from `.env` before this module is imported. `MODEL` is read once at import and
+`harmonizer/config.py` fills from `.env` before this module is imported. `MODEL` is read once at import and
 `model_available()` on every call.
 
 `ask(question, role)` resolves in this order and always reports `mode`:
@@ -137,7 +100,7 @@ snapshot date, never `current_date`.
 | `GET /api/crosswalk?role` | site crosswalk, subject match counts |
 | `GET /api/quality?role` | rules, failures, answer-key score |
 | `GET /api/access` | every tagged table and what each role gets |
-| `GET /`, `/static/*` | the front end from `web/` |
+| `GET /`, `/static/*` | the front end from `../frontend/` (`server.WEB`) |
 
 Catalog metadata is deliberately visible to every role, including for tables whose data is
 withheld. What is hidden for a withheld table or masked column is the data and anything derived

@@ -53,7 +53,7 @@ Corrupt the row, then record it:
 plant("P20", "irt", "valid_kit_status_domain", row["KIT_ID"], "kit with an unknown status")
 ```
 
-`rule_id` must be the `id` of a rule in `concord/quality.py`, and `record_key` must be exactly
+`rule_id` must be the `id` of a rule in `harmonizer/quality.py`, and `record_key` must be exactly
 what that rule returns as its first column, or the problem will be reported as missed. For
 safety cases the script picks records to corrupt from ones not already planted
 (`clean = [...]`), so that one case does not carry two problems; do the same elsewhere.
@@ -72,7 +72,7 @@ safety cases the script picks records to corrupt from ones not already planted
 
 ### After regenerating
 
-1. `python -m concord build` and read the summary line by line.
+1. `python -m harmonizer build` and read the summary line by line.
 2. `python tests/test_concord.py`.
 3. Update the hand-written figures in `README.md`, `docs/DATA.md`, `docs/DEMO.md`, `docs/DECK.md`.
 4. Retake any screenshot in `docs/screenshots/` that shows a changed number.

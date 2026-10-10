@@ -43,8 +43,8 @@ python -m pytest tests/test_concord.py -k headline -q         # one test
 
 - A plain function named `test_*` with bare `assert` and a message that names what failed.
   No fixtures, parametrization or classes, so it keeps working under the plain runner.
-- Go through the public surface: `ask.ask`, `engine.execute`, `engine.trace`, `engine.catalog`,
-  `engine.role_connection`, and the route functions in `server` (they are plain functions; no
+- Go through the public surface of the back end: `ask.ask`, `engine.execute`, `engine.trace`,
+  `engine.catalog`, `engine.role_connection`, and the route functions in `server` (they are plain functions; no
   HTTP client is needed). Close any connection you open.
 - Test the policy at both levels when it matters: what `engine.execute` reports, and what is
   physically in the role database.

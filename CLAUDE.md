@@ -8,23 +8,32 @@ data-quality warnings attached, under role-based access control.
 Python 3.10+, DuckDB, sqlglot, FastAPI, and a dependency-free front end. No database server,
 no Docker, no build step, no API key required.
 
+The code is in three parts, each a folder at the repository root:
+
+- **`harmonizer/`** turns the feeds into the warehouse and the per-role databases (the write side).
+- **`backend/`** answers questions from what the harmonizer built and serves the JSON API (the read side).
+- **`frontend/`** is the web app. It talks to the back end over `/api/...` and to nothing else.
+
+Dependencies point one way: front end -> back end (HTTP only) -> harmonizer (the files in
+`build/`, plus `config`, `policy` and `quality`). The harmonizer imports neither of the others.
+
 ## Commands
 
-Run from the repository root, with the virtual environment active. `concord` is not installed;
-it is imported from the cwd.
+Run from the repository root, with the virtual environment active. `harmonizer` and `backend`
+are not installed; they are imported from the cwd.
 
 ```bash
 python3 -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt   # once
-python -m concord build                    # rebuild build/*.duckdb from feeds/ (about 1-2 s)
-python -m concord serve [--host H --port P] # default 127.0.0.1:8040
-python -m concord ask "Which sites are we late paying?" --role finance   # prints the result JSON
+python -m harmonizer build                 # rebuild build/*.duckdb from feeds/ (about 1-2 s)
+python -m backend serve [--host H --port P] # default 127.0.0.1:8040
+python -m backend ask "Which sites are we late paying?" --role finance   # prints the result JSON
 python tests/test_concord.py               # all 10 tests, no test runner needed
 ```
 
 - A virtual environment does not survive its folder being moved or renamed: `activate` keeps
   the old path and `python` is then not found. Recreate it, or call `.venv/bin/python` directly.
-- `serve` and `ask` build only when `build/warehouse.duckdb` is missing. After changing a model, a feed,
-  a quality rule or the policy, run `build` yourself.
+- `serve` and `ask` build only when `build/warehouse.duckdb` is missing. After changing a model, a
+  feed, a quality rule or the policy, run `python -m harmonizer build` yourself.
 - A running server picks up a rebuild without a restart (the catalog cache is keyed on the
   warehouse file's mtime). Changes to Python code need a restart; there is no `--reload`.
 - `pytest` is not in `requirements.txt`. The tests are written to run under it, so install it
@@ -33,18 +42,20 @@ python tests/test_concord.py               # all 10 tests, no test runner needed
 - Free-form questions need `GEMINI_API_KEY` (or `GOOGLE_API_KEY`). They are written into SQL by
   Gemini through the `google-genai` SDK; `CONCORD_MODEL` overrides the model id (default
   `gemini-3.8-flash`).
-- Both settings live in `.env` at the repository root (copy `.env.example`). `concord/config.py`
+- Both settings live in `.env` at the repository root (copy `.env.example`). `harmonizer/config.py`
   loads it on import; a variable already set in the shell wins. `.env` is gitignored: never
   commit it, print it or paste its contents anywhere. `.env.example` is committed and must only
-  ever hold placeholders. A running server reads `.env` once, so restart it after a change. Without a key everything still works from the reviewed questions.
+  ever hold placeholders. A running server reads `.env` once, so restart it after a change.
+  Without a key everything still works from the reviewed questions.
 - API docs are served at `/api/docs`.
 
 ## Layout
 
 ```
-concord/            the package (see concord/CLAUDE.md)
-  models/           one .sql file per table: silver/, master/, gold/ (see concord/models/CLAUDE.md)
-  web/              index.html, app.js, styles.css (see concord/web/CLAUDE.md)
+harmonizer/         feeds -> warehouse: config, policy, pipeline, models, quality (see harmonizer/CLAUDE.md)
+  models/           one .sql file per table: silver/, master/, gold/ (see harmonizer/models/CLAUDE.md)
+backend/            warehouse -> answers: engine, ask, server (see backend/CLAUDE.md)
+frontend/           index.html, app.js, styles.css (see frontend/CLAUDE.md)
 feeds/              the five mock source systems. Generated and committed (see feeds/CLAUDE.md)
 data/public/        snapshot of the real public data the feeds are derived from (see data/CLAUDE.md)
 scripts/            fetch_public_data.py, simulate_feeds.py: regenerate the two folders above (see scripts/CLAUDE.md)
@@ -64,7 +75,7 @@ its Good / Better / Best tiers and judging criteria are what the project is meas
 
 ```
 data/public/ --simulate_feeds.py--> feeds/<system>/*.csv|json + _manifest.json
-feeds/ --pipeline.build()--> build/warehouse.duckdb
+feeds/ --harmonizer: pipeline.build()--> build/warehouse.duckdb
     bronze   files as received: every value text, plus _src_system, _src_file, _src_row
     silver   typed, renamed, dates parsed; still one table per source object
     master   golden site and subject records, and the crosswalks that map every system's ids
@@ -72,6 +83,7 @@ feeds/ --pipeline.build()--> build/warehouse.duckdb
     meta     the catalog: feeds, datasets, columns (with profiles), lineage
     dq       rules and failures
 build/warehouse.duckdb --policy--> build/role_<role>.duckdb   (one read-only database per role)
+build/ --backend: engine, ask, server--> /api/... --> frontend
 ```
 
 Current build: 12 bronze, 12 silver, 4 master, 13 gold tables; 27 quality rules, 54 findings;
@@ -94,7 +106,7 @@ to a client must apply `engine.access()` / `policy` by hand, as `/api/crosswalk`
 
 **Sensitivity tags do not propagate.** A tag on a bronze file or a silver model is not
 inherited downstream. Every model that exposes a sensitive column must re-declare the tag in
-its own header, or the value leaks into that role's database. See `concord/models/CLAUDE.md`.
+its own header, or the value leaks into that role's database. See `harmonizer/models/CLAUDE.md`.
 
 **Row-level provenance is carried everywhere.** Every bronze and silver table, the two golden
 records (`master.site`, `master.subject`), and every gold table that is one row per source
@@ -119,11 +131,12 @@ simulated says so. No real patient, site or payment is described; site names are
 
 | To do this | Touch this | Then |
 |---|---|---|
-| Add or change a table | a `.sql` file under `concord/models/<layer>/` | `build`, run the tests |
-| Add a quality rule | `RULES` in `concord/quality.py` | `build`; if it is meant to catch a planted problem, plant it in `simulate_feeds.py` |
-| Add a reviewed question | `VETTED` (and optionally `ALSO`) in `concord/ask.py` | run the tests: it must run or be refused cleanly for every role |
-| Add a tag or a role | `TAGS` / `ROLES` in `concord/policy.py`, plus tags in manifests and model headers | `build`; add a `.pill.tag-<tag>` style in `web/styles.css` |
-| Make a result column clickable for tracing | `TRACEABLE` in `concord/engine.py` | |
+| Add or change a table | a `.sql` file under `harmonizer/models/<layer>/` | `build`, run the tests |
+| Add a quality rule | `RULES` in `harmonizer/quality.py` | `build`; if it is meant to catch a planted problem, plant it in `simulate_feeds.py` |
+| Add a reviewed question | `VETTED` (and optionally `ALSO`) in `backend/ask.py` | run the tests: it must run or be refused cleanly for every role |
+| Add a tag or a role | `TAGS` / `ROLES` in `harmonizer/policy.py`, plus tags in manifests and model headers | `build`; add a `.pill.tag-<tag>` style in `frontend/styles.css` |
+| Make a result column clickable for tracing | `TRACEABLE` in `backend/engine.py` | |
+| Add or change an API route | `backend/server.py`, then the `viewX()` that calls it in `frontend/app.js` | restart the server; update the route table in `backend/CLAUDE.md` |
 | Change the simulation | `scripts/simulate_feeds.py` | regenerate, `build`, tests, then update the figures quoted in `README.md` and `docs/` |
 
 The figures in `README.md`, `docs/DATA.md`, `docs/DEMO.md` and `docs/DECK.md` (25 planted, 29

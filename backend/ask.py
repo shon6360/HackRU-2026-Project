@@ -17,7 +17,9 @@ import re
 
 from pydantic import BaseModel, Field
 
-from . import config, engine, policy
+from harmonizer import config, policy
+
+from . import engine
 
 MODEL = os.environ.get("CONCORD_MODEL", "gemini-3.8-flash")
 

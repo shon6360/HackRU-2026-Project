@@ -1,6 +1,8 @@
 # Front end
 
-Three files, served as-is by FastAPI: `index.html` at `/`, the rest under `/static/`. No
+Three files, served as-is by the back end (`backend/server.py`): `index.html` at `/`, the rest
+under `/static/`. Everything the app shows comes from the back end's `/api/...` routes, which are
+listed in `backend/CLAUDE.md`; the front end imports nothing and reads no files. No
 framework, no bundler, no npm, no external requests. Keep it that way: the app has to run from
 a clean clone with `pip install` alone, and offline.
 

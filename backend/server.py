@@ -6,8 +6,12 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
+from harmonizer import config, policy, quality
+
 from . import ask as asker
-from . import config, engine, policy, quality
+from . import engine
+
+WEB = config.ROOT / "frontend"
 
 app = FastAPI(title="Concord", docs_url="/api/docs", redoc_url=None)
 
@@ -246,7 +250,7 @@ def access_matrix():
 # ----------------------------------------------------------------------------- front end
 @app.get("/")
 def index():
-    return FileResponse(config.WEB / "index.html")
+    return FileResponse(WEB / "index.html")
 
 
-app.mount("/static", StaticFiles(directory=config.WEB), name="static")
+app.mount("/static", StaticFiles(directory=WEB), name="static")

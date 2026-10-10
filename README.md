@@ -27,15 +27,15 @@ Needs Python 3.10 or newer. Nothing else: no database server, no Docker, no API 
 git clone https://github.com/shon6360/HackRU-2026-Project.git && cd HackRU-2026-Project
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-python -m concord serve
+python -m backend serve
 ```
 
 Open http://127.0.0.1:8040. The first start builds the warehouse from the committed feeds in about two seconds.
 
 ```bash
-python -m concord build          # rebuild the warehouse, catalog, quality results and role databases
+python -m harmonizer build       # rebuild the warehouse, catalog, quality results and role databases
 python tests/test_concord.py     # 10 end-to-end checks (also runs under pytest)
-python -m concord ask "Which sites are we late paying?" --role finance
+python -m backend ask "Which sites are we late paying?" --role finance
 ```
 
 To ask free-form questions, give Concord a Gemini API key. Create one at
@@ -43,7 +43,7 @@ To ask free-form questions, give Concord a Gemini API key. Create one at
 
 ```bash
 cp .env.example .env             # then open .env and paste the key after GEMINI_API_KEY=
-python -m concord serve          # restart the server whenever .env changes
+python -m backend serve          # restart the server whenever .env changes
 ```
 
 `.env` is gitignored, so the key stays on your machine. A `GEMINI_API_KEY` exported in the shell works too
@@ -78,16 +78,20 @@ match) and you can write SQL yourself under any answer.
                        policy: tags -> one read-only database per role
 ```
 
+The code is in three parts. The **harmonizer** turns the feeds into the warehouse and the per-role
+databases. The **back end** answers questions from what the harmonizer built and serves the API. The
+**front end** is the web app, which talks to the back end over that API and to nothing else.
+
 | Piece | Where | What it does |
 |---|---|---|
 | Feeds | `feeds/` | Exports from five mock systems, each with a manifest giving its owner, extract time, freshness SLA and sensitivity tags |
-| Models | `concord/models/**/*.sql` | One SQL file per table. Its documentation lives in the header; its dependencies and lineage are read out of the SQL |
-| Crosswalk | `concord/models/master/` | Maps every system's site and subject ids to master keys, recording method, confidence and evidence |
-| Quality | `concord/quality.py` | 27 rules. Each is a query returning the records that fail, with the source file and row |
-| Policy | `concord/policy.py` | Three tags, three roles. Enforced by building a separate database per role |
-| Engine | `concord/engine.py` | Parses a query, checks it against the policy, runs it sandboxed, and attaches lineage, freshness and quality warnings |
-| Ask | `concord/ask.py` | Reviewed questions, plus Gemini writing SQL from the role's own view of the catalog |
-| App | `concord/server.py`, `concord/web/` | FastAPI and a dependency-free front end |
+| Models | `harmonizer/models/**/*.sql` | One SQL file per table. Its documentation lives in the header; its dependencies and lineage are read out of the SQL |
+| Crosswalk | `harmonizer/models/master/` | Maps every system's site and subject ids to master keys, recording method, confidence and evidence |
+| Quality | `harmonizer/quality.py` | 27 rules. Each is a query returning the records that fail, with the source file and row |
+| Policy | `harmonizer/policy.py` | Three tags, three roles. Enforced by building a separate database per role |
+| Engine | `backend/engine.py` | Parses a query, checks it against the policy, runs it sandboxed, and attaches lineage, freshness and quality warnings |
+| Ask | `backend/ask.py` | Reviewed questions, plus Gemini writing SQL from the role's own view of the catalog |
+| App | `backend/server.py`, `frontend/` | FastAPI and a dependency-free front end |
 
 ### Matching ids
 
@@ -142,7 +146,9 @@ payment problems are not attached to any real institution.
 ## Layout
 
 ```
-concord/            the package: pipeline, models, quality, policy, engine, ask, server, web
+harmonizer/         feeds -> warehouse: pipeline, SQL models, crosswalk, quality rules, access policy
+backend/            warehouse -> answers: query engine, question answering, the JSON API
+frontend/           the web app: index.html, app.js, styles.css
 feeds/              the five mock source systems (committed, deterministic)
 data/public/        snapshot of the public data the feeds are built from, with SOURCES.json
 scripts/            fetch_public_data.py and simulate_feeds.py, to regenerate the two folders above

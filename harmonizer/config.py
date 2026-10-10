@@ -8,14 +8,13 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 ROOT = Path(__file__).resolve().parents[1]
-# Every module imports config first, so the key is in place before anything reads it.
+# Every module, here and in the back end, imports config first, so the key is in place before anything reads it.
 # A variable already set in the shell wins over the file.
 load_dotenv(ROOT / ".env")
 FEEDS = ROOT / "feeds"
 BUILD = ROOT / "build"
 WAREHOUSE = BUILD / "warehouse.duckdb"
 MODELS = Path(__file__).parent / "models"
-WEB = Path(__file__).parent / "web"
 
 LAYERS = ["bronze", "silver", "master", "gold"]
 LINEAGE_COLUMNS = {

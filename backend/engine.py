@@ -19,7 +19,7 @@ import duckdb
 import sqlglot
 from sqlglot import exp
 
-from . import config, policy
+from harmonizer import config, policy
 
 ROW_LIMIT = 500
 TIMEOUT_SECONDS = 15

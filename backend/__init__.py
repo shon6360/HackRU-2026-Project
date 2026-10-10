@@ -1,0 +1,6 @@
+"""Concord's back end: answers questions from the warehouse the harmonizer built.
+
+Runs a role's SQL inside that role's own database, explains the answer (lineage, freshness,
+quality, what was withheld), turns plain-English questions into SQL, and serves the JSON API
+and the front end. It never writes to build/; `config` and `policy` come from the harmonizer.
+"""

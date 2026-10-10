@@ -10,7 +10,7 @@ files by hand.** Change the script and regenerate; it reproduces this folder byt
 
 | Path | What |
 |---|---|
-| `_snapshot.json` | `as_of` (2014-01-31) and the seed. `concord/config.py` reads `as_of`; it is "today" for the whole platform |
+| `_snapshot.json` | `as_of` (2014-01-31) and the seed. `harmonizer/config.py` reads `as_of`; it is "today" for the whole platform |
 | `ANSWER_KEY.json` | The planted data-quality problems and the story sites. Used only for scoring |
 | `edc/` | `dm.csv`, `ae.csv`, `sv.csv`, `ds.csv`: real CDISC SDTM pilot rows, cut at the snapshot |
 | `ctms/` | `study.json`, `sites.csv`, `monitoring_visits.csv` |

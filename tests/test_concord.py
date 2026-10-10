@@ -12,8 +12,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from concord import ask, config, engine, policy, quality, server  # noqa: E402
-from concord.pipeline import build  # noqa: E402
+from backend import ask, engine, server  # noqa: E402
+from harmonizer import config, policy, quality  # noqa: E402
+from harmonizer.pipeline import build  # noqa: E402
 
 SUMMARY = build(verbose=False)
 KEY = json.loads((config.FEEDS / "ANSWER_KEY.json").read_text())
