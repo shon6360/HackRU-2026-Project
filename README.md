@@ -1,2 +1,2 @@
-# RUBusy
+# Medical Bill Scanner
 HackRU hackathon project
