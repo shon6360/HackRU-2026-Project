@@ -21,21 +21,23 @@ Built for the Regeneron challenge at HackRU Fall 2026, starter sheet 40, *One So
 
 ## Run it
 
-Needs Python 3.10 or newer, and Node.js 20.9 or newer to build the web app once. No database server, no Docker,
+Needs Python 3.10 or newer, and Node.js 20.9 or newer to build the web app. No database server, no Docker,
 no API key.
 
 ```bash
 git clone https://github.com/shon6360/HackRU-2026-Project.git && cd HackRU-2026-Project
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-(cd frontend && npm install && npm run build)   # builds the web app into frontend/out, once
+python -m backend build          # the warehouse into build/, the web app into frontend/out
 python -m backend serve
 ```
 
-Open http://127.0.0.1:8040. The first start builds the warehouse from the committed feeds in about two seconds.
+Open http://127.0.0.1:8040. `build` loads the committed feeds into the warehouse in about two seconds, then builds
+the web app with npm. The first run takes longer, while npm downloads the web app's packages.
 
 ```bash
-python -m harmonizer build       # rebuild the warehouse, catalog, quality results and role databases
+python -m backend build          # rebuild everything: the warehouse and the web app
+python -m harmonizer build       # the warehouse half only: catalog, quality results and role databases
 python tests/test_concord.py     # 10 end-to-end checks (also runs under pytest)
 python -m backend ask "Which sites are we late paying?" --role finance
 ```

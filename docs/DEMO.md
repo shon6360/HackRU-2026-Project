@@ -1,6 +1,6 @@
 # Three-minute demo script
 
-Record at 1440 × 900 or larger. Build the web app if you have not yet (`cd frontend && npm install && npm run build`),
+Record at 1440 × 900 or larger. Build if you have not yet (`python -m backend build`),
 start the server (`python -m backend serve`) and open
 http://127.0.0.1:8040 signed in as Maya. Each step has a link that reproduces the screen, in case a click
 goes wrong while recording.

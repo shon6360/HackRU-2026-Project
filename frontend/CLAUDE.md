@@ -19,6 +19,8 @@ npm run dev          # http://localhost:3000 with hot reload; forwards /api to t
 npm run typecheck    # generates the route types, then tsc
 ```
 
+- From the repository root, `python -m backend build` does the install (when `node_modules/` is
+  missing) and the build, after rebuilding the warehouse.
 - `npm run dev` needs the back end running. It forwards `/api` to `http://127.0.0.1:8040`;
   set `CONCORD_API` to point it elsewhere.
 - A change shows on port 8040 only after `npm run build`. The running server picks the new files

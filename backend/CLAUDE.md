@@ -5,6 +5,7 @@ API and the front end. Read `../CLAUDE.md` first for commands and the rules that
 broken.
 
 ```bash
+python -m backend build                         # the warehouse, then the web app
 python -m backend serve [--host H --port P]     # default 127.0.0.1:8040
 python -m backend ask "Which sites are we late paying?" --role finance
 ```
@@ -13,7 +14,7 @@ python -m backend ask "Which sites are we late paying?" --role finance
 
 | Module | Role |
 |---|---|
-| `__main__.py` | CLI: `serve`, `ask`. Both run the harmonizer's build first when there is no warehouse |
+| `__main__.py` | CLI: `build`, `serve`, `ask`. `build` runs the harmonizer's pipeline, then npm in `frontend/`. The other two run the pipeline first when there is no warehouse |
 | `engine.py` | `catalog()`, `preflight()`, `execute()`, `upstream_graph()`, `answer_context()`, `trace()` |
 | `ask.py` | `VETTED` questions, matching, the Gemini call, `ask()` |
 | `server.py` | FastAPI app: a thin JSON API over the engine, plus the static front end |
@@ -22,7 +23,8 @@ Imports point one way. `engine` uses `config` and `policy` from the harmonizer; 
 `engine`; `server` uses `ask`, `engine`, and the harmonizer's `policy` and `quality`. The back
 end imports `harmonizer.config`, `harmonizer.policy` and `harmonizer.quality` and nothing else
 from there, and it never writes to `build/`: the two sides meet only through those files. The
-one exception is `__main__.py`, which calls `harmonizer.pipeline.build()` on first use.
+one exception is `__main__.py`, which calls `harmonizer.pipeline.build()` for `build` and on first
+use.
 
 ## engine.py
 

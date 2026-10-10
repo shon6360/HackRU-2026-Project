@@ -255,5 +255,5 @@ else:
     @app.get("/")
     def not_built():
         return PlainTextResponse("The web app has not been built yet. Run this once, then restart the server:\n\n"
-                                 "    cd frontend && npm install && npm run build\n\n"
+                                 "    python -m backend build\n\n"
                                  "The API is running: see /api/docs.\n", status_code=503)

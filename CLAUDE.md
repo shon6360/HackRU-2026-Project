@@ -24,8 +24,8 @@ are not installed; they are imported from the cwd.
 
 ```bash
 python3 -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt   # once
-(cd frontend && npm install && npm run build)   # once, and after front-end changes: writes frontend/out
-python -m harmonizer build                 # rebuild build/*.duckdb from feeds/ (about 1-2 s)
+python -m backend build                    # everything: build/*.duckdb from feeds/, then frontend/out with npm
+python -m harmonizer build                 # the warehouse half only (about 1-2 s)
 python -m backend serve [--host H --port P] # default 127.0.0.1:8040
 python -m backend ask "Which sites are we late paying?" --role finance   # prints the result JSON
 python tests/test_concord.py               # all 10 tests, no test runner needed
@@ -33,8 +33,12 @@ python tests/test_concord.py               # all 10 tests, no test runner needed
 
 - A virtual environment does not survive its folder being moved or renamed: `activate` keeps
   the old path and `python` is then not found. Recreate it, or call `.venv/bin/python` directly.
-- `serve` and `ask` build only when `build/warehouse.duckdb` is missing. After changing a model, a
-  feed, a quality rule or the policy, run `python -m harmonizer build` yourself.
+- `python -m backend build` is the one build command: it runs the harmonizer's pipeline, then
+  `npm run build` in `frontend/` (and `npm install` first when `frontend/node_modules` is missing).
+  Each half still runs alone: `python -m harmonizer build`, or `npm run build` in `frontend/`.
+- `serve` and `ask` build only when `build/warehouse.duckdb` is missing, and never build the web
+  app. After changing a model, a feed, a quality rule or the policy, run `python -m harmonizer build`
+  yourself.
 - The server serves the web app from `frontend/out`. If that folder is missing when it starts, `/`
   says how to build it and only the API is served; build, then restart. For front-end work, run
   `npm run dev` in `frontend/` beside the server: it serves on port 3000 and forwards `/api` to 8040.
@@ -67,7 +71,7 @@ tests/              test_concord.py: end-to-end checks (see tests/CLAUDE.md)
 docs/               DATA.md, DEMO.md, DECK.md, screenshots/ (see docs/CLAUDE.md)
 build/              generated DuckDB files. Gitignored. Never edit, never commit
 README.md           the project README, then the HackRU challenge brief from the line `# ONE SOURCE OF TRUTH` on
-requirements.txt    the seven runtime dependencies. pytest and pandas are not in it
+requirements.txt    the seven Python runtime dependencies. pytest and pandas are not in it. The front end's are in frontend/package.json
 .env.example        template for .env (the Gemini key and model id). .env itself is gitignored
 ```
 
