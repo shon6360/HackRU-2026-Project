@@ -1,0 +1,58 @@
+[
+ {
+  "name": "CDISC pilot SDTM DM",
+  "url": "https://raw.githubusercontent.com/cdisc-org/sdtm-adam-pilot-project/master/updated-pilot-submission-package/900172/m5/datasets/cdiscpilot01/tabulations/sdtm/dm.xpt",
+  "file": "data/public/sdtm/dm.csv",
+  "sha256": "c4cc63c870860a971be2da7c317892a2f79ae74753bea1a435d1a3f17b83a525",
+  "retrieved_utc": "2026-10-10T15:26:19+00:00",
+  "note": "306 rows, converted XPT -> CSV unchanged"
+ },
+ {
+  "name": "CDISC pilot SDTM AE",
+  "url": "https://raw.githubusercontent.com/cdisc-org/sdtm-adam-pilot-project/master/updated-pilot-submission-package/900172/m5/datasets/cdiscpilot01/tabulations/sdtm/ae.xpt",
+  "file": "data/public/sdtm/ae.csv",
+  "sha256": "347779bdda09dc95be3efe45e1f8aa9331abac379448fa98c0529d913ab0b2ec",
+  "retrieved_utc": "2026-10-10T15:26:20+00:00",
+  "note": "1191 rows, converted XPT -> CSV unchanged"
+ },
+ {
+  "name": "CDISC pilot SDTM SV",
+  "url": "https://raw.githubusercontent.com/cdisc-org/sdtm-adam-pilot-project/master/updated-pilot-submission-package/900172/m5/datasets/cdiscpilot01/tabulations/sdtm/sv.xpt",
+  "file": "data/public/sdtm/sv.csv",
+  "sha256": "63b1b5ced9095a74693193c0dc29d7d4f5db7f70ec2e822bbad47dce20841bda",
+  "retrieved_utc": "2026-10-10T15:26:20+00:00",
+  "note": "3559 rows, converted XPT -> CSV unchanged"
+ },
+ {
+  "name": "CDISC pilot SDTM DS",
+  "url": "https://raw.githubusercontent.com/cdisc-org/sdtm-adam-pilot-project/master/updated-pilot-submission-package/900172/m5/datasets/cdiscpilot01/tabulations/sdtm/ds.xpt",
+  "file": "data/public/sdtm/ds.csv",
+  "sha256": "e328568bb3af73ee5368166f39851909dd9b3a4cc3834760747925c9530ac8fc",
+  "retrieved_utc": "2026-10-10T15:26:20+00:00",
+  "note": "596 rows, converted XPT -> CSV unchanged"
+ },
+ {
+  "name": "CDISC pilot SDTM EX",
+  "url": "https://raw.githubusercontent.com/cdisc-org/sdtm-adam-pilot-project/master/updated-pilot-submission-package/900172/m5/datasets/cdiscpilot01/tabulations/sdtm/ex.xpt",
+  "file": "data/public/sdtm/ex.csv",
+  "sha256": "82b7d71c3b7191248cd049cd64fdab37965219fd567608bfa5f122d6f9e418a5",
+  "retrieved_utc": "2026-10-10T15:26:20+00:00",
+  "note": "591 rows, converted XPT -> CSV unchanged"
+ },
+ {
+  "name": "ClinicalTrials.gov NCT07011732",
+  "url": "https://clinicaltrials.gov/api/v2/studies/NCT07011732",
+  "file": "data/public/ctgov/NCT07011732.json",
+  "sha256": "8c4a4fc7f88e03e30ceba189c0081460d0cbde6cb616e7eaa453dbd3fb7cf21c",
+  "retrieved_utc": "2026-10-10T15:26:20+00:00",
+  "note": "full study record incl. locations"
+ },
+ {
+  "name": "openFDA drug/event sample",
+  "url": "https://api.fda.gov/drug/event.json?search=patient.drug.medicinalproduct:%22COBENFY%22+AND+serious:1&limit=3",
+  "file": "data/public/openfda/sample_events.json",
+  "sha256": "d459374565defff46d2a7ddfc89308e671fa0849f9b7fb539836c8f3855b7722",
+  "retrieved_utc": "2026-10-10T15:26:21+00:00",
+  "note": "3 real FAERS reports; used as the schema template only"
+ }
+]

@@ -1,0 +1,57 @@
+{
+ "system": "edc",
+ "system_name": "Electronic Data Capture (trial database)",
+ "owner": "Clinical Data Management",
+ "steward": "L. Marchetti",
+ "extracted_at": "2014-01-31T02:00:00",
+ "freshness_sla_hours": 24,
+ "id_conventions": "Study CDISCPILOT01; site = SITEID '701'; subject = USUBJID '01-701-1015'; ISO 8601 dates",
+ "files": [
+  {
+   "file": "dm.csv",
+   "rows": 270,
+   "description": "SDTM DM - one row per screened subject",
+   "tags": [
+    "patient_level"
+   ],
+   "column_tags": {
+    "arm": [
+     "unblinded"
+    ],
+    "armcd": [
+     "unblinded"
+    ],
+    "actarm": [
+     "unblinded"
+    ],
+    "actarmcd": [
+     "unblinded"
+    ]
+   }
+  },
+  {
+   "file": "ae.csv",
+   "rows": 997,
+   "description": "SDTM AE - adverse events",
+   "tags": [
+    "patient_level"
+   ]
+  },
+  {
+   "file": "sv.csv",
+   "rows": 2795,
+   "description": "SDTM SV - subject visits",
+   "tags": [
+    "patient_level"
+   ]
+  },
+  {
+   "file": "ds.csv",
+   "rows": 412,
+   "description": "SDTM DS - disposition events",
+   "tags": [
+    "patient_level"
+   ]
+  }
+ ]
+}

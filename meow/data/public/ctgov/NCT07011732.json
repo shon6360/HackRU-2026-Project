@@ -1,0 +1,3222 @@
+{
+ "protocolSection": {
+  "identificationModule": {
+   "nctId": "NCT07011732",
+   "orgStudyIdInfo": {
+    "id": "CN012-0023"
+   },
+   "secondaryIdInfos": [
+    {
+     "id": "2025-520613-31",
+     "type": "OTHER",
+     "domain": "EU CTR"
+    },
+    {
+     "id": "U1111-1316-5745",
+     "type": "OTHER",
+     "domain": "WHO"
+    },
+    {
+     "id": "2025",
+     "type": "NIH",
+     "link": "https://reporter.nih.gov/quickSearch/2025"
+    }
+   ],
+   "organization": {
+    "fullName": "Bristol-Myers Squibb",
+    "class": "INDUSTRY"
+   },
+   "briefTitle": "A Phase 3 Study to Evaluate the Safety and Efficacy of KarXT + KarX-EC for the Treatment of Agitation Associated With Alzheimer's Disease (ADAGIO-1)",
+   "officialTitle": "A Phase 3, Randomized, Double-Blind, Placebo-Controlled, Parallel Group Study to Evaluate the Safety and Efficacy of KarXT + KarX-EC for the Treatment of Agitation Associated With Alzheimer's Disease"
+  },
+  "statusModule": {
+   "statusVerifiedDate": "2026-09",
+   "overallStatus": "RECRUITING",
+   "expandedAccessInfo": {
+    "hasExpandedAccess": false
+   },
+   "startDateStruct": {
+    "date": "2025-07-10",
+    "type": "ACTUAL"
+   },
+   "primaryCompletionDateStruct": {
+    "date": "2028-11-24",
+    "type": "ESTIMATED"
+   },
+   "completionDateStruct": {
+    "date": "2028-12-08",
+    "type": "ESTIMATED"
+   },
+   "studyFirstSubmitDate": "2025-06-02",
+   "studyFirstSubmitQcDate": "2025-06-02",
+   "studyFirstPostDateStruct": {
+    "date": "2025-06-10",
+    "type": "ACTUAL"
+   },
+   "lastUpdateSubmitDate": "2026-09-15",
+   "lastUpdatePostDateStruct": {
+    "date": "2026-09-16",
+    "type": "ACTUAL"
+   }
+  },
+  "sponsorCollaboratorsModule": {
+   "responsibleParty": {
+    "type": "SPONSOR"
+   },
+   "leadSponsor": {
+    "name": "Bristol-Myers Squibb",
+    "class": "INDUSTRY"
+   }
+  },
+  "oversightModule": {
+   "oversightHasDmc": true,
+   "isFdaRegulatedDrug": true,
+   "isFdaRegulatedDevice": false
+  },
+  "descriptionModule": {
+   "briefSummary": "The purpose of this study is to evaluate the efficacy and safety of KarXT + KarX-EC in adult participants with agitation related to Alzheimer's Disease."
+  },
+  "conditionsModule": {
+   "conditions": [
+    "Alzheimer Disease"
+   ]
+  },
+  "designModule": {
+   "studyType": "INTERVENTIONAL",
+   "phases": [
+    "PHASE3"
+   ],
+   "designInfo": {
+    "allocation": "RANDOMIZED",
+    "interventionModel": "PARALLEL",
+    "primaryPurpose": "TREATMENT",
+    "maskingInfo": {
+     "masking": "QUADRUPLE",
+     "whoMasked": [
+      "PARTICIPANT",
+      "CARE_PROVIDER",
+      "INVESTIGATOR",
+      "OUTCOMES_ASSESSOR"
+     ]
+    }
+   },
+   "enrollmentInfo": {
+    "count": 426,
+    "type": "ESTIMATED"
+   }
+  },
+  "armsInterventionsModule": {
+   "armGroups": [
+    {
+     "label": "KarXT + KarX-EC",
+     "type": "EXPERIMENTAL",
+     "interventionNames": [
+      "Drug: Xanomeline/Trospium Chloride Capsule",
+      "Drug: Xanomeline Enteric Capsule"
+     ]
+    },
+    {
+     "label": "Placebo",
+     "type": "PLACEBO_COMPARATOR",
+     "interventionNames": [
+      "Drug: Placebo"
+     ]
+    }
+   ],
+   "interventions": [
+    {
+     "type": "DRUG",
+     "name": "Xanomeline/Trospium Chloride Capsule",
+     "description": "Specified dose on specified days",
+     "armGroupLabels": [
+      "KarXT + KarX-EC"
+     ],
+     "otherNames": [
+      "KarXT",
+      "BMS-986510"
+     ]
+    },
+    {
+     "type": "DRUG",
+     "name": "Xanomeline Enteric Capsule",
+     "description": "Specified dose on specified days",
+     "armGroupLabels": [
+      "KarXT + KarX-EC"
+     ],
+     "otherNames": [
+      "KarX-EC",
+      "BMS-986519"
+     ]
+    },
+    {
+     "type": "DRUG",
+     "name": "Placebo",
+     "description": "Specified dose on specified days",
+     "armGroupLabels": [
+      "Placebo"
+     ]
+    }
+   ]
+  },
+  "outcomesModule": {
+   "primaryOutcomes": [
+    {
+     "measure": "Change from baseline on the Cohen-Mansfield Agitation Inventory-International Psychogeriatric Association (CMAI-IPA) Total Score at Week 14",
+     "timeFrame": "At Week 14"
+    }
+   ],
+   "secondaryOutcomes": [
+    {
+     "measure": "Change from baseline on the Clinical Global Impressions-Severity (CGI-S) at Week 14",
+     "timeFrame": "At Week 14"
+    },
+    {
+     "measure": "Change from baseline on the CMAI-IPA Domains at Week 14",
+     "timeFrame": "At Week 14"
+    },
+    {
+     "measure": "Change from baseline on the CMAI Total Score at Week 14",
+     "timeFrame": "At Week 14"
+    },
+    {
+     "measure": "Number of participants with Occurrence of Response at Week 14",
+     "description": "As determined by CMAI-IPA Total Score changes of at least 30%, 40%, and 50% from baseline",
+     "timeFrame": "At Week 14"
+    },
+    {
+     "measure": "Change from baseline on the Neuropsychiatric Inventory/Neuropsychiatric Inventory -Nursing Home (NPI/NPI-NH) Total Score at Week 14",
+     "timeFrame": "At Week 14"
+    },
+    {
+     "measure": "Number of participants with Adverse Events (AEs)",
+     "timeFrame": "Up to Week 18"
+    },
+    {
+     "measure": "Number of participants with Treatment Emergent AEs (TEAEs)",
+     "timeFrame": "Up to Week 18"
+    },
+    {
+     "measure": "Number of participants with Serious AEs (SAEs)",
+     "timeFrame": "Up to Week 18"
+    },
+    {
+     "measure": "Number of participants with AEs leading to study drug withdrawal",
+     "timeFrame": "Up to Week 14"
+    },
+    {
+     "measure": "Number of deaths",
+     "timeFrame": "Up to Week 18"
+    },
+    {
+     "measure": "Number of participants with AEs of Special Interest (AESIs)",
+     "timeFrame": "Up to Week 18"
+    },
+    {
+     "measure": "Barnes Akathisia Rating Scale (BARS)",
+     "timeFrame": "Up to Week 14"
+    },
+    {
+     "measure": "Abnormal Involuntary Movement Scale (AIMS)",
+     "timeFrame": "Up to Week 14"
+    },
+    {
+     "measure": "Body Weight",
+     "timeFrame": "Up to Week 14"
+    },
+    {
+     "measure": "Body Mass Index (BMI)",
+     "timeFrame": "Up to Week 14"
+    },
+    {
+     "measure": "Number of participants with vital sign abnormalities",
+     "timeFrame": "Up to Week 18"
+    },
+    {
+     "measure": "Number of participants with clinical laboratory abnormalities",
+     "timeFrame": "Up to Week 14"
+    },
+    {
+     "measure": "Number of participants with 12-lead electrocardiogram (ECG) abnormalities",
+     "timeFrame": "Up to Week 14"
+    },
+    {
+     "measure": "Number of participants with suicidal ideation as assessed by the Columbia-Suicide Severity Rating Scale (C-SSRS)",
+     "timeFrame": "Up to Week 18"
+    },
+    {
+     "measure": "Severity of benign prostatic hyperplasia in male participants as assessed by International Prostate Symptom Score (IPSS)",
+     "timeFrame": "Up to Week 14"
+    }
+   ]
+  },
+  "eligibilityModule": {
+   "eligibilityCriteria": "Inclusion Criteria\n\n\\- A diagnosis of Alzheimer's disease (AD) in accordance with the 2024 Alzheimer's Association criteria with one of the following confirmations of AD pathology: i) Historical evidence of AD diagnosis with amyloid positron emission tomography (PET), A\u03b242/40 ratio in CSF, pTau181/A\u03b242 ratio in CSF or pTau217/A\u03b242 ratio in plasma using an Health Authority (HA)-authorized diagnostic assay.\n\nii) If no historical evidence available: A. A plasma biomarker will be assessed for eligibility if allowed per regulatory requirements. The test cutoff(s) will be based on diagnostic use approval.\n\nB. If a plasma biomarker assay cannot be used or if the assay result is inconclusive, conduct one the following:\n\n* Amyloid PET.\n* A\u03b242/40 ratio or pTau181/A\u03b242 ratio in CSF using an HA-authorized diagnostic assay.\n\n  * Mini-Mental State Examination (MMSE) score of \u2264 24 at Screening (Visit 1).\n  * Have an identified caregiver who has sufficient contact (approximately 8 hours over a week) and is willing to:\n\n    i) Attend all visits and report on participant's status. ii) Oversee participant compliance with medication and study procedures. iii) Participate in the study assessments and provide informed consent to participate in the study.\n  * History of agitation that meets the International Psychogeriatric Association (IPA) consensus definition for agitation in cognitive disorders with onset at least two weeks prior to Screening (Visit 1).\n  * AD participants are required to have NPI/NPI-NH Agitation/Aggression score \u2265 4 at Screening (Visit 1) and Baseline (Visit 2).\n  * CMAI-IPA Total Score \u2265 30 at Screening (Visit 1) and Baseline (Visit 2).\n\nExclusion Criteria\n\n\\- Medical Conditions: i) Agitation symptoms that are primarily attributable to a condition other than the AD causing the dementia.\n\nii) History of bipolar disorder, schizophrenia, or schizoaffective disorder. iii) History of (or at high risk for) urinary retention, gastric retention, or narrow-angle glaucoma as evaluated by the Investigator.\n\niv) Risk of suicidal behavior during the study as determined by the Investigator's clinical assessment and/or C-SSR.\n\n\\- Prior/Concomitant Therapy: i) Recent history of receiving monoamine oxidase inhibitors, anticonvulsants (eg, lamotrigine, divalproex), mood stabilizers (eg, lithium), tricyclic antidepressants (eg, imipramine, desipramine), or any other psychoactive medications except for as needed anxiolytics (eg, lorazepam).\n\nA. Selective serotonin reuptake inhibitors and serotonin norepinephrine reuptake inhibitors taken at a stable dose for at least 8 weeks prior to Screening (Visit 1) may be permitted.\n\nB. Trazodone may be used as a hypnotic or for agitation if started at least 8 weeks prior to Screening (Visit 1).\n\nC. Mirtazapine may be used as a hypnotic if started at least 8 weeks prior to Screening (Visit 1).\n\n\\- Other protocol-defined Inclusion/Exclusion criteria apply.",
+   "healthyVolunteers": false,
+   "sex": "ALL",
+   "minimumAge": "55 Years",
+   "maximumAge": "90 Years",
+   "stdAges": [
+    "ADULT",
+    "OLDER_ADULT"
+   ]
+  },
+  "contactsLocationsModule": {
+   "centralContacts": [
+    {
+     "name": "BMS Clinical Trials Contact Center www.BMSClinicalTrials.com",
+     "role": "CONTACT",
+     "phone": "855-907-3286",
+     "email": "Clinical.Trials@bms.com"
+    },
+    {
+     "name": "First line of the email MUST contain NCT # and Site #.",
+     "role": "CONTACT"
+    }
+   ],
+   "overallOfficials": [
+    {
+     "name": "Bristol-Myers Squibb",
+     "affiliation": "Bristol-Myers Squibb",
+     "role": "STUDY_DIRECTOR"
+    }
+   ],
+   "locations": [
+    {
+     "facility": "Imaging Endpoints",
+     "status": "RECRUITING",
+     "city": "Scottsdale",
+     "state": "Arizona",
+     "zip": "85258",
+     "country": "United States",
+     "contacts": [
+      {
+       "name": "Nida Laurin, Site 1619",
+       "role": "CONTACT",
+       "phone": "480-290-1547"
+      }
+     ],
+     "geoPoint": {
+      "lat": 33.50921,
+      "lon": -111.89903
+     }
+    },
+    {
+     "facility": "Advanced Research Center (ARC) - Anaheim",
+     "status": "RECRUITING",
+     "city": "Anaheim",
+     "state": "California",
+     "zip": "92805",
+     "country": "United States",
+     "contacts": [
+      {
+       "name": "Steven Macina, Site 1657",
+       "role": "CONTACT",
+       "phone": "714-999-6688"
+      }
+     ],
+     "geoPoint": {
+      "lat": 33.83529,
+      "lon": -117.9145
+     }
+    },
+    {
+     "facility": "Local Institution - 1668",
+     "status": "NOT_YET_RECRUITING",
+     "city": "Fresno",
+     "state": "California",
+     "zip": "93710",
+     "country": "United States",
+     "contacts": [
+      {
+       "name": "Site 1668",
+       "role": "CONTACT"
+      }
+     ],
+     "geoPoint": {
+      "lat": 36.74773,
+      "lon": -119.77237
+     }
+    },
+    {
+     "facility": "Local Institution - 1637",
+     "status": "COMPLETED",
+     "city": "La Jolla",
+     "state": "California",
+     "zip": "92037",
+     "country": "United States",
+     "geoPoint": {
+      "lat": 32.84727,
+      "lon": -117.2742
+     }
+    },
+    {
+     "facility": "The Neurology Group",
+     "status": "RECRUITING",
+     "city": "Pomona",
+     "state": "California",
+     "zip": "91767",
+     "country": "United States",
+     "contacts": [
+      {
+       "name": "Sadiq Altamimi, Site 1662",
+       "role": "CONTACT"
+      }
+     ],
+     "geoPoint": {
+      "lat": 34.05529,
+      "lon": -117.75228
+     }
+    },
+    {
+     "facility": "Local Institution - 1639",
+     "status": "ACTIVE_NOT_RECRUITING",
+     "city": "Torrance",
+     "state": "California",
+     "zip": "90505",
+     "country": "United States",
+     "geoPoint": {
+      "lat": 33.83585,
+      "lon": -118.34063
+     }
+    },
+    {
+     "facility": "Sunwise Clinical Research",
+     "status": "RECRUITING",
+     "city": "Walnut Creek",
+     "state": "California",
+     "zip": "94596",
+     "country": "United States",
+     "contacts": [
+      {
+       "name": "Ira Glick, Site 1651",
+       "role": "CONTACT",
+       "phone": "925-298-5147"
+      }
+     ],
+     "geoPoint": {
+      "lat": 37.90631,
+      "lon": -122.06496
+     }
+    },
+    {
+     "facility": "Local Institution - 1630",
+     "status": "WITHDRAWN",
+     "city": "Colorado Springs",
+     "state": "Colorado",
+     "zip": "80907",
+     "country": "United States",
+     "geoPoint": {
+      "lat": 38.83388,
+      "lon": -104.82136
+     }
+    },
+    {
+     "facility": "Local Institution - 1622",
+     "status": "NOT_YET_RECRUITING",
+     "city": "Maitland",
+     "state": "Florida",
+     "zip": "32751",
+     "country": "United States",
+     "contacts": [
+      {
+       "name": "Site 1622",
+       "role": "CONTACT"
+      }
+     ],
+     "geoPoint": {
+      "lat": 28.62778,
+      "lon": -81.36312
+     }
+    },
+    {
+     "facility": "Local Institution - 1631",
+     "status": "NOT_YET_RECRUITING",
+     "city": "Maitland",
+     "state": "Florida",
+     "zip": "32751",
+     "country": "United States",
+     "contacts": [
+      {
+       "name": "Site 1631",
+       "role": "CONTACT"
+      }
+     ],
+     "geoPoint": {
+      "lat": 28.62778,
+      "lon": -81.36312
+     }
+    },
+    {
+     "facility": "Flourish Research",
+     "status": "RECRUITING",
+     "city": "Merritt Island",
+     "state": "Florida",
+     "zip": "32952",
+     "country": "United States",
+     "contacts": [
+      {
+       "name": "David Kirk, Site 1666",
+       "role": "CONTACT",
+       "phone": "321-305-5015"
+      }
+     ],
+     "geoPoint": {
+      "lat": 28.359,
+      "lon": -80.69
+     }
+    },
+    {
+     "facility": "Local Institution - 1602",
+     "status": "NOT_YET_RECRUITING",
+     "city": "Miami",
+     "state": "Florida",
+     "zip": "33122",
+     "country": "United States",
+     "contacts": [
+      {
+       "name": "Site 1602",
+       "role": "CONTACT"
+      }
+     ],
+     "geoPoint": {
+      "lat": 25.77427,
+      "lon": -80.19366
+     }
+    },
+    {
+     "facility": "Local Institution - 1618",
+     "status": "NOT_YET_RECRUITING",
+     "city": "Miami",
+     "state": "Florida",
+     "zip": "33135",
+     "country": "United States",
+     "contacts": [
+      {
+       "name": "Site 1618",
+       "role": "CONTACT"
+      }
+     ],
+     "geoPoint": {
+      "lat": 25.77427,
+      "lon": -80.19366
+     }
+    },
+    {
+     "facility": "Hope Research Network - Miami",
+     "status": "RECRUITING",
+     "city": "Miami",
+     "state": "Florida",
+     "zip": "33166",
+     "country": "United States",
+     "contacts": [
+      {
+       "name": "Jorge Jorge, Site 1609",
+       "role": "CONTACT",
+       "phone": "786-681-4959"
+      }
+     ],
+     "geoPoint": {
+      "lat": 25.77427,
+      "lon": -80.19366
+     }
+    },
+    {
+     "facility": "Local Institution - 1604",
+     "status": "COMPLETED",
+     "city": "Miami",
+     "state": "Florida",
+     "zip": "33186",
+     "country": "United States",
+     "geoPoint": {
+      "lat": 25.77427,
+      "lon": -80.19366
+     }
+    },
+    {
+     "facility": "Local Institution - 1608",
+     "status": "NOT_YET_RECRUITING",
+     "city": "Ocala",
+     "state": "Florida",
+     "zip": "34471",
+     "country": "United States",
+     "contacts": [
+      {
+       "name": "Site 1608",
+       "role": "CONTACT"
+      }
+     ],
+     "geoPoint": {
+      "lat": 29.1872,
+      "lon": -82.14009
+     }
+    },
+    {
+     "facility": "Combined Research Orlando (CRO)",
+     "status": "RECRUITING",
+     "city": "Orlando",
+     "state": "Florida",
+     "zip": "32807",
+     "country": "United States",
+     "contacts": [
+      {
+       "name": "Eric Carbonell, Site 1635",
+       "role": "CONTACT",
+       "phone": "407-440-4493"
+      }
+     ],
+     "geoPoint": {
+      "lat": 28.53834,
+      "lon": -81.37924
+     }
+    },
+    {
+     "facility": "Progressive Medical Research",
+     "status": "RECRUITING",
+     "city": "Port Orange",
+     "state": "Florida",
+     "zip": "32127",
+     "country": "United States",
+     "contacts": [
+      {
+       "name": "Alexander White, Site 1612",
+       "role": "CONTACT",
+       "phone": "386-304-7070"
+      }
+     ],
+     "geoPoint": {
+      "lat": 29.13832,
+      "lon": -80.99561
+     }
+    },
+    {
+     "facility": "Local Institution - 1655",
+     "status": "NOT_YET_RECRUITING",
+     "city": "Marrero",
+     "state": "Louisiana",
+     "zip": "70072",
+     "country": "United States",
+     "contacts": [
+      {
+       "name": "Site 1655",
+       "role": "CONTACT"
+      }
+     ],
+     "geoPoint": {
+      "lat": 29.89937,
+      "lon": -90.10035
+     }
+    },
+    {
+     "facility": "CBH Health",
+     "status": "RECRUITING",
+     "city": "Gaithersburg",
+     "state": "Maryland",
+     "zip": "20877",
+     "country": "United States",
+     "contacts": [
+      {
+       "name": "Elia Acevedo Diaz, Site 1636",
+       "role": "CONTACT",
+       "phone": "301-251-4702"
+      }
+     ],
+     "geoPoint": {
+      "lat": 39.14344,
+      "lon": -77.20137
+     }
+    },
+    {
+     "facility": "Local Institution - 1663",
+     "status": "NOT_YET_RECRUITING",
+     "city": "Foxborough",
+     "state": "Massachusetts",
+     "zip": "02035-1309",
+     "country": "United States",
+     "contacts": [
+      {
+       "name": "Site 1663",
+       "role": "CONTACT"
+      }
+     ],
+     "geoPoint": {
+      "lat": 42.06538,
+      "lon": -71.24783
+     }
+    },
+    {
+     "facility": "Boston Center for Memory",
+     "status": "RECRUITING",
+     "city": "Newton",
+     "state": "Massachusetts",
+     "zip": "02459",
+     "country": "United States",
+     "contacts": [
+      {
+       "name": "Paul Solomon, Site 1638",
+       "role": "CONTACT",
+       "phone": "413-281-0577"
+      }
+     ],
+     "geoPoint": {
+      "lat": 42.33704,
+      "lon": -71.20922
+     }
+    },
+    {
+     "facility": "Mayflower Clinical Research",
+     "status": "RECRUITING",
+     "city": "South Dartmouth",
+     "state": "Massachusetts",
+     "zip": "02747",
+     "country": "United States",
+     "contacts": [
+      {
+       "name": "Mushtaque Chachar, Site 1642",
+       "role": "CONTACT",
+       "phone": "508-925-7403"
+      }
+     ],
+     "geoPoint": {
+      "lat": 41.59177,
+      "lon": -70.94115
+     }
+    },
+    {
+     "facility": "Elixia MA",
+     "status": "RECRUITING",
+     "city": "Springfield",
+     "state": "Massachusetts",
+     "zip": "01103",
+     "country": "United States",
+     "contacts": [
+      {
+       "name": "Brittany Perreault, Site 1660",
+       "role": "CONTACT"
+      }
+     ],
+     "geoPoint": {
+      "lat": 42.10148,
+      "lon": -72.58981
+     }
+    },
+    {
+     "facility": "NeuroBehavioral Medicine Group",
+     "status": "RECRUITING",
+     "city": "Bloomfield Hills",
+     "state": "Michigan",
+     "zip": "48302",
+     "country": "United States",
+     "contacts": [
+      {
+       "name": "Richard Jackson, Site 1665",
+       "role": "CONTACT",
+       "phone": "412-916-2425"
+      }
+     ],
+     "geoPoint": {
+      "lat": 42.58364,
+      "lon": -83.24549
+     }
+    },
+    {
+     "facility": "Oakland Medical Research",
+     "status": "RECRUITING",
+     "city": "Troy",
+     "state": "Michigan",
+     "zip": "48085",
+     "country": "United States",
+     "contacts": [
+      {
+       "name": "Jay Sandberg, Site 1620",
+       "role": "CONTACT",
+       "phone": "248-687-7412"
+      }
+     ],
+     "geoPoint": {
+      "lat": 42.60559,
+      "lon": -83.14993
+     }
+    },
+    {
+     "facility": "Local Institution - 1667",
+     "status": "NOT_YET_RECRUITING",
+     "city": "St Louis",
+     "state": "Missouri",
+     "zip": "63128",
+     "country": "United States",
+     "contacts": [
+      {
+       "name": "Site 1667",
+       "role": "CONTACT"
+      }
+     ],
+     "geoPoint": {
+      "lat": 38.62727,
+      "lon": -90.19789
+     }
+    },
+    {
+     "facility": "Redbird Research",
+     "status": "RECRUITING",
+     "city": "Las Vegas",
+     "state": "Nevada",
+     "zip": "89119",
+     "country": "United States",
+     "contacts": [
+      {
+       "name": "Jelena Kunovac, Site 1649",
+       "role": "CONTACT",
+       "phone": "760-758-2222"
+      }
+     ],
+     "geoPoint": {
+      "lat": 36.17497,
+      "lon": -115.13722
+     }
+    },
+    {
+     "facility": "Local Institution - 1647",
+     "status": "COMPLETED",
+     "city": "Middletown",
+     "state": "New Jersey",
+     "zip": "07748",
+     "country": "United States",
+     "geoPoint": {
+      "lat": 40.39428,
+      "lon": -74.11709
+     }
+    },
+    {
+     "facility": "Global Medical Institutes LLC; Princeton Medical Institute",
+     "status": "RECRUITING",
+     "city": "Princeton",
+     "state": "New Jersey",
+     "zip": "08540",
+     "country": "United States",
+     "contacts": [
+      {
+       "name": "Matthew Adasofunjo, Site 1664",
+       "role": "CONTACT"
+      }
+     ],
+     "geoPoint": {
+      "lat": 40.34872,
+      "lon": -74.65905
+     }
+    },
+    {
+     "facility": "Local Institution - 1610",
+     "status": "NOT_YET_RECRUITING",
+     "city": "Inwood",
+     "state": "New York",
+     "zip": "11096",
+     "country": "United States",
+     "contacts": [
+      {
+       "name": "Site 1610",
+       "role": "CONTACT"
+      }
+     ],
+     "geoPoint": {
+      "lat": 40.86566,
+      "lon": -73.9268
+     }
+    },
+    {
+     "facility": "Mid Hudson Medical Research",
+     "status": "RECRUITING",
+     "city": "New Windsor",
+     "state": "New York",
+     "zip": "12553",
+     "country": "United States",
+     "contacts": [
+      {
+       "name": "Sashi Makam, Site 1656",
+       "role": "CONTACT",
+       "phone": "845-674-9398"
+      }
+     ],
+     "geoPoint": {
+      "lat": 41.47676,
+      "lon": -74.02375
+     }
+    },
+    {
+     "facility": "Five Towns Neurology PC -Woodmere - 923 Broadway",
+     "status": "RECRUITING",
+     "city": "Woodmere",
+     "state": "New York",
+     "zip": "11598-1739",
+     "country": "United States",
+     "contacts": [
+      {
+       "name": "David Steiner, Site 1658",
+       "role": "CONTACT",
+       "phone": "516-239-1800"
+      }
+     ],
+     "geoPoint": {
+      "lat": 40.63205,
+      "lon": -73.71263
+     }
+    },
+    {
+     "facility": "Local Institution - 1645",
+     "status": "WITHDRAWN",
+     "city": "Woodmere",
+     "state": "New York",
+     "zip": "11598-1739",
+     "country": "United States",
+     "geoPoint": {
+      "lat": 40.63205,
+      "lon": -73.71263
+     }
+    },
+    {
+     "facility": "Central States Research",
+     "status": "RECRUITING",
+     "city": "Tulsa",
+     "state": "Oklahoma",
+     "zip": "74136",
+     "country": "United States",
+     "contacts": [
+      {
+       "name": "Sarah Land, Site 1640",
+       "role": "CONTACT",
+       "phone": "918-645-5400"
+      }
+     ],
+     "geoPoint": {
+      "lat": 36.15398,
+      "lon": -95.99277
+     }
+    },
+    {
+     "facility": "Local Institution - 1652",
+     "status": "WITHDRAWN",
+     "city": "Columbia",
+     "state": "South Carolina",
+     "zip": "29205",
+     "country": "United States",
+     "geoPoint": {
+      "lat": 34.00071,
+      "lon": -81.03481
+     }
+    },
+    {
+     "facility": "Advanced Neurology Epilepsy and Sleep Center",
+     "status": "RECRUITING",
+     "city": "El Paso",
+     "state": "Texas",
+     "zip": "79912",
+     "country": "United States",
+     "contacts": [
+      {
+       "name": "Aamr Herekar, Site 1643",
+       "role": "CONTACT",
+       "phone": "505-903-1715"
+      }
+     ],
+     "geoPoint": {
+      "lat": 31.75872,
+      "lon": -106.48693
+     }
+    },
+    {
+     "facility": "Wasatch Clinical Research, LLC",
+     "status": "RECRUITING",
+     "city": "Salt Lake City",
+     "state": "Utah",
+     "zip": "84107",
+     "country": "United States",
+     "contacts": [
+      {
+       "name": "Albert Jarvi, Site 1641",
+       "role": "CONTACT",
+       "phone": "801-288-0607"
+      }
+     ],
+     "geoPoint": {
+      "lat": 40.76078,
+      "lon": -111.89105
+     }
+    },
+    {
+     "facility": "The Memory Clinic",
+     "status": "RECRUITING",
+     "city": "Bennington",
+     "state": "Vermont",
+     "zip": "05201-9810",
+     "country": "United States",
+     "contacts": [
+      {
+       "name": "Lisa Catapano-Friedman, Site 1646",
+       "role": "CONTACT",
+       "phone": "413-281-0575"
+      }
+     ],
+     "geoPoint": {
+      "lat": 42.87813,
+      "lon": -73.19677
+     }
+    },
+    {
+     "facility": "Local Institution - 1644",
+     "status": "NOT_YET_RECRUITING",
+     "city": "Seattle",
+     "state": "Washington",
+     "zip": "98122",
+     "country": "United States",
+     "contacts": [
+      {
+       "name": "Site 1644",
+       "role": "CONTACT"
+      }
+     ],
+     "geoPoint": {
+      "lat": 47.60621,
+      "lon": -122.33207
+     }
+    },
+    {
+     "facility": "Local Institution - 1654",
+     "status": "COMPLETED",
+     "city": "Spokane",
+     "state": "Washington",
+     "zip": "99201",
+     "country": "United States",
+     "geoPoint": {
+      "lat": 47.65966,
+      "lon": -117.42908
+     }
+    },
+    {
+     "facility": "Local Institution - 1001",
+     "status": "NOT_YET_RECRUITING",
+     "city": "La Plata",
+     "state": "Buenos Aires",
+     "zip": "1900",
+     "country": "Argentina",
+     "contacts": [
+      {
+       "name": "Site 1001",
+       "role": "CONTACT"
+      }
+     ],
+     "geoPoint": {
+      "lat": -34.92126,
+      "lon": -57.95442
+     }
+    },
+    {
+     "facility": "Local Institution - 1002",
+     "status": "NOT_YET_RECRUITING",
+     "city": "Mar del Plata",
+     "state": "Buenos Aires",
+     "zip": "B7602CBM",
+     "country": "Argentina",
+     "contacts": [
+      {
+       "name": "Site 1002",
+       "role": "CONTACT"
+      }
+     ],
+     "geoPoint": {
+      "lat": -38.00042,
+      "lon": -57.5562
+     }
+    },
+    {
+     "facility": "CEN Centro Especializado en Neurociencias",
+     "status": "RECRUITING",
+     "city": "C\u00f3rdoba",
+     "state": "C\u00f3rdoba Province",
+     "zip": "5004",
+     "country": "Argentina",
+     "contacts": [
+      {
+       "name": "Hernan Ruggeri, Site 1004",
+       "role": "CONTACT",
+       "phone": "93515339477"
+      }
+     ],
+     "geoPoint": {
+      "lat": -31.40648,
+      "lon": -64.18853
+     }
+    },
+    {
+     "facility": "Fundacion Estudios Clinicos",
+     "status": "RECRUITING",
+     "city": "Rosario",
+     "state": "Santa Fe Province",
+     "zip": "S2000DEJ",
+     "country": "Argentina",
+     "contacts": [
+      {
+       "name": "Javier Travella, Site 1006",
+       "role": "CONTACT"
+      }
+     ],
+     "geoPoint": {
+      "lat": -32.94682,
+      "lon": -60.63932
+     }
+    },
+    {
+     "facility": "Fundaci\u00f3n para la Lucha contra las Enfermedades Neurol\u00f3gicas de la Infancia (FLENI)",
+     "status": "RECRUITING",
+     "city": "Buenos Aires",
+     "zip": "C1428AQK",
+     "country": "Argentina",
+     "contacts": [
+      {
+       "name": "Ricardo Allegri, Site 1003",
+       "role": "CONTACT",
+       "phone": "5491144704855"
+      }
+     ],
+     "geoPoint": {
+      "lat": -34.61315,
+      "lon": -58.37723
+     }
+    },
+    {
+     "facility": "Instituto Privado Kremer",
+     "status": "RECRUITING",
+     "city": "C\u00f3rdoba",
+     "zip": "5004",
+     "country": "Argentina",
+     "contacts": [
+      {
+       "name": "Leonardo Kremer, Site 1005",
+       "role": "CONTACT",
+       "phone": "543515000000"
+      }
+     ],
+     "geoPoint": {
+      "lat": -31.40648,
+      "lon": -64.18853
+     }
+    },
+    {
+     "facility": "Centro Medico Luquez",
+     "status": "RECRUITING",
+     "city": "C\u00f3rdoba",
+     "zip": "5006",
+     "country": "Argentina",
+     "contacts": [
+      {
+       "name": "Juan Luquez, Site 1000",
+       "role": "CONTACT",
+       "phone": "+5493517481586"
+      }
+     ],
+     "geoPoint": {
+      "lat": -31.40648,
+      "lon": -64.18853
+     }
+    },
+    {
+     "facility": "L2IP - Instituto de Pesquisas Cl\u00ednicas",
+     "status": "RECRUITING",
+     "city": "Bras\u00edlia",
+     "state": "Federal District",
+     "zip": "70200730",
+     "country": "Brazil",
+     "contacts": [
+      {
+       "name": "Eduardo Vasconcellos, Site 1051",
+       "role": "CONTACT",
+       "phone": "55-6199983-1080"
+      }
+     ],
+     "geoPoint": {
+      "lat": -15.77972,
+      "lon": -47.92972
+     }
+    },
+    {
+     "facility": "CECPAR - Centro de Estudos Cl\u00ednicos do Paran\u00e1",
+     "status": "RECRUITING",
+     "city": "Curitiba",
+     "state": "Paran\u00e1",
+     "zip": "80030-310",
+     "country": "Brazil",
+     "contacts": [
+      {
+       "name": "Luiz Petry, Site 1053",
+       "role": "CONTACT",
+       "phone": "+5541988668732"
+      }
+     ],
+     "geoPoint": {
+      "lat": -25.42778,
+      "lon": -49.27306
+     }
+    },
+    {
+     "facility": "PUCTrials",
+     "status": "RECRUITING",
+     "city": "Curitiba",
+     "state": "Paran\u00e1",
+     "zip": "80230-130",
+     "country": "Brazil",
+     "contacts": [
+      {
+       "name": "Carlos Twardowschy, Site 1052",
+       "role": "CONTACT",
+       "phone": "5541999260355"
+      }
+     ],
+     "geoPoint": {
+      "lat": -25.42778,
+      "lon": -49.27306
+     }
+    },
+    {
+     "facility": "Nucleo de Pesquisa Clinica do Rio Grande do Sul",
+     "status": "RECRUITING",
+     "city": "Porto Alegre",
+     "state": "Rio Grande do Sul",
+     "zip": "90430-001",
+     "country": "Brazil",
+     "contacts": [
+      {
+       "name": "Clarissa Gama, Site 1058",
+       "role": "CONTACT",
+       "phone": "+55 51 999885851"
+      }
+     ],
+     "geoPoint": {
+      "lat": -30.03283,
+      "lon": -51.23019
+     }
+    },
+    {
+     "facility": "Hospital Moinhos de Vento",
+     "status": "RECRUITING",
+     "city": "Porto Alegre",
+     "state": "Rio Grande do Sul",
+     "zip": "90560-032",
+     "country": "Brazil",
+     "contacts": [
+      {
+       "name": "Wyllians Borelli, Site 1054",
+       "role": "CONTACT",
+       "phone": "5551991019123"
+      }
+     ],
+     "geoPoint": {
+      "lat": -30.03283,
+      "lon": -51.23019
+     }
+    },
+    {
+     "facility": "Instituto de Pesquisa Cl\u00ednica de Campinas",
+     "status": "RECRUITING",
+     "city": "Campinas",
+     "state": "S\u00e3o Paulo",
+     "zip": "13060-080",
+     "country": "Brazil",
+     "contacts": [
+      {
+       "name": "Alexandre Pieri, Site 1057",
+       "role": "CONTACT",
+       "phone": "(5519)32670023"
+      }
+     ],
+     "geoPoint": {
+      "lat": -22.90556,
+      "lon": -47.06083
+     }
+    },
+    {
+     "facility": "Ruschel Medicina e Pesquisa Cl\u00ednica",
+     "status": "RECRUITING",
+     "city": "Rio de Janeiro",
+     "zip": "22270-060",
+     "country": "Brazil",
+     "contacts": [
+      {
+       "name": "Sandra Ruschel, Site 1050",
+       "role": "CONTACT",
+       "phone": "5521999822072"
+      }
+     ],
+     "geoPoint": {
+      "lat": -22.90642,
+      "lon": -43.18223
+     }
+    },
+    {
+     "facility": "CPQuali Pesquisa Cl\u00ednica",
+     "status": "RECRUITING",
+     "city": "S\u00e3o Paulo",
+     "zip": "01228-000",
+     "country": "Brazil",
+     "contacts": [
+      {
+       "name": "Leonel Takada, Site 1055",
+       "role": "CONTACT",
+       "phone": "5511971539018"
+      }
+     ],
+     "geoPoint": {
+      "lat": -23.5475,
+      "lon": -46.63611
+     }
+    },
+    {
+     "facility": "Clinica Viver - Centro de Desospitalizacao Humana",
+     "status": "RECRUITING",
+     "city": "S\u00e3o Paulo",
+     "zip": "04020-060",
+     "country": "Brazil",
+     "contacts": [
+      {
+       "name": "Claudiane Daltion, Site 1056",
+       "role": "CONTACT",
+       "phone": "551159087222"
+      }
+     ],
+     "geoPoint": {
+      "lat": -23.5475,
+      "lon": -46.63611
+     }
+    },
+    {
+     "facility": "Medical Center Medconsult Pleven OOD",
+     "status": "RECRUITING",
+     "city": "Pleven",
+     "zip": "5800",
+     "country": "Bulgaria",
+     "contacts": [
+      {
+       "name": "Mariya Alexandrova-Stoycheva, Site 1101",
+       "role": "CONTACT",
+       "phone": "360+11"
+      }
+     ],
+     "geoPoint": {
+      "lat": 43.41791,
+      "lon": 24.61666
+     }
+    },
+    {
+     "facility": "Outpatient Clinic for Individual Practice for Specialized Medical Care in Psychiatry - Dr. Madlena Dimitrova Borisova",
+     "status": "RECRUITING",
+     "city": "Razgrad",
+     "zip": "7200",
+     "country": "Bulgaria",
+     "contacts": [
+      {
+       "name": "Madlena Borisova, Site 1103",
+       "role": "CONTACT",
+       "phone": "+359 88 991 2216"
+      }
+     ],
+     "geoPoint": {
+      "lat": 43.53331,
+      "lon": 26.51849
+     }
+    },
+    {
+     "facility": "Medical Center Sveti Naum EOOD",
+     "status": "RECRUITING",
+     "city": "Sofia",
+     "zip": "1113",
+     "country": "Bulgaria",
+     "contacts": [
+      {
+       "name": "Assen Karadaliev, Site 1100",
+       "role": "CONTACT",
+       "phone": "35929702117"
+      }
+     ],
+     "geoPoint": {
+      "lat": 42.69751,
+      "lon": 23.32415
+     }
+    },
+    {
+     "facility": "Local Institution - 1104",
+     "status": "NOT_YET_RECRUITING",
+     "city": "Sofia",
+     "zip": "1202",
+     "country": "Bulgaria",
+     "contacts": [
+      {
+       "name": "Site 1104",
+       "role": "CONTACT"
+      }
+     ],
+     "geoPoint": {
+      "lat": 42.69751,
+      "lon": 23.32415
+     }
+    },
+    {
+     "facility": "Medical Center Mladost",
+     "status": "RECRUITING",
+     "city": "Varna",
+     "zip": "9020",
+     "country": "Bulgaria",
+     "contacts": [
+      {
+       "name": "Hristo Kozhuharov, Site 1102",
+       "role": "CONTACT",
+       "phone": "35952555695"
+      }
+     ],
+     "geoPoint": {
+      "lat": 43.21912,
+      "lon": 27.91024
+     }
+    },
+    {
+     "facility": "Local Institution - 1153",
+     "status": "NOT_YET_RECRUITING",
+     "city": "Hamilton",
+     "state": "Ontario",
+     "zip": "L8M 1W9",
+     "country": "Canada",
+     "contacts": [
+      {
+       "name": "Site 1153",
+       "role": "CONTACT"
+      }
+     ],
+     "geoPoint": {
+      "lat": 43.25011,
+      "lon": -79.84963
+     }
+    },
+    {
+     "facility": "Local Institution - 1755",
+     "status": "WITHDRAWN",
+     "city": "London",
+     "state": "Ontario",
+     "zip": "N6A 5W9",
+     "country": "Canada",
+     "geoPoint": {
+      "lat": 42.98339,
+      "lon": -81.23304
+     }
+    },
+    {
+     "facility": "London Health Sciences Centre-Victoria Campus",
+     "status": "RECRUITING",
+     "city": "London",
+     "state": "Ontario",
+     "zip": "N6A 5W9",
+     "country": "Canada",
+     "contacts": [
+      {
+       "name": "Tuoyo Awani, Site 1155",
+       "role": "CONTACT",
+       "phone": "519-685-8500 x77024"
+      }
+     ],
+     "geoPoint": {
+      "lat": 42.98339,
+      "lon": -81.23304
+     }
+    },
+    {
+     "facility": "Sunnybrook Research Institute",
+     "status": "RECRUITING",
+     "city": "Toronto",
+     "state": "Ontario",
+     "zip": "M4N 3M5",
+     "country": "Canada",
+     "contacts": [
+      {
+       "name": "Sandra Black, Site 1151",
+       "role": "CONTACT",
+       "phone": "416-480-6100 x4551"
+      }
+     ],
+     "geoPoint": {
+      "lat": 43.70643,
+      "lon": -79.39864
+     }
+    },
+    {
+     "facility": "Centre for Addiction & Mental Health",
+     "status": "RECRUITING",
+     "city": "Toronto",
+     "state": "Ontario",
+     "zip": "M6J 1H4",
+     "country": "Canada",
+     "contacts": [
+      {
+       "name": "Sanjeev Kumar, Site 1154",
+       "role": "CONTACT",
+       "phone": "416-535-8501 x32589"
+      }
+     ],
+     "geoPoint": {
+      "lat": 43.70643,
+      "lon": -79.39864
+     }
+    },
+    {
+     "facility": "Ontario Shores Centre For Mental Health Sciences",
+     "status": "RECRUITING",
+     "city": "Whitby",
+     "state": "Ontario",
+     "zip": "L1N 5S9",
+     "country": "Canada",
+     "contacts": [
+      {
+       "name": "Amer Burhan, Site 1152",
+       "role": "CONTACT",
+       "phone": "905-430-4055 x6268"
+      }
+     ],
+     "geoPoint": {
+      "lat": 43.88342,
+      "lon": -78.93287
+     }
+    },
+    {
+     "facility": "Local Institution - 1150",
+     "status": "NOT_YET_RECRUITING",
+     "city": "Montreal",
+     "state": "Quebec",
+     "zip": "H4A 3T2",
+     "country": "Canada",
+     "contacts": [
+      {
+       "name": "Site 1150",
+       "role": "CONTACT"
+      }
+     ],
+     "geoPoint": {
+      "lat": 45.50884,
+      "lon": -73.58781
+     }
+    },
+    {
+     "facility": "Xuanwu Hospital Capital Medical University",
+     "status": "RECRUITING",
+     "city": "Beijing",
+     "state": "Beijing Municipality",
+     "zip": "100053",
+     "country": "China",
+     "contacts": [
+      {
+       "name": "Yi Tang, Site 1805",
+       "role": "CONTACT",
+       "phone": "+8613811021432"
+      }
+     ],
+     "geoPoint": {
+      "lat": 39.9075,
+      "lon": 116.39723
+     }
+    },
+    {
+     "facility": "Beijing Anding Hospital Capital Medical University",
+     "status": "RECRUITING",
+     "city": "Beijing",
+     "state": "Beijing Municipality",
+     "zip": "100088",
+     "country": "China",
+     "contacts": [
+      {
+       "name": "Qinge Zhang, Site 1810",
+       "role": "CONTACT"
+      }
+     ],
+     "geoPoint": {
+      "lat": 39.9075,
+      "lon": 116.39723
+     }
+    },
+    {
+     "facility": "Peking University Sixth Hospital",
+     "status": "RECRUITING",
+     "city": "Haidian District",
+     "state": "Beijing Municipality",
+     "zip": "100191",
+     "country": "China",
+     "contacts": [
+      {
+       "name": "Huali Wang, Site 1815",
+       "role": "CONTACT",
+       "phone": "+86-10-82806167"
+      }
+     ]
+    },
+    {
+     "facility": "The First Affiliated Hospital of Chongqing Medical University",
+     "status": "RECRUITING",
+     "city": "Chongqing",
+     "state": "Chongqing Municipality",
+     "zip": "630014",
+     "country": "China",
+     "contacts": [
+      {
+       "name": "Yang Lv, Site 1813",
+       "role": "CONTACT",
+       "phone": "+861361823653"
+      }
+     ],
+     "geoPoint": {
+      "lat": 29.56026,
+      "lon": 106.55771
+     }
+    },
+    {
+     "facility": "The Affiliated Brain Hospital of Guangzhou Medical University",
+     "status": "RECRUITING",
+     "city": "Guangzhou",
+     "state": "Guangdong",
+     "zip": "0",
+     "country": "China",
+     "contacts": [
+      {
+       "name": "Yuping Ning, Site 1809",
+       "role": "CONTACT",
+       "phone": "+861392221423"
+      }
+     ],
+     "geoPoint": {
+      "lat": 23.11667,
+      "lon": 113.25
+     }
+    },
+    {
+     "facility": "Shenzhen Kangning Hospital",
+     "status": "RECRUITING",
+     "city": "Shenzhen",
+     "state": "Guangdong",
+     "zip": "518118",
+     "country": "China",
+     "contacts": [
+      {
+       "name": "Yongjun Wang, Site 1818",
+       "role": "CONTACT",
+       "phone": "8613632587615"
+      }
+     ],
+     "geoPoint": {
+      "lat": 22.54554,
+      "lon": 114.0683
+     }
+    },
+    {
+     "facility": "The Second Affiliated Hospital of Guangzhou Medical University",
+     "status": "RECRUITING",
+     "city": "Guangzhou",
+     "state": "Guangzhou Province",
+     "zip": "510260",
+     "country": "China",
+     "contacts": [
+      {
+       "name": "Jun Liu, Site 1802",
+       "role": "CONTACT",
+       "phone": "+862081332621"
+      }
+     ],
+     "geoPoint": {
+      "lat": 23.11667,
+      "lon": 113.25
+     }
+    },
+    {
+     "facility": "Xiangya Hospital Central South University",
+     "status": "RECRUITING",
+     "city": "Changsha",
+     "state": "Hunan",
+     "zip": "410008",
+     "country": "China",
+     "contacts": [
+      {
+       "name": "Lu Shen, Site 1803",
+       "role": "CONTACT",
+       "phone": "073189753041"
+      }
+     ],
+     "geoPoint": {
+      "lat": 28.19874,
+      "lon": 112.97087
+     }
+    },
+    {
+     "facility": "Nanjing Drum Tower hospital",
+     "status": "RECRUITING",
+     "city": "Nanjing",
+     "state": "Jiangsu",
+     "zip": "210008",
+     "country": "China",
+     "contacts": [
+      {
+       "name": "Yun Xu, Site 1801",
+       "role": "CONTACT",
+       "phone": "+86 13914764479"
+      }
+     ],
+     "geoPoint": {
+      "lat": 32.06167,
+      "lon": 118.77778
+     }
+    },
+    {
+     "facility": "Local Institution - 1800",
+     "status": "WITHDRAWN",
+     "city": "Shanghai",
+     "state": "Shanghai Municipality",
+     "zip": "200025",
+     "country": "China",
+     "geoPoint": {
+      "lat": 31.22222,
+      "lon": 121.45806
+     }
+    },
+    {
+     "facility": "Local Institution - 1811",
+     "status": "NOT_YET_RECRUITING",
+     "city": "Shanghai",
+     "state": "Shanghai Municipality",
+     "zip": "200065",
+     "country": "China",
+     "contacts": [
+      {
+       "name": "Site 1811",
+       "role": "CONTACT"
+      }
+     ],
+     "geoPoint": {
+      "lat": 31.22222,
+      "lon": 121.45806
+     }
+    },
+    {
+     "facility": "Mental Health Center of Xi'an City",
+     "status": "RECRUITING",
+     "city": "Xian",
+     "state": "Shanxi",
+     "zip": "710061",
+     "country": "China",
+     "contacts": [
+      {
+       "name": "Wei Dang, Site 1816",
+       "role": "CONTACT"
+      }
+     ]
+    },
+    {
+     "facility": "West China Hospital, Sichuan University",
+     "status": "RECRUITING",
+     "city": "Chengdu",
+     "state": "Sichuan",
+     "zip": "610041",
+     "country": "China",
+     "contacts": [
+      {
+       "name": "Weihong Kuang, Site 1819",
+       "role": "CONTACT",
+       "phone": "+861898060171"
+      }
+     ],
+     "geoPoint": {
+      "lat": 30.66667,
+      "lon": 104.06667
+     }
+    },
+    {
+     "facility": "Tianjin Anding Hospital",
+     "status": "RECRUITING",
+     "city": "Tianjin",
+     "state": "Tianjin Municipality",
+     "zip": "300074",
+     "country": "China",
+     "contacts": [
+      {
+       "name": "Jie Li, Site 1814",
+       "role": "CONTACT",
+       "phone": "+862288188006"
+      }
+     ],
+     "geoPoint": {
+      "lat": 39.14222,
+      "lon": 117.17667
+     }
+    },
+    {
+     "facility": "The First Affiliated Hospital of Zhejiang University",
+     "status": "RECRUITING",
+     "city": "Hangzhou",
+     "state": "Zhejiang",
+     "zip": "310003",
+     "country": "China",
+     "contacts": [
+      {
+       "name": "Ning Wei, Site 1804",
+       "role": "CONTACT",
+       "phone": "+86 13957162835"
+      }
+     ],
+     "geoPoint": {
+      "lat": 30.29365,
+      "lon": 120.16142
+     }
+    },
+    {
+     "facility": "Sir Run Run Shaw Hospital, School of Medicine, Zhejiang University",
+     "status": "RECRUITING",
+     "city": "Hangzhou",
+     "zip": "310016",
+     "country": "China",
+     "contacts": [
+      {
+       "name": "Wei Chen, Site 1817",
+       "role": "CONTACT",
+       "phone": "+86 138 0573 6335"
+      }
+     ],
+     "geoPoint": {
+      "lat": 30.29365,
+      "lon": 120.16142
+     }
+    },
+    {
+     "facility": "The First Affiliated Hospital of Kunming Medical University",
+     "status": "RECRUITING",
+     "city": "Kunming",
+     "zip": "650032",
+     "country": "China",
+     "contacts": [
+      {
+       "name": "Jin Lu, Site 1812",
+       "role": "CONTACT",
+       "phone": "8613944802410"
+      }
+     ],
+     "geoPoint": {
+      "lat": 25.03889,
+      "lon": 102.71833
+     }
+    },
+    {
+     "facility": "Local Institution - 1808",
+     "status": "WITHDRAWN",
+     "city": "Tianjin",
+     "zip": "300350",
+     "country": "China",
+     "geoPoint": {
+      "lat": 39.14222,
+      "lon": 117.17667
+     }
+    },
+    {
+     "facility": "Local Institution - 1550",
+     "status": "NOT_YET_RECRUITING",
+     "city": "Zagreb",
+     "state": "City of Zagreb",
+     "zip": "10000",
+     "country": "Croatia",
+     "contacts": [
+      {
+       "name": "Site 1550",
+       "role": "CONTACT"
+      }
+     ],
+     "geoPoint": {
+      "lat": 45.81444,
+      "lon": 15.97798
+     }
+    },
+    {
+     "facility": "Local Institution - 1553",
+     "status": "NOT_YET_RECRUITING",
+     "city": "Zagreb",
+     "state": "City of Zagreb",
+     "zip": "10000",
+     "country": "Croatia",
+     "contacts": [
+      {
+       "name": "Site 1553",
+       "role": "CONTACT"
+      }
+     ],
+     "geoPoint": {
+      "lat": 45.81444,
+      "lon": 15.97798
+     }
+    },
+    {
+     "facility": "Klinicki Bolnicki Centar Rijeka",
+     "status": "RECRUITING",
+     "city": "Rijeka",
+     "zip": "51000",
+     "country": "Croatia",
+     "contacts": [
+      {
+       "name": "Vladimir Sabljic, Site 1554",
+       "role": "CONTACT",
+       "phone": "+385 98 369 555"
+      }
+     ],
+     "geoPoint": {
+      "lat": 45.32673,
+      "lon": 14.44241
+     }
+    },
+    {
+     "facility": "Clinical Hospital Center Split",
+     "status": "RECRUITING",
+     "city": "Split",
+     "zip": "HR-21000",
+     "country": "Croatia",
+     "contacts": [
+      {
+       "name": "Trpimir Glavina, Site 1551",
+       "role": "CONTACT",
+       "phone": "38598422557"
+      }
+     ],
+     "geoPoint": {
+      "lat": 43.50891,
+      "lon": 16.43915
+     }
+    },
+    {
+     "facility": "General Hospital Varazdin",
+     "status": "RECRUITING",
+     "city": "Vara\u017edin",
+     "zip": "42000",
+     "country": "Croatia",
+     "contacts": [
+      {
+       "name": "Spomenka Kidemet-Piskac, Site 1552",
+       "role": "CONTACT"
+      }
+     ],
+     "geoPoint": {
+      "lat": 46.30444,
+      "lon": 16.33778
+     }
+    },
+    {
+     "facility": "Local Institution - 1555",
+     "status": "NOT_YET_RECRUITING",
+     "city": "Zagreb",
+     "zip": "10 090",
+     "country": "Croatia",
+     "contacts": [
+      {
+       "name": "Site 1555",
+       "role": "CONTACT"
+      }
+     ],
+     "geoPoint": {
+      "lat": 45.81444,
+      "lon": 15.97798
+     }
+    },
+    {
+     "facility": "University Hospital of Patras",
+     "status": "RECRUITING",
+     "city": "P\u00e1trai",
+     "state": "Acha\u1e2fa",
+     "zip": "26504",
+     "country": "Greece",
+     "contacts": [
+      {
+       "name": "John Ellul, Site 1200",
+       "role": "CONTACT",
+       "phone": "+306932447636"
+      }
+     ],
+     "geoPoint": {
+      "lat": 38.2462,
+      "lon": 21.73508
+     }
+    },
+    {
+     "facility": "Henry Dunant Hospital Center",
+     "status": "RECRUITING",
+     "city": "Athens",
+     "state": "Attica",
+     "zip": "115 26",
+     "country": "Greece",
+     "contacts": [
+      {
+       "name": "Konstantina Yiannopoulou, Site 1205",
+       "role": "CONTACT",
+       "phone": "+302107796309"
+      }
+     ],
+     "geoPoint": {
+      "lat": 37.98376,
+      "lon": 23.72784
+     }
+    },
+    {
+     "facility": "Aiginiteio University Hospital",
+     "status": "RECRUITING",
+     "city": "Athens",
+     "state": "Attik\u00ed",
+     "zip": "115 28",
+     "country": "Greece",
+     "contacts": [
+      {
+       "name": "Nikolaos Scarmeas, Site 1206",
+       "role": "CONTACT"
+      }
+     ],
+     "geoPoint": {
+      "lat": 37.98376,
+      "lon": 23.72784
+     }
+    },
+    {
+     "facility": "University General Hospital \"ATTIKON\" - General Hospital of West Attica \"H AGIA VARVARA\"",
+     "status": "RECRUITING",
+     "city": "Cha\u00efd\u00e1ri",
+     "state": "Attik\u00ed",
+     "zip": "124 62",
+     "country": "Greece",
+     "contacts": [
+      {
+       "name": "Georgios Tsivgoulis, Site 1203",
+       "role": "CONTACT",
+       "phone": "+302105832473"
+      }
+     ],
+     "geoPoint": {
+      "lat": 38.01135,
+      "lon": 23.66597
+     }
+    },
+    {
+     "facility": "Eginition Hospital",
+     "status": "RECRUITING",
+     "city": "Athens",
+     "zip": "11528",
+     "country": "Greece",
+     "contacts": [
+      {
+       "name": "NIKOS STEFANIS, Site 1202",
+       "role": "CONTACT",
+       "phone": "+306936608887"
+      }
+     ],
+     "geoPoint": {
+      "lat": 37.98376,
+      "lon": 23.72784
+     }
+    },
+    {
+     "facility": "Athens Medical Center",
+     "status": "RECRUITING",
+     "city": "Athens",
+     "zip": "15125",
+     "country": "Greece",
+     "contacts": [
+      {
+       "name": "John Papatriantafyllou, Site 1207",
+       "role": "CONTACT"
+      }
+     ],
+     "geoPoint": {
+      "lat": 37.98376,
+      "lon": 23.72784
+     }
+    },
+    {
+     "facility": "Local Institution - 1201",
+     "status": "NOT_YET_RECRUITING",
+     "city": "Ioannina",
+     "zip": "45500",
+     "country": "Greece",
+     "contacts": [
+      {
+       "name": "Site 1201",
+       "role": "CONTACT"
+      }
+     ],
+     "geoPoint": {
+      "lat": 39.66341,
+      "lon": 20.85187
+     }
+    },
+    {
+     "facility": "Euromedica General Clinic of Thessaloniki",
+     "status": "RECRUITING",
+     "city": "Thessaloniki",
+     "zip": "54645",
+     "country": "Greece",
+     "contacts": [
+      {
+       "name": "Magda Tsolaki, Site 1204",
+       "role": "CONTACT",
+       "phone": "+30 694 291 8933"
+      }
+     ],
+     "geoPoint": {
+      "lat": 40.64072,
+      "lon": 22.93493
+     }
+    },
+    {
+     "facility": "Local Institution - 1255",
+     "status": "NOT_YET_RECRUITING",
+     "city": "Ahmedabad",
+     "state": "Gujarat",
+     "zip": "380060",
+     "country": "India",
+     "contacts": [
+      {
+       "name": "Site 1255",
+       "role": "CONTACT"
+      }
+     ],
+     "geoPoint": {
+      "lat": 23.02579,
+      "lon": 72.58727
+     }
+    },
+    {
+     "facility": "Yashoda Hospitals",
+     "status": "RECRUITING",
+     "city": "Hyderabad",
+     "state": "Telangana",
+     "zip": "500082",
+     "country": "India",
+     "contacts": [
+      {
+       "name": "Jaydip Chaudhuri, Site 1252",
+       "role": "CONTACT"
+      }
+     ],
+     "geoPoint": {
+      "lat": 17.38405,
+      "lon": 78.45636
+     }
+    },
+    {
+     "facility": "Deva Institute Of Healthcare & Research Pvt. Ltd.",
+     "status": "RECRUITING",
+     "city": "Varanasi",
+     "state": "Uttar Pradesh",
+     "zip": "221005",
+     "country": "India",
+     "contacts": [
+      {
+       "name": "Venu Jhanwar, Site 1254",
+       "role": "CONTACT",
+       "phone": "+91-9935571052"
+      }
+     ],
+     "geoPoint": {
+      "lat": 25.31668,
+      "lon": 83.01041
+     }
+    },
+    {
+     "facility": "Apollo Multispeciality Hospitals limited",
+     "status": "RECRUITING",
+     "city": "Kolkata",
+     "state": "West Bengal",
+     "zip": "700054",
+     "country": "India",
+     "contacts": [
+      {
+       "name": "AMITABHA GHOSH, Site 1250",
+       "role": "CONTACT",
+       "phone": "9830119686"
+      }
+     ],
+     "geoPoint": {
+      "lat": 22.56263,
+      "lon": 88.36304
+     }
+    },
+    {
+     "facility": "Local Institution - 1256",
+     "status": "NOT_YET_RECRUITING",
+     "city": "Delhi",
+     "zip": "110 095",
+     "country": "India",
+     "contacts": [
+      {
+       "name": "Site 1256",
+       "role": "CONTACT"
+      }
+     ],
+     "geoPoint": {
+      "lat": 28.65195,
+      "lon": 77.23149
+     }
+    },
+    {
+     "facility": "Asha Hospital",
+     "status": "RECRUITING",
+     "city": "Hyderabad",
+     "zip": "500034",
+     "country": "India",
+     "contacts": [
+      {
+       "name": "G Rao, Site 1251",
+       "role": "CONTACT",
+       "phone": "9985900005"
+      }
+     ],
+     "geoPoint": {
+      "lat": 17.38405,
+      "lon": 78.45636
+     }
+    },
+    {
+     "facility": "Local Institution - 1253",
+     "status": "NOT_YET_RECRUITING",
+     "city": "New Delhi",
+     "zip": "110029",
+     "country": "India",
+     "contacts": [
+      {
+       "name": "Site 1253",
+       "role": "CONTACT"
+      }
+     ],
+     "geoPoint": {
+      "lat": 28.62137,
+      "lon": 77.2148
+     }
+    },
+    {
+     "facility": "Hatano Kousei Hospital",
+     "status": "RECRUITING",
+     "city": "Hadano",
+     "state": "Kanagawa",
+     "zip": "257-0003",
+     "country": "Japan",
+     "contacts": [
+      {
+       "name": "Sakai Yoshiro, Site 1301",
+       "role": "CONTACT"
+      }
+     ],
+     "geoPoint": {
+      "lat": 35.37111,
+      "lon": 139.22361
+     }
+    },
+    {
+     "facility": "Teikyo University Mizonokuchi Hospital",
+     "status": "RECRUITING",
+     "city": "Kawasaki",
+     "state": "Kanagawa",
+     "zip": "213-8507",
+     "country": "Japan",
+     "contacts": [
+      {
+       "name": "Makoto Nakane, Site 1307",
+       "role": "CONTACT"
+      }
+     ],
+     "geoPoint": {
+      "lat": 35.52056,
+      "lon": 139.71722
+     }
+    },
+    {
+     "facility": "Asakayama Hospital",
+     "status": "RECRUITING",
+     "city": "Sakai",
+     "state": "Osaka",
+     "zip": "590-0018",
+     "country": "Japan",
+     "contacts": [
+      {
+       "name": "Kazue Kamae, Site 1304",
+       "role": "CONTACT",
+       "phone": "0722294882"
+      }
+     ],
+     "geoPoint": {
+      "lat": 34.58216,
+      "lon": 135.46653
+     }
+    },
+    {
+     "facility": "National Hospital Organization Hizen Psychiatric Center",
+     "status": "RECRUITING",
+     "city": "Kanzaki-Gun Yoshinogari-Cho",
+     "state": "Saga-ken",
+     "zip": "842-0192",
+     "country": "Japan",
+     "contacts": [
+      {
+       "name": "Manabu Hashimoto, Site 1303",
+       "role": "CONTACT",
+       "phone": "0952523231"
+      }
+     ]
+    },
+    {
+     "facility": "Rainbow and Sea Hospital",
+     "status": "RECRUITING",
+     "city": "Karatsu-shi",
+     "state": "Saga-ken",
+     "zip": "847-0031",
+     "country": "Japan",
+     "contacts": [
+      {
+       "name": "Taro Shindo, Site 1300",
+       "role": "CONTACT",
+       "phone": "0955770711"
+      }
+     ]
+    },
+    {
+     "facility": "Nippon Medical School Hospital",
+     "status": "RECRUITING",
+     "city": "Bunkyo-ku",
+     "state": "Tokyo",
+     "zip": "113-8603",
+     "country": "Japan",
+     "contacts": [
+      {
+       "name": "Amane Tateno, Site 1305",
+       "role": "CONTACT"
+      }
+     ]
+    },
+    {
+     "facility": "Kuramitsu Hospital",
+     "status": "RECRUITING",
+     "city": "Fukuoka",
+     "zip": "819-0037",
+     "country": "Japan",
+     "contacts": [
+      {
+       "name": "Noriko Tamaru, Site 1302",
+       "role": "CONTACT",
+       "phone": "+81-92-811-1821"
+      }
+     ],
+     "geoPoint": {
+      "lat": 33.6,
+      "lon": 130.41667
+     }
+    },
+    {
+     "facility": "Okayama City General Medical Center Okayama City Hospital",
+     "status": "RECRUITING",
+     "city": "Okayama",
+     "zip": "700-8557",
+     "country": "Japan",
+     "contacts": [
+      {
+       "name": "Kentaro Deguchi, Site 1306",
+       "role": "CONTACT"
+      }
+     ],
+     "geoPoint": {
+      "lat": 34.65,
+      "lon": 133.93333
+     }
+    },
+    {
+     "facility": "Local Institution - 1308",
+     "status": "NOT_YET_RECRUITING",
+     "city": "Shimotsuke-shi, Tochigi",
+     "zip": "329-0498",
+     "country": "Japan",
+     "contacts": [
+      {
+       "name": "Site 1308",
+       "role": "CONTACT"
+      }
+     ],
+     "geoPoint": {
+      "lat": 36.38333,
+      "lon": 139.73333
+     }
+    },
+    {
+     "facility": "Hospital Universitario de Saltillo",
+     "status": "RECRUITING",
+     "city": "Saltillo",
+     "state": "Coahuila",
+     "zip": "25000",
+     "country": "Mexico",
+     "contacts": [
+      {
+       "name": "MARIO VALDES, Site 1355",
+       "role": "CONTACT",
+       "phone": "+5218441258992"
+      }
+     ],
+     "geoPoint": {
+      "lat": 25.42595,
+      "lon": -100.97963
+     }
+    },
+    {
+     "facility": "Boca Clinical Trials Mexico S.C.",
+     "status": "RECRUITING",
+     "city": "Guadalajara",
+     "state": "Jalisco",
+     "zip": "44600",
+     "country": "Mexico",
+     "contacts": [
+      {
+       "name": "Hector Cruz, Site 1356",
+       "role": "CONTACT",
+       "phone": "3316546308"
+      }
+     ],
+     "geoPoint": {
+      "lat": 20.67738,
+      "lon": -103.34749
+     }
+    },
+    {
+     "facility": "Innovacion y Desarrollo en Ciencias de la Salud",
+     "status": "RECRUITING",
+     "city": "Mexico City",
+     "state": "Mexico City",
+     "zip": "14090",
+     "country": "Mexico",
+     "contacts": [
+      {
+       "name": "Virgilio Hernandez Ruiz, Site 1363",
+       "role": "CONTACT"
+      }
+     ],
+     "geoPoint": {
+      "lat": 19.42847,
+      "lon": -99.12766
+     }
+    },
+    {
+     "facility": "Local Institution - 1360",
+     "status": "NOT_YET_RECRUITING",
+     "city": "Mexico City",
+     "state": "Mexico City",
+     "zip": "14269",
+     "country": "Mexico",
+     "contacts": [
+      {
+       "name": "Site 1360",
+       "role": "CONTACT"
+      }
+     ],
+     "geoPoint": {
+      "lat": 19.42847,
+      "lon": -99.12766
+     }
+    },
+    {
+     "facility": "AVIX Investigacion Clinica",
+     "status": "RECRUITING",
+     "city": "Monterrey",
+     "state": "Nuevo Le\u00f3n",
+     "zip": "64623",
+     "country": "Mexico",
+     "contacts": [
+      {
+       "name": "Amador Macias, Site 1364",
+       "role": "CONTACT",
+       "phone": "5218182528996"
+      }
+     ],
+     "geoPoint": {
+      "lat": 25.68435,
+      "lon": -100.31721
+     }
+    },
+    {
+     "facility": "Local Institution - 1350",
+     "status": "NOT_YET_RECRUITING",
+     "city": "Monterrey",
+     "state": "Nuevo Le\u00f3n",
+     "zip": "66460",
+     "country": "Mexico",
+     "contacts": [
+      {
+       "name": "Site 1350",
+       "role": "CONTACT"
+      }
+     ],
+     "geoPoint": {
+      "lat": 25.68435,
+      "lon": -100.31721
+     }
+    },
+    {
+     "facility": "Local Institution - 1361",
+     "status": "NOT_YET_RECRUITING",
+     "city": "Mexico City",
+     "zip": "10200",
+     "country": "Mexico",
+     "contacts": [
+      {
+       "name": "Site 1361",
+       "role": "CONTACT"
+      }
+     ],
+     "geoPoint": {
+      "lat": 19.42847,
+      "lon": -99.12766
+     }
+    },
+    {
+     "facility": "Neurociencias PRISMA A.C.",
+     "status": "RECRUITING",
+     "city": "San Luis Potos\u00ed City",
+     "zip": "78216",
+     "country": "Mexico",
+     "contacts": [
+      {
+       "name": "Carlos Guerra Galicia, Site 1362",
+       "role": "CONTACT"
+      }
+     ],
+     "geoPoint": {
+      "lat": 22.15234,
+      "lon": -100.97135
+     }
+    },
+    {
+     "facility": "Clinical Research Institute S.C.",
+     "status": "RECRUITING",
+     "city": "Tlalnepantla",
+     "zip": "54055",
+     "country": "Mexico",
+     "contacts": [
+      {
+       "name": "DANIEL ORTA, Site 1352",
+       "role": "CONTACT",
+       "phone": "525553627780"
+      }
+     ],
+     "geoPoint": {
+      "lat": 19.54005,
+      "lon": -99.19538
+     }
+    },
+    {
+     "facility": "Unidade Local de Sa\u00fade de Coimbra, E.P.E.",
+     "status": "RECRUITING",
+     "city": "Coimbra",
+     "zip": "3049",
+     "country": "Portugal",
+     "contacts": [
+      {
+       "name": "Isabel Santana, Site 1401",
+       "role": "CONTACT",
+       "phone": "351239400448"
+      }
+     ],
+     "geoPoint": {
+      "lat": 40.20686,
+      "lon": -8.41996
+     }
+    },
+    {
+     "facility": "Centro Hospitalar do Alto Ave",
+     "status": "RECRUITING",
+     "city": "Guimar\u00e3es",
+     "zip": "4835-044",
+     "country": "Portugal",
+     "contacts": [
+      {
+       "name": "Joana Meireles, Site 1402",
+       "role": "CONTACT",
+       "phone": "253540330"
+      }
+     ],
+     "geoPoint": {
+      "lat": 41.44443,
+      "lon": -8.29619
+     }
+    },
+    {
+     "facility": "Centro Hospitalar Universit\u00e1rio Lisboa Norte, E.P.E. - Hospital de Santa Maria",
+     "status": "RECRUITING",
+     "city": "Lisbon",
+     "zip": "1649-035",
+     "country": "Portugal",
+     "contacts": [
+      {
+       "name": "Ana Verdelho, Site 1404",
+       "role": "CONTACT",
+       "phone": "3512178050x50"
+      }
+     ],
+     "geoPoint": {
+      "lat": 38.72509,
+      "lon": -9.1498
+     }
+    },
+    {
+     "facility": "Unidade Local de Sa\u00fade de Matosinhos SA",
+     "status": "RECRUITING",
+     "city": "Senhora da Hora",
+     "zip": "4464-513",
+     "country": "Portugal",
+     "contacts": [
+      {
+       "name": "Vitor Tedim Cruz, Site 1403",
+       "role": "CONTACT",
+       "phone": "3519123604x24"
+      }
+     ],
+     "geoPoint": {
+      "lat": 41.18641,
+      "lon": -8.65172
+     }
+    },
+    {
+     "facility": "Campus Neurologico Senior",
+     "status": "RECRUITING",
+     "city": "Torres Vedras",
+     "zip": "2560-280",
+     "country": "Portugal",
+     "contacts": [
+      {
+       "name": "Camila N\u00f3brega, Site 1400",
+       "role": "CONTACT",
+       "phone": "+351261330700"
+      }
+     ],
+     "geoPoint": {
+      "lat": 39.09109,
+      "lon": -9.2586
+     }
+    },
+    {
+     "facility": "Prof. Dr. Alexandru Obregia Psychiatry Hospital",
+     "status": "RECRUITING",
+     "city": "Bucharest",
+     "state": "Bucharest",
+     "zip": "041919",
+     "country": "Romania",
+     "contacts": [
+      {
+       "name": "Laura Cristina Dolis, Site 1458",
+       "role": "CONTACT",
+       "phone": "0040757243543"
+      }
+     ],
+     "geoPoint": {
+      "lat": 44.43225,
+      "lon": 26.10626
+     }
+    },
+    {
+     "facility": "Prof. Dr. Alexandru Obregia Psychiatry Hospital",
+     "status": "RECRUITING",
+     "city": "Bucharest",
+     "state": "Bucharest",
+     "zip": "041919",
+     "country": "Romania",
+     "contacts": [
+      {
+       "name": "Corina Nicolae, Site 1456",
+       "role": "CONTACT",
+       "phone": "+40727818190"
+      }
+     ],
+     "geoPoint": {
+      "lat": 44.43225,
+      "lon": 26.10626
+     }
+    },
+    {
+     "facility": "Prof. Dr. Alexandru Obregia Psychiatry Hospital",
+     "status": "RECRUITING",
+     "city": "Bucharest",
+     "state": "Bucharest",
+     "zip": "041919",
+     "country": "Romania",
+     "contacts": [
+      {
+       "name": "SIMONA TRIFU, Site 1455",
+       "role": "CONTACT",
+       "phone": "0040731581100"
+      }
+     ],
+     "geoPoint": {
+      "lat": 44.43225,
+      "lon": 26.10626
+     }
+    },
+    {
+     "facility": "Prof. Dr. Alexandru Obregia Psychiatry Hospital",
+     "status": "RECRUITING",
+     "city": "Bucharest",
+     "state": "Bucharest",
+     "zip": "041919",
+     "country": "Romania",
+     "contacts": [
+      {
+       "name": "Mihnea Manea, Site 1454",
+       "role": "CONTACT",
+       "phone": "0040745974029"
+      }
+     ],
+     "geoPoint": {
+      "lat": 44.43225,
+      "lon": 26.10626
+     }
+    },
+    {
+     "facility": "Prof. Dr. Alexandru Obregia Psychiatry Hospital",
+     "status": "RECRUITING",
+     "city": "Bucharest",
+     "state": "Bucharest",
+     "zip": "041919",
+     "country": "Romania",
+     "contacts": [
+      {
+       "name": "Valentin Matei, Site 1453",
+       "role": "CONTACT",
+       "phone": "+40721243869"
+      }
+     ],
+     "geoPoint": {
+      "lat": 44.43225,
+      "lon": 26.10626
+     }
+    },
+    {
+     "facility": "Prof. Dr. Alexandru Obregia Psychiatry Hospital",
+     "status": "RECRUITING",
+     "city": "Bucharest",
+     "state": "Bucharest",
+     "zip": "041919",
+     "country": "Romania",
+     "contacts": [
+      {
+       "name": "ADELA CIOBANU, Site 1452",
+       "role": "CONTACT",
+       "phone": "0040723671301"
+      }
+     ],
+     "geoPoint": {
+      "lat": 44.43225,
+      "lon": 26.10626
+     }
+    },
+    {
+     "facility": "Local Institution - 1451",
+     "status": "WITHDRAWN",
+     "city": "Bucharest",
+     "zip": "010825",
+     "country": "Romania",
+     "geoPoint": {
+      "lat": 44.43225,
+      "lon": 26.10626
+     }
+    },
+    {
+     "facility": "Local Institution - 1463",
+     "status": "NOT_YET_RECRUITING",
+     "city": "Bucharest",
+     "zip": "011241",
+     "country": "Romania",
+     "contacts": [
+      {
+       "name": "Site 1463",
+       "role": "CONTACT"
+      }
+     ],
+     "geoPoint": {
+      "lat": 44.43225,
+      "lon": 26.10626
+     }
+    },
+    {
+     "facility": "Local Institution - 1459",
+     "status": "WITHDRAWN",
+     "city": "Bucharest",
+     "zip": "060222",
+     "country": "Romania",
+     "geoPoint": {
+      "lat": 44.43225,
+      "lon": 26.10626
+     }
+    },
+    {
+     "facility": "Prof Dr Alexandru Obregia Clinical Psychiatric Hospital- Centrul de Sanatate Mintala",
+     "status": "RECRUITING",
+     "city": "Bucharest",
+     "zip": "40874",
+     "country": "Romania",
+     "contacts": [
+      {
+       "name": "Mihaela Rosca, Site 1450",
+       "role": "CONTACT",
+       "phone": "+40745588989"
+      }
+     ],
+     "geoPoint": {
+      "lat": 44.43225,
+      "lon": 26.10626
+     }
+    },
+    {
+     "facility": "Cai Ferate Clinical Hospital Constanta",
+     "status": "RECRUITING",
+     "city": "Constan\u021ba",
+     "zip": "90123",
+     "country": "Romania",
+     "contacts": [
+      {
+       "name": "Ana-Maria Ionescu, Site 1461",
+       "role": "CONTACT",
+       "phone": "4024151078x3"
+      }
+     ],
+     "geoPoint": {
+      "lat": 44.18073,
+      "lon": 28.63432
+     }
+    },
+    {
+     "facility": "Institutul de Psihiatrie Socola",
+     "status": "RECRUITING",
+     "city": "Ia\u0219i",
+     "zip": "700282",
+     "country": "Romania",
+     "contacts": [
+      {
+       "name": "CRISTINEL STEFANESCU, Site 1457",
+       "role": "CONTACT",
+       "phone": "+40744518195"
+      }
+     ],
+     "geoPoint": {
+      "lat": 47.16667,
+      "lon": 27.6
+     }
+    },
+    {
+     "facility": "Spitalul de Psihiatrie \u0219i Neurologie Bra\u0219ov",
+     "status": "RECRUITING",
+     "city": "Sanpetru /Brasov",
+     "zip": "507190",
+     "country": "Romania",
+     "contacts": [
+      {
+       "name": "Petru Iulian Ifteni, Site 1460",
+       "role": "CONTACT",
+       "phone": "40724993329"
+      }
+     ]
+    },
+    {
+     "facility": "Local Institution - 1464",
+     "status": "NOT_YET_RECRUITING",
+     "city": "Sibiu",
+     "zip": "550052",
+     "country": "Romania",
+     "contacts": [
+      {
+       "name": "Site 1464",
+       "role": "CONTACT"
+      }
+     ],
+     "geoPoint": {
+      "lat": 45.8,
+      "lon": 24.15
+     }
+    },
+    {
+     "facility": "Clinical Psychiatric Hospital \"Dr. Gheorghe Preda\"",
+     "status": "RECRUITING",
+     "city": "Sibiu",
+     "zip": "550082",
+     "country": "Romania",
+     "contacts": [
+      {
+       "name": "Ciprian Bacila, Site 1462",
+       "role": "CONTACT",
+       "phone": "+40723000227"
+      }
+     ],
+     "geoPoint": {
+      "lat": 45.8,
+      "lon": 24.15
+     }
+    },
+    {
+     "facility": "Oroitu CAE",
+     "status": "RECRUITING",
+     "city": "Getxo",
+     "state": "Bizkaia",
+     "zip": "48993",
+     "country": "Spain",
+     "contacts": [
+      {
+       "name": "Manuel Fernandez, Site 1510",
+       "role": "CONTACT",
+       "phone": "+34 630 070 877"
+      }
+     ],
+     "geoPoint": {
+      "lat": 43.35689,
+      "lon": -3.01146
+     }
+    },
+    {
+     "facility": "Hospital General Universitario de Elche",
+     "status": "RECRUITING",
+     "city": "Elche (alicante)",
+     "zip": "03203",
+     "country": "Spain",
+     "contacts": [
+      {
+       "name": "Maria Gloria Gonz\u00e1lez Caballero, Site 1509",
+       "role": "CONTACT",
+       "phone": "966 616 805"
+      }
+     ],
+     "geoPoint": {
+      "lat": 38.26218,
+      "lon": -0.70107
+     }
+    },
+    {
+     "facility": "Complejo Hospitalario Ruber Juan Bravo",
+     "status": "RECRUITING",
+     "city": "Madrid",
+     "zip": "28006",
+     "country": "Spain",
+     "contacts": [
+      {
+       "name": "Juan Lopez Lozano, Site 1508",
+       "role": "CONTACT",
+       "phone": "+34914211218"
+      }
+     ],
+     "geoPoint": {
+      "lat": 40.4165,
+      "lon": -3.70256
+     }
+    },
+    {
+     "facility": "Hospital Clinico San Carlos",
+     "status": "RECRUITING",
+     "city": "Madrid",
+     "zip": "28040",
+     "country": "Spain",
+     "contacts": [
+      {
+       "name": "Jordi Matias Guiu, Site 1505",
+       "role": "CONTACT"
+      }
+     ],
+     "geoPoint": {
+      "lat": 40.4165,
+      "lon": -3.70256
+     }
+    },
+    {
+     "facility": "Hospital Clinico Universitario Virgen de La Victoria",
+     "status": "RECRUITING",
+     "city": "M\u00e1laga",
+     "zip": "29010",
+     "country": "Spain",
+     "contacts": [
+      {
+       "name": "Carlos De La Cruz Cosme, Site 1502",
+       "role": "CONTACT",
+       "phone": "675 486 977"
+      }
+     ],
+     "geoPoint": {
+      "lat": 36.72016,
+      "lon": -4.42034
+     }
+    },
+    {
+     "facility": "Clinica Universidad de Navarra",
+     "status": "RECRUITING",
+     "city": "Pamplona",
+     "zip": "31008",
+     "country": "Spain",
+     "contacts": [
+      {
+       "name": "Mario Riverol Fernandez, Site 1507",
+       "role": "CONTACT",
+       "phone": "+34948255400"
+      }
+     ],
+     "geoPoint": {
+      "lat": 42.81687,
+      "lon": -1.64323
+     }
+    },
+    {
+     "facility": "Hospital Universitario de Salamanca - Complejo Asistencial Universitario de Salamanca",
+     "status": "RECRUITING",
+     "city": "Salamanca",
+     "zip": "37007",
+     "country": "Spain",
+     "contacts": [
+      {
+       "name": "Angel Luis Montejo, Site 1500",
+       "role": "CONTACT",
+       "phone": "+34639754620"
+      }
+     ],
+     "geoPoint": {
+      "lat": 40.96882,
+      "lon": -5.66388
+     }
+    },
+    {
+     "facility": "Hospital Victoria Eugenia de Sevilla",
+     "status": "RECRUITING",
+     "city": "Seville",
+     "zip": "41009",
+     "country": "Spain",
+     "contacts": [
+      {
+       "name": "Felix Vinuela Fernandez, Site 1503",
+       "role": "CONTACT",
+       "phone": "+34654566812"
+      }
+     ],
+     "geoPoint": {
+      "lat": 37.38283,
+      "lon": -5.97317
+     }
+    },
+    {
+     "facility": "Hospital Mutua Terrassa",
+     "status": "RECRUITING",
+     "city": "Terrassa",
+     "zip": "8221",
+     "country": "Spain",
+     "contacts": [
+      {
+       "name": "Jerzy Krupinski, Site 1504",
+       "role": "CONTACT",
+       "phone": "+34937365050ext13939"
+      }
+     ],
+     "geoPoint": {
+      "lat": 41.56667,
+      "lon": 2.01667
+     }
+    },
+    {
+     "facility": "Hospital Universitario De Rio Hortega",
+     "status": "RECRUITING",
+     "city": "Valladolid",
+     "zip": "47012",
+     "country": "Spain",
+     "contacts": [
+      {
+       "name": "Juan Mu\u00f1oz Sanchez, Site 1506",
+       "role": "CONTACT",
+       "phone": "+34679279973"
+      }
+     ],
+     "geoPoint": {
+      "lat": 41.65541,
+      "lon": -4.72353
+     }
+    },
+    {
+     "facility": "Hospital Viamed Montecanal",
+     "status": "RECRUITING",
+     "city": "Zaragoza",
+     "zip": "50012",
+     "country": "Spain",
+     "contacts": [
+      {
+       "name": "Antonio Oliveros-Cid, Site 1501",
+       "role": "CONTACT",
+       "phone": "+34670492099"
+      }
+     ],
+     "geoPoint": {
+      "lat": 41.65606,
+      "lon": -0.87734
+     }
+    },
+    {
+     "facility": "Chang Gung Memorial Hospital at Kaohsiung",
+     "status": "RECRUITING",
+     "city": "Kaohsiung Niao Sung Dist",
+     "state": "Kaohsiung",
+     "zip": "83301",
+     "country": "Taiwan",
+     "contacts": [
+      {
+       "name": "Chiung-Chih Chang, Site 1753",
+       "role": "CONTACT"
+      }
+     ]
+    },
+    {
+     "facility": "National Cheng Kung University Hospital",
+     "status": "RECRUITING",
+     "city": "Tainan, Taiana",
+     "zip": "704",
+     "country": "Taiwan",
+     "contacts": [
+      {
+       "name": "Ming-Chyi Pai, Site 1751",
+       "role": "CONTACT"
+      }
+     ],
+     "geoPoint": {
+      "lat": 22.99083,
+      "lon": 120.21333
+     }
+    },
+    {
+     "facility": "National Taiwan University Hospital",
+     "status": "RECRUITING",
+     "city": "Taipei",
+     "zip": "100229",
+     "country": "Taiwan",
+     "contacts": [
+      {
+       "name": "Yi-Ting Lin, Site 1754",
+       "role": "CONTACT"
+      }
+     ],
+     "geoPoint": {
+      "lat": 25.05306,
+      "lon": 121.52639
+     }
+    },
+    {
+     "facility": "Taipei Veterans General Hospital",
+     "status": "RECRUITING",
+     "city": "Taipei",
+     "zip": "112",
+     "country": "Taiwan",
+     "contacts": [
+      {
+       "name": "Jong-Ling Fuh, Site 1750",
+       "role": "CONTACT"
+      }
+     ],
+     "geoPoint": {
+      "lat": 25.05306,
+      "lon": 121.52639
+     }
+    },
+    {
+     "facility": "Chang Gung Medical Foundation-Linkou Branch",
+     "status": "RECRUITING",
+     "city": "Taoyuan",
+     "zip": "333",
+     "country": "Taiwan",
+     "contacts": [
+      {
+       "name": "Yi-chun Chen, Site 1752",
+       "role": "CONTACT"
+      }
+     ],
+     "geoPoint": {
+      "lat": 24.99368,
+      "lon": 121.29696
+     }
+    }
+   ]
+  },
+  "referencesModule": {
+   "seeAlsoLinks": [
+    {
+     "label": "BMS Clinical Trial Information",
+     "url": "https://www.bms.com/researchers-and-partners/clinical-trials-and-research.html"
+    },
+    {
+     "label": "BMS Clinical Trial Patient Recruiting",
+     "url": "https://www.bmsclinicaltrials.com/us/en/clinical-trials/NCT07011732.html"
+    }
+   ]
+  },
+  "ipdSharingStatementModule": {
+   "ipdSharing": "YES",
+   "description": "BMS will provide access to individual anonymized participant data upon request from qualified researchers, and subject to certain criteria. Additional information regarding Bristol Myer Squibb's data sharing policy and process can be found at https://www.bms.com/researchers-and-partners/clinical-trials-and-research.html",
+   "infoTypes": [
+    "STUDY_PROTOCOL",
+    "SAP",
+    "CSR"
+   ],
+   "timeFrame": "See Plan Description",
+   "accessCriteria": "See Plan Description",
+   "url": "https://www.bms.com/researchers-and-partners/clinical-trials-and-research.html"
+  }
+ },
+ "derivedSection": {
+  "miscInfoModule": {
+   "versionHolder": "2026-10-09",
+   "removedCountries": [
+    "Puerto Rico"
+   ]
+  },
+  "conditionBrowseModule": {
+   "meshes": [
+    {
+     "id": "D000544",
+     "term": "Alzheimer Disease"
+    }
+   ],
+   "ancestors": [
+    {
+     "id": "D003704",
+     "term": "Dementia"
+    },
+    {
+     "id": "D001927",
+     "term": "Brain Diseases"
+    },
+    {
+     "id": "D002493",
+     "term": "Central Nervous System Diseases"
+    },
+    {
+     "id": "D009422",
+     "term": "Nervous System Diseases"
+    },
+    {
+     "id": "D024801",
+     "term": "Tauopathies"
+    },
+    {
+     "id": "D019636",
+     "term": "Neurodegenerative Diseases"
+    },
+    {
+     "id": "D019965",
+     "term": "Neurocognitive Disorders"
+    },
+    {
+     "id": "D001523",
+     "term": "Mental Disorders"
+    }
+   ]
+  },
+  "interventionBrowseModule": {
+   "meshes": [
+    {
+     "id": "C075257",
+     "term": "xanomeline"
+    },
+    {
+     "id": "C003330",
+     "term": "trospium chloride"
+    }
+   ]
+  }
+ },
+ "hasResults": false
+}

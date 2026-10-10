@@ -1,0 +1,26 @@
+{
+ "system": "ctms",
+ "system_name": "Clinical Trial Management System",
+ "owner": "Clinical Operations",
+ "steward": "D. Abara",
+ "extracted_at": "2014-01-31T03:15:00",
+ "freshness_sla_hours": 24,
+ "id_conventions": "Protocol CDISC-PILOT-01; site = 'SITE-0701'; no subject-level data; MM/DD/YYYY dates",
+ "files": [
+  {
+   "file": "study.json",
+   "rows": 1,
+   "description": "Study master record"
+  },
+  {
+   "file": "sites.csv",
+   "rows": 18,
+   "description": "Site master"
+  },
+  {
+   "file": "monitoring_visits.csv",
+   "rows": 160,
+   "description": "Monitoring visit log"
+  }
+ ]
+}

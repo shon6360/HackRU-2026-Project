@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Concord</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230f766e'/%3E%3Cpath d='M22 11a8 8 0 1 0 0 10' fill='none' stroke='white' stroke-width='3.2' stroke-linecap='round'/%3E%3Ccircle cx='22' cy='16' r='2.4' fill='white'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="#/ask">
+    <svg viewBox="0 0 32 32" width="26" height="26" aria-hidden="true"><rect width="32" height="32" rx="8" fill="var(--accent)"/><path d="M22 11a8 8 0 1 0 0 10" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round"/><circle cx="22" cy="16" r="2.4" fill="#fff"/></svg>
+    <span>Concord</span>
+  </a>
+  <nav id="nav">
+    <a href="#/ask" data-page="ask">Ask</a>
+    <a href="#/catalog" data-page="catalog">Catalog</a>
+    <a href="#/lineage" data-page="lineage">Lineage</a>
+    <a href="#/crosswalk" data-page="crosswalk">Crosswalk</a>
+    <a href="#/quality" data-page="quality">Quality</a>
+    <a href="#/access" data-page="access">Access</a>
+  </nav>
+  <div class="topbar-right">
+    <div id="feeds" class="feeds" title="Source feeds"></div>
+    <div id="roles" class="roles" role="radiogroup" aria-label="Signed in as"></div>
+  </div>
+</header>
+<main id="main"></main>
+<aside id="drawer" class="drawer" hidden>
+  <div class="drawer-head">
+    <h2 id="drawer-title"></h2>
+    <button id="drawer-close" class="icon-btn" aria-label="Close">&times;</button>
+  </div>
+  <div id="drawer-body" class="drawer-body"></div>
+</aside>
+<div id="scrim" class="scrim" hidden></div>
+<script src="/static/app.js"></script>
+</body>
+</html>

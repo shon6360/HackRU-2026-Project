@@ -1,0 +1,19 @@
+{
+ "system": "safety",
+ "system_name": "Pharmacovigilance safety database",
+ "owner": "Global Patient Safety",
+ "steward": "N. Iyer",
+ "extracted_at": "2014-01-30T23:00:00",
+ "freshness_sla_hours": 24,
+ "id_conventions": "Protocol CDISCPILOT-01; site = free-text name only, no site number; subject = bare subject number '1015'; YYYYMMDD dates",
+ "files": [
+  {
+   "file": "cases.json",
+   "rows": 37,
+   "description": "Individual case safety reports (openFDA drug/event shape + study/case blocks)",
+   "tags": [
+    "patient_level"
+   ]
+  }
+ ]
+}

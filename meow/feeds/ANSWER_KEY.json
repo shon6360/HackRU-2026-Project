@@ -1,0 +1,214 @@
+{
+ "description": "Data-quality problems planted by scripts/simulate_feeds.py. The pipeline never reads this file; only the Quality page does, to score how many the rules caught.",
+ "story_sites": {
+  "all_three_problems": [
+   "708",
+   "718"
+  ],
+  "open_safety_cases": [
+   "701",
+   "708",
+   "711",
+   "714",
+   "716",
+   "718"
+  ],
+  "low_supply": [
+   "705",
+   "706",
+   "708",
+   "715",
+   "718"
+  ],
+  "overdue_payments": [
+   "703",
+   "704",
+   "708",
+   "713",
+   "717",
+   "718"
+  ],
+  "no_recent_monitoring": [
+   "704",
+   "708",
+   "713"
+  ]
+ },
+ "planted": [
+  {
+   "id": "P18",
+   "system": "ctms",
+   "rule_id": "uniq_ctms_site_number",
+   "record_key": "SITE-0706",
+   "what": "same site number listed twice in CTMS with a re-typed name"
+  },
+  {
+   "id": "P06",
+   "system": "ctms",
+   "rule_id": "fk_monitoring_site",
+   "record_key": "MV-5160",
+   "what": "monitoring visit for a site number that is not in the site master"
+  },
+  {
+   "id": "P12",
+   "system": "ctms",
+   "rule_id": "valid_monitoring_date_not_future",
+   "record_key": "MV-5081",
+   "what": "monitoring visit dated in 2041"
+  },
+  {
+   "id": "P08",
+   "system": "irt",
+   "rule_id": "seq_randomized_after_screening",
+   "record_key": "7081372",
+   "what": "IRT randomization date is before the EDC screening date"
+  },
+  {
+   "id": "P08",
+   "system": "irt",
+   "rule_id": "seq_randomized_after_screening",
+   "record_key": "7171174",
+   "what": "IRT randomization date is before the EDC screening date"
+  },
+  {
+   "id": "P03",
+   "system": "irt",
+   "rule_id": "fk_randomization_subject",
+   "record_key": "7019999",
+   "what": "IRT randomization for a subject that does not exist in EDC"
+  },
+  {
+   "id": "P10",
+   "system": "irt",
+   "rule_id": "valid_kit_dispensed_before_expiry",
+   "record_key": "K-105494",
+   "what": "kit dispensed to a subject after its expiry date"
+  },
+  {
+   "id": "P10",
+   "system": "irt",
+   "rule_id": "valid_kit_dispensed_before_expiry",
+   "record_key": "K-101389",
+   "what": "kit dispensed to a subject after its expiry date"
+  },
+  {
+   "id": "P16",
+   "system": "edc",
+   "rule_id": "recon_sae_missing_in_safety",
+   "record_key": "701-1211#9",
+   "what": "serious/severe AE recorded in EDC with no case in the safety database"
+  },
+  {
+   "id": "P16",
+   "system": "edc",
+   "rule_id": "recon_sae_missing_in_safety",
+   "record_key": "718-1170#5",
+   "what": "serious/severe AE recorded in EDC with no case in the safety database"
+  },
+  {
+   "id": "P16",
+   "system": "edc",
+   "rule_id": "recon_sae_missing_in_safety",
+   "record_key": "703-1175#1",
+   "what": "serious/severe AE recorded in EDC with no case in the safety database"
+  },
+  {
+   "id": "P17",
+   "system": "safety",
+   "rule_id": "recon_sae_onset_mismatch",
+   "record_key": "10004103",
+   "what": "onset date in the safety case differs from the EDC AE onset"
+  },
+  {
+   "id": "P17",
+   "system": "safety",
+   "rule_id": "recon_sae_onset_mismatch",
+   "record_key": "10004700",
+   "what": "onset date in the safety case differs from the EDC AE onset"
+  },
+  {
+   "id": "P02",
+   "system": "safety",
+   "rule_id": "uniq_safety_company_number",
+   "record_key": "US-SPONSOR-2013-004239",
+   "what": "same case transmitted twice under two report IDs"
+  },
+  {
+   "id": "P13",
+   "system": "safety",
+   "rule_id": "consist_sex_edc_vs_safety",
+   "record_key": "10004358",
+   "what": "patient sex in the safety case disagrees with EDC"
+  },
+  {
+   "id": "P09",
+   "system": "safety",
+   "rule_id": "valid_case_onset_not_future",
+   "record_key": "10004536",
+   "what": "case onset date in 2099"
+  },
+  {
+   "id": "P05",
+   "system": "safety",
+   "rule_id": "fk_case_subject",
+   "record_key": "10004887",
+   "what": "safety case for a subject number that does not exist in EDC"
+  },
+  {
+   "id": "P15",
+   "system": "safety",
+   "rule_id": "xwalk_site_unresolved",
+   "record_key": "St. Elsewhere Clinic",
+   "what": "site name in a safety case that matches no site in the master"
+  },
+  {
+   "id": "P01",
+   "system": "finance",
+   "rule_id": "uniq_payment_document",
+   "record_key": "4501224",
+   "what": "payment document appears twice in the extract"
+  },
+  {
+   "id": "P01",
+   "system": "finance",
+   "rule_id": "uniq_payment_document",
+   "record_key": "4501276",
+   "what": "payment document appears twice in the extract"
+  },
+  {
+   "id": "P11",
+   "system": "finance",
+   "rule_id": "seq_paid_after_invoice",
+   "record_key": "4501384",
+   "what": "paid date is before the invoice date"
+  },
+  {
+   "id": "P14",
+   "system": "finance",
+   "rule_id": "valid_payment_amount_positive",
+   "record_key": "4500259",
+   "what": "negative payment amount"
+  },
+  {
+   "id": "P19",
+   "system": "finance",
+   "rule_id": "complete_payment_due_date",
+   "record_key": "4501520",
+   "what": "payment with no due date"
+  },
+  {
+   "id": "P04",
+   "system": "finance",
+   "rule_id": "fk_payment_site",
+   "record_key": "4501584",
+   "what": "site payment posted to a vendor that is not a study site"
+  },
+  {
+   "id": "P07",
+   "system": "finance",
+   "rule_id": "fresh_feed_within_sla",
+   "record_key": "finance",
+   "what": "finance extract is 24 days old against a 7-day SLA"
+  }
+ ]
+}

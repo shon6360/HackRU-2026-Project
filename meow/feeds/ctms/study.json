@@ -1,0 +1,13 @@
+{
+ "protocol_number": "CDISC-PILOT-01",
+ "registry_id": "NCT07011732",
+ "registry_note": "Registry fields below are the real ClinicalTrials.gov record of a xanomeline Alzheimer's study, borrowed because the CDISC pilot study itself has no registry entry.",
+ "brief_title": "A Phase 3 Study to Evaluate the Safety and Efficacy of KarXT + KarX-EC for the Treatment of Agitation Associated With Alzheimer's Disease (ADAGIO-1)",
+ "phase": "PHASE3",
+ "conditions": [
+  "Alzheimer Disease"
+ ],
+ "lead_sponsor": "Bristol-Myers Squibb",
+ "overall_status": "RECRUITING",
+ "planned_sites": 17
+}

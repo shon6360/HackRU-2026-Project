@@ -1,0 +1,43 @@
+{
+ "system": "irt",
+ "system_name": "Interactive Response Technology (randomization & drug supply)",
+ "owner": "Clinical Supply Chain",
+ "steward": "W. Brandt",
+ "extracted_at": "2014-01-31T01:30:00",
+ "freshness_sla_hours": 24,
+ "id_conventions": "Study PILOT01; site = 'US701'; subject = '7011015' (site + subject number run together); DDMONYYYY dates",
+ "files": [
+  {
+   "file": "randomization.csv",
+   "rows": 229,
+   "description": "Randomization list - UNBLINDED",
+   "tags": [
+    "patient_level"
+   ],
+   "column_tags": {
+    "trt_cd": [
+     "unblinded"
+    ],
+    "trt_desc": [
+     "unblinded"
+    ]
+   }
+  },
+  {
+   "file": "kits.csv",
+   "rows": 1535,
+   "description": "Kit inventory and dispensing - kit type is UNBLINDING",
+   "column_tags": {
+    "kit_type": [
+     "unblinded"
+    ],
+    "lot": [
+     "unblinded"
+    ],
+    "disp_subject": [
+     "patient_level"
+    ]
+   }
+  }
+ ]
+}

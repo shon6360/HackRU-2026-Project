@@ -1,0 +1,24 @@
+{
+ "system": "finance",
+ "system_name": "ERP - site payments ledger",
+ "owner": "R&D Finance",
+ "steward": "C. Whitlock",
+ "extracted_at": "2014-01-07T06:00:00",
+ "freshness_sla_hours": 168,
+ "id_conventions": "Project PRJ-CDP01; site = vendor legal name + VendorID, no site number; DD.MM.YYYY dates; amounts as '12,450.00'",
+ "files": [
+  {
+   "file": "vendors.csv",
+   "rows": 18,
+   "description": "Vendor master"
+  },
+  {
+   "file": "site_payments.csv",
+   "rows": 96,
+   "description": "Site payment documents",
+   "tags": [
+    "financial"
+   ]
+  }
+ ]
+}

@@ -1,0 +1,582 @@
+{
+ "meta": {
+  "disclaimer": "Do not rely on openFDA to make decisions regarding medical care. While we make every effort to ensure that data is accurate, you should assume all results are unvalidated. We may limit or otherwise restrict your access to the API in line with our Terms of Service.",
+  "terms": "https://open.fda.gov/terms/",
+  "license": "https://open.fda.gov/license/",
+  "last_updated": "2026-07-30",
+  "results": {
+   "skip": 0,
+   "limit": 3,
+   "total": 513
+  }
+ },
+ "results": [
+  {
+   "safetyreportversion": "8",
+   "safetyreportid": "23938144",
+   "primarysourcecountry": "US",
+   "occurcountry": "US",
+   "transmissiondateformat": "102",
+   "transmissiondate": "20260415",
+   "reporttype": "2",
+   "serious": "1",
+   "seriousnessdeath": "2",
+   "seriousnesslifethreatening": "2",
+   "seriousnesshospitalization": "1",
+   "seriousnessdisabling": "2",
+   "seriousnesscongenitalanomali": "2",
+   "seriousnessother": "1",
+   "receivedateformat": "102",
+   "receivedate": "20240604",
+   "receiptdateformat": "102",
+   "receiptdate": "20260130",
+   "fulfillexpeditecriteria": "1",
+   "companynumb": "US-TAKEDA-2024TUS016542",
+   "primarysource": {
+    "reportercountry": "US",
+    "qualification": "5"
+   },
+   "sender": {
+    "sendertype": "6",
+    "senderorganization": "TAKEDA"
+   },
+   "receiver": {
+    "receivertype": "6",
+    "receiverorganization": "FDA"
+   },
+   "patient": {
+    "patientonsetage": "52",
+    "patientonsetageunit": "801",
+    "patientsex": "2",
+    "reaction": [
+     {
+      "reactionmeddraversionpt": "28.1",
+      "reactionmeddrapt": "Leukaemia",
+      "reactionoutcome": "1"
+     },
+     {
+      "reactionmeddraversionpt": "28.1",
+      "reactionmeddrapt": "Heart rate increased",
+      "reactionoutcome": "6"
+     },
+     {
+      "reactionmeddraversionpt": "28.1",
+      "reactionmeddrapt": "Cardiac ventricular thrombosis",
+      "reactionoutcome": "6"
+     },
+     {
+      "reactionmeddraversionpt": "28.1",
+      "reactionmeddrapt": "Fatigue",
+      "reactionoutcome": "6"
+     },
+     {
+      "reactionmeddraversionpt": "28.1",
+      "reactionmeddrapt": "Rash macular",
+      "reactionoutcome": "6"
+     },
+     {
+      "reactionmeddraversionpt": "28.1",
+      "reactionmeddrapt": "Dysphagia",
+      "reactionoutcome": "1"
+     },
+     {
+      "reactionmeddraversionpt": "28.1",
+      "reactionmeddrapt": "Feeling abnormal",
+      "reactionoutcome": "1"
+     },
+     {
+      "reactionmeddraversionpt": "28.1",
+      "reactionmeddrapt": "Abnormal behaviour",
+      "reactionoutcome": "6"
+     },
+     {
+      "reactionmeddraversionpt": "28.1",
+      "reactionmeddrapt": "Off label use",
+      "reactionoutcome": "6"
+     },
+     {
+      "reactionmeddraversionpt": "28.1",
+      "reactionmeddrapt": "Drug ineffective",
+      "reactionoutcome": "6"
+     },
+     {
+      "reactionmeddraversionpt": "28.1",
+      "reactionmeddrapt": "Anxiety",
+      "reactionoutcome": "6"
+     },
+     {
+      "reactionmeddraversionpt": "28.1",
+      "reactionmeddrapt": "Palpitations",
+      "reactionoutcome": "6"
+     },
+     {
+      "reactionmeddraversionpt": "28.1",
+      "reactionmeddrapt": "Dizziness",
+      "reactionoutcome": "6"
+     },
+     {
+      "reactionmeddraversionpt": "28.1",
+      "reactionmeddrapt": "Weight increased",
+      "reactionoutcome": "6"
+     },
+     {
+      "reactionmeddraversionpt": "28.1",
+      "reactionmeddrapt": "Contusion",
+      "reactionoutcome": "6"
+     },
+     {
+      "reactionmeddraversionpt": "28.1",
+      "reactionmeddrapt": "Cardiac discomfort",
+      "reactionoutcome": "6"
+     },
+     {
+      "reactionmeddraversionpt": "28.1",
+      "reactionmeddrapt": "Alopecia",
+      "reactionoutcome": "6"
+     },
+     {
+      "reactionmeddraversionpt": "28.1",
+      "reactionmeddrapt": "Constipation",
+      "reactionoutcome": "6"
+     }
+    ],
+    "drug": [
+     {
+      "drugcharacterization": "1",
+      "medicinalproduct": "PONATINIB",
+      "drugbatchnumb": "12489038",
+      "drugauthorizationnumb": "203469",
+      "drugstructuredosagenumb": "30",
+      "drugstructuredosageunit": "003",
+      "drugseparatedosagenumb": "1",
+      "drugintervaldosageunitnumb": "1",
+      "drugintervaldosagedefinition": "804",
+      "drugdosagetext": "30 MILLIGRAM, QD",
+      "drugdosageform": "Tablet",
+      "drugindication": "Chronic myeloid leukaemia",
+      "actiondrug": "4",
+      "drugrecurreadministration": "3",
+      "activesubstance": {
+       "activesubstancename": "PONATINIB"
+      }
+     },
+     {
+      "drugcharacterization": "1",
+      "medicinalproduct": "PONATINIB",
+      "drugbatchnumb": "12528889",
+      "drugauthorizationnumb": "203469",
+      "drugstructuredosagenumb": "30",
+      "drugstructuredosageunit": "003",
+      "drugseparatedosagenumb": "1",
+      "drugintervaldosageunitnumb": "1",
+      "drugintervaldosagedefinition": "804",
+      "drugdosagetext": "30 MILLIGRAM, QD",
+      "drugdosageform": "Tablet",
+      "actiondrug": "4",
+      "drugrecurreadministration": "3",
+      "activesubstance": {
+       "activesubstancename": "PONATINIB"
+      }
+     },
+     {
+      "drugcharacterization": "1",
+      "medicinalproduct": "PONATINIB",
+      "drugauthorizationnumb": "203469",
+      "drugstructuredosagenumb": "30",
+      "drugstructuredosageunit": "003",
+      "drugseparatedosagenumb": "1",
+      "drugintervaldosageunitnumb": "2",
+      "drugintervaldosagedefinition": "804",
+      "drugdosagetext": "30 MILLIGRAM, QOD",
+      "drugdosageform": "Tablet",
+      "actiondrug": "4",
+      "drugrecurreadministration": "3",
+      "activesubstance": {
+       "activesubstancename": "PONATINIB"
+      }
+     },
+     {
+      "drugcharacterization": "1",
+      "medicinalproduct": "PONATINIB",
+      "drugbatchnumb": "12689284",
+      "drugauthorizationnumb": "203469",
+      "drugstructuredosagenumb": "30",
+      "drugstructuredosageunit": "003",
+      "drugseparatedosagenumb": "1",
+      "drugintervaldosageunitnumb": "1",
+      "drugintervaldosagedefinition": "804",
+      "drugdosagetext": "30 MILLIGRAM, QD",
+      "drugdosageform": "Tablet",
+      "actiondrug": "4",
+      "drugrecurreadministration": "3",
+      "activesubstance": {
+       "activesubstancename": "PONATINIB"
+      }
+     },
+     {
+      "drugcharacterization": "1",
+      "medicinalproduct": "PONATINIB",
+      "drugauthorizationnumb": "203469",
+      "drugstructuredosagenumb": "15",
+      "drugstructuredosageunit": "003",
+      "drugseparatedosagenumb": "1",
+      "drugintervaldosageunitnumb": "2",
+      "drugintervaldosagedefinition": "804",
+      "drugdosagetext": "15 MILLIGRAM, QOD",
+      "drugdosageform": "Tablet",
+      "actiondrug": "4",
+      "drugrecurreadministration": "3",
+      "activesubstance": {
+       "activesubstancename": "PONATINIB"
+      }
+     },
+     {
+      "drugcharacterization": "1",
+      "medicinalproduct": "PONATINIB",
+      "drugbatchnumb": "12596455",
+      "drugauthorizationnumb": "203469",
+      "drugstructuredosagenumb": "15",
+      "drugstructuredosageunit": "003",
+      "drugseparatedosagenumb": "1",
+      "drugintervaldosageunitnumb": "1",
+      "drugintervaldosagedefinition": "804",
+      "drugdosagetext": "15 MILLIGRAM, QD",
+      "drugdosageform": "Tablet",
+      "actiondrug": "4",
+      "drugrecurreadministration": "3",
+      "activesubstance": {
+       "activesubstancename": "PONATINIB"
+      }
+     },
+     {
+      "drugcharacterization": "1",
+      "medicinalproduct": "PONATINIB",
+      "drugbatchnumb": "12699156",
+      "drugauthorizationnumb": "203469",
+      "drugstructuredosagenumb": "15",
+      "drugstructuredosageunit": "003",
+      "drugseparatedosagenumb": "1",
+      "drugintervaldosageunitnumb": "1",
+      "drugintervaldosagedefinition": "804",
+      "drugdosagetext": "15 MILLIGRAM, QD",
+      "drugdosageform": "Tablet",
+      "actiondrug": "4",
+      "drugrecurreadministration": "3",
+      "activesubstance": {
+       "activesubstancename": "PONATINIB"
+      }
+     },
+     {
+      "drugcharacterization": "1",
+      "medicinalproduct": "PONATINIB",
+      "drugbatchnumb": "12897346",
+      "drugauthorizationnumb": "203469",
+      "drugstructuredosagenumb": "15",
+      "drugstructuredosageunit": "003",
+      "drugseparatedosagenumb": "1",
+      "drugintervaldosageunitnumb": "1",
+      "drugintervaldosagedefinition": "804",
+      "drugdosagetext": "15 MILLIGRAM, QD",
+      "drugdosageform": "Tablet",
+      "actiondrug": "4",
+      "drugrecurreadministration": "3",
+      "activesubstance": {
+       "activesubstancename": "PONATINIB"
+      }
+     },
+     {
+      "drugcharacterization": "1",
+      "medicinalproduct": "COBENFY",
+      "drugseparatedosagenumb": "1",
+      "drugdosagetext": "UNK",
+      "drugindication": "Product used for unknown indication",
+      "actiondrug": "1",
+      "drugadditional": "1",
+      "activesubstance": {
+       "activesubstancename": "TROSPIUM CHLORIDE\\XANOMELINE"
+      }
+     },
+     {
+      "drugcharacterization": "2",
+      "medicinalproduct": "SEROQUEL",
+      "drugstructuredosagenumb": "200",
+      "drugstructuredosageunit": "003",
+      "drugseparatedosagenumb": "1",
+      "drugdosagetext": "200 MILLIGRAM",
+      "activesubstance": {
+       "activesubstancename": "QUETIAPINE FUMARATE"
+      }
+     },
+     {
+      "drugcharacterization": "2",
+      "medicinalproduct": "SEROQUEL",
+      "drugstructuredosagenumb": "50",
+      "drugstructuredosageunit": "003",
+      "drugseparatedosagenumb": "1",
+      "drugintervaldosageunitnumb": "1",
+      "drugintervaldosagedefinition": "804",
+      "drugdosagetext": "50 MILLIGRAM, QD",
+      "activesubstance": {
+       "activesubstancename": "QUETIAPINE FUMARATE"
+      }
+     },
+     {
+      "drugcharacterization": "2",
+      "medicinalproduct": "AMOXAPINE",
+      "drugseparatedosagenumb": "1",
+      "drugdosagetext": "UNK",
+      "activesubstance": {
+       "activesubstancename": "AMOXAPINE"
+      }
+     },
+     {
+      "drugcharacterization": "2",
+      "medicinalproduct": "SERTRALINE HYDROCHLORIDE",
+      "drugseparatedosagenumb": "1",
+      "drugdosagetext": "UNK",
+      "activesubstance": {
+       "activesubstancename": "SERTRALINE HYDROCHLORIDE"
+      }
+     },
+     {
+      "drugcharacterization": "2",
+      "medicinalproduct": "LATUDA",
+      "drugstructuredosagenumb": "120",
+      "drugstructuredosageunit": "003",
+      "drugseparatedosagenumb": "1",
+      "drugintervaldosageunitnumb": "1",
+      "drugintervaldosagedefinition": "804",
+      "drugdosagetext": "120 MILLIGRAM, QD",
+      "activesubstance": {
+       "activesubstancename": "LURASIDONE HYDROCHLORIDE"
+      }
+     },
+     {
+      "drugcharacterization": "2",
+      "medicinalproduct": "LATUDA",
+      "drugstructuredosagenumb": "60",
+      "drugstructuredosageunit": "003",
+      "drugseparatedosagenumb": "1",
+      "drugintervaldosageunitnumb": "1",
+      "drugintervaldosagedefinition": "804",
+      "drugdosagetext": "60 MILLIGRAM, QD",
+      "activesubstance": {
+       "activesubstancename": "LURASIDONE HYDROCHLORIDE"
+      }
+     },
+     {
+      "drugcharacterization": "2",
+      "medicinalproduct": "KLONOPIN",
+      "drugseparatedosagenumb": "1",
+      "drugdosagetext": "UNK",
+      "activesubstance": {
+       "activesubstancename": "CLONAZEPAM"
+      }
+     },
+     {
+      "drugcharacterization": "2",
+      "medicinalproduct": "RISPERDAL",
+      "drugseparatedosagenumb": "1",
+      "drugdosagetext": "UNK",
+      "activesubstance": {
+       "activesubstancename": "RISPERIDONE"
+      }
+     },
+     {
+      "drugcharacterization": "2",
+      "medicinalproduct": "ACYCLOVIR",
+      "drugseparatedosagenumb": "1",
+      "drugdosagetext": "UNK",
+      "activesubstance": {
+       "activesubstancename": "ACYCLOVIR"
+      }
+     },
+     {
+      "drugcharacterization": "2",
+      "medicinalproduct": "BENZEDREX",
+      "drugseparatedosagenumb": "1",
+      "drugdosagetext": "UNK",
+      "activesubstance": {
+       "activesubstancename": "PROPYLHEXEDRINE"
+      }
+     },
+     {
+      "drugcharacterization": "2",
+      "medicinalproduct": "SUCRALFATE",
+      "drugseparatedosagenumb": "1",
+      "drugdosagetext": "UNK",
+      "activesubstance": {
+       "activesubstancename": "SUCRALFATE"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "safetyreportversion": "1",
+   "safetyreportid": "24611867",
+   "primarysourcecountry": "US",
+   "occurcountry": "US",
+   "transmissiondateformat": "102",
+   "transmissiondate": "20250115",
+   "reporttype": "1",
+   "serious": "1",
+   "seriousnessdeath": "2",
+   "seriousnesslifethreatening": "2",
+   "seriousnesshospitalization": "2",
+   "seriousnessdisabling": "2",
+   "seriousnesscongenitalanomali": "2",
+   "seriousnessother": "1",
+   "receivedateformat": "102",
+   "receivedate": "20241113",
+   "receiptdateformat": "102",
+   "receiptdate": "20241113",
+   "fulfillexpeditecriteria": "2",
+   "companynumb": "US-BRISTOL-MYERS SQUIBB COMPANY-2024-175553",
+   "primarysource": {
+    "reportercountry": "US",
+    "qualification": "3"
+   },
+   "sender": {
+    "sendertype": "1",
+    "senderorganization": "BRISTOL-MYERS SQUIBB COMPANY"
+   },
+   "receiver": {
+    "receivertype": "6",
+    "receiverorganization": "FDA"
+   },
+   "patient": {
+    "patientsex": "1",
+    "reaction": [
+     {
+      "reactionmeddraversionpt": "27.1",
+      "reactionmeddrapt": "Urinary retention",
+      "reactionoutcome": "6"
+     }
+    ],
+    "drug": [
+     {
+      "drugcharacterization": "1",
+      "medicinalproduct": "COBENFY",
+      "drugbatchnumb": "Unknown",
+      "drugdosagetext": "DOSE : ^50/20MG DOSE^;     FREQ : UNAVAILABLE",
+      "drugindication": "Product used for unknown indication",
+      "actiondrug": "5",
+      "drugadditional": "3",
+      "activesubstance": {
+       "activesubstancename": "TROSPIUM CHLORIDE\\XANOMELINE"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "safetyreportversion": "2",
+   "safetyreportid": "24640739",
+   "primarysourcecountry": "US",
+   "occurcountry": "US",
+   "transmissiondateformat": "102",
+   "transmissiondate": "20250409",
+   "reporttype": "1",
+   "serious": "1",
+   "seriousnessdeath": "2",
+   "seriousnesslifethreatening": "2",
+   "seriousnesshospitalization": "2",
+   "seriousnessdisabling": "2",
+   "seriousnesscongenitalanomali": "2",
+   "seriousnessother": "1",
+   "receivedateformat": "102",
+   "receivedate": "20241120",
+   "receiptdateformat": "102",
+   "receiptdate": "20250128",
+   "fulfillexpeditecriteria": "2",
+   "companynumb": "US-BRISTOL-MYERS SQUIBB COMPANY-2024-179459",
+   "primarysource": {
+    "reportercountry": "US",
+    "qualification": "2"
+   },
+   "sender": {
+    "sendertype": "6",
+    "senderorganization": "BRISTOL-MYERS SQUIBB COMPANY"
+   },
+   "receiver": {
+    "receivertype": "6",
+    "receiverorganization": "FDA"
+   },
+   "patient": {
+    "patientonsetage": "4",
+    "patientonsetageunit": "800",
+    "patientagegroup": "5",
+    "patientsex": "2",
+    "reaction": [
+     {
+      "reactionmeddraversionpt": "27.1",
+      "reactionmeddrapt": "Dystonia",
+      "reactionoutcome": "3"
+     }
+    ],
+    "drug": [
+     {
+      "drugcharacterization": "1",
+      "medicinalproduct": "COBENFY",
+      "drugbatchnumb": "Unknown",
+      "drugseparatedosagenumb": "1",
+      "drugintervaldosageunitnumb": "0.5",
+      "drugintervaldosagedefinition": "804",
+      "drugdosagetext": "DOSE : 50 MG /20 MG;   FREQ: TWICE A DAY",
+      "drugadministrationroute": "048",
+      "drugindication": "Schizophrenia",
+      "drugstartdateformat": "602",
+      "drugstartdate": "2024",
+      "actiondrug": "1",
+      "drugadditional": "2",
+      "activesubstance": {
+       "activesubstancename": "TROSPIUM CHLORIDE\\XANOMELINE"
+      }
+     },
+     {
+      "drugcharacterization": "1",
+      "medicinalproduct": "COBENFY",
+      "drugbatchnumb": "Unknown",
+      "drugseparatedosagenumb": "1",
+      "drugintervaldosageunitnumb": "0.5",
+      "drugintervaldosagedefinition": "804",
+      "drugdosagetext": "DOSE: 100MG/20MG",
+      "drugadministrationroute": "048",
+      "actiondrug": "1",
+      "drugadditional": "2",
+      "activesubstance": {
+       "activesubstancename": "TROSPIUM CHLORIDE\\XANOMELINE"
+      }
+     },
+     {
+      "drugcharacterization": "1",
+      "medicinalproduct": "RISPERIDONE",
+      "drugbatchnumb": "Unknown",
+      "drugindication": "Product used for unknown indication",
+      "actiondrug": "5",
+      "drugadditional": "3",
+      "activesubstance": {
+       "activesubstancename": "RISPERIDONE"
+      }
+     },
+     {
+      "drugcharacterization": "1",
+      "medicinalproduct": "HALOPERIDOL",
+      "drugbatchnumb": "Unknown",
+      "drugindication": "Product used for unknown indication",
+      "actiondrug": "5",
+      "drugrecurreadministration": "3",
+      "drugadditional": "3",
+      "activesubstance": {
+       "activesubstancename": "HALOPERIDOL"
+      }
+     }
+    ],
+    "summary": {
+     "narrativeincludeclinical": "CASE EVENT DATE: 20240101"
+    }
+   }
+  }
+ ]
+}
