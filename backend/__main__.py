@@ -27,7 +27,12 @@ def main() -> None:
     if args.command == "serve":
         import uvicorn
 
+        from .server import WEB
+
         _build_if_missing()
+        if not WEB.is_dir():
+            print("\nThe web app has not been built yet, so only the API will be served.\n"
+                  "Build it once with:  cd frontend && npm install && npm run build")
         print(f"\nConcord is running at http://{args.host}:{args.port}\n")
         uvicorn.run("backend.server:app", host=args.host, port=args.port, log_level="warning")
     elif args.command == "ask":

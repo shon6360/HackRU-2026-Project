@@ -21,12 +21,14 @@ Built for the Regeneron challenge at HackRU Fall 2026, starter sheet 40, *One So
 
 ## Run it
 
-Needs Python 3.10 or newer. Nothing else: no database server, no Docker, no API key.
+Needs Python 3.10 or newer, and Node.js 20.9 or newer to build the web app once. No database server, no Docker,
+no API key.
 
 ```bash
 git clone https://github.com/shon6360/HackRU-2026-Project.git && cd HackRU-2026-Project
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
+(cd frontend && npm install && npm run build)   # builds the web app into frontend/out, once
 python -m backend serve
 ```
 
@@ -91,7 +93,7 @@ databases. The **back end** answers questions from what the harmonizer built and
 | Policy | `harmonizer/policy.py` | Three tags, three roles. Enforced by building a separate database per role |
 | Engine | `backend/engine.py` | Parses a query, checks it against the policy, runs it sandboxed, and attaches lineage, freshness and quality warnings |
 | Ask | `backend/ask.py` | Reviewed questions, plus Gemini writing SQL from the role's own view of the catalog |
-| App | `backend/server.py`, `frontend/` | FastAPI and a dependency-free front end |
+| App | `backend/server.py`, `frontend/` | FastAPI, and a Next.js and Tailwind CSS front end built to static files that FastAPI serves |
 
 ### Matching ids
 
@@ -148,7 +150,7 @@ payment problems are not attached to any real institution.
 ```
 harmonizer/         feeds -> warehouse: pipeline, SQL models, crosswalk, quality rules, access policy
 backend/            warehouse -> answers: query engine, question answering, the JSON API
-frontend/           the web app: index.html, app.js, styles.css
+frontend/           the web app: Next.js and Tailwind CSS, built to static files in frontend/out
 feeds/              the five mock source systems (committed, deterministic)
 data/public/        snapshot of the public data the feeds are built from, with SOURCES.json
 scripts/            fetch_public_data.py and simulate_feeds.py, to regenerate the two folders above

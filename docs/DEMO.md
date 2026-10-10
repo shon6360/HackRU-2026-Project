@@ -1,6 +1,7 @@
 # Three-minute demo script
 
-Record at 1440 × 900 or larger. Start the server first (`python -m backend serve`) and open
+Record at 1440 × 900 or larger. Build the web app if you have not yet (`cd frontend && npm install && npm run build`),
+start the server (`python -m backend serve`) and open
 http://127.0.0.1:8040 signed in as Maya. Each step has a link that reproduces the screen, in case a click
 goes wrong while recording.
 
@@ -16,7 +17,7 @@ On the **Crosswalk** page, pointing at the "What each system calls things" table
 ## 0:20 One question, five systems (40 seconds)
 
 Go to **Ask**. Click the first question.
-`http://127.0.0.1:8040/#/ask?q=Which%20sites%20have%20open%20safety%20cases%2C%20low%20drug%20supply%20and%20overdue%20payments%3F`
+`http://127.0.0.1:8040/ask/?q=Which%20sites%20have%20open%20safety%20cases%2C%20low%20drug%20supply%20and%20overdue%20payments%3F`
 
 > This is the question from the challenge sheet: which sites have open safety cases, low drug supply and
 > overdue payments. Milliseconds. Two sites. It read all five systems.
@@ -40,7 +41,7 @@ Click `S718` in the result.
 
 Close the drawer. Click *How many subjects and reportable adverse events are there in each treatment arm?*
 then the **Compare roles** tab.
-`http://127.0.0.1:8040/#/ask?q=How%20many%20subjects%20and%20reportable%20adverse%20events%20are%20there%20in%20each%20treatment%20arm%3F&tab=roles`
+`http://127.0.0.1:8040/ask/?q=How%20many%20subjects%20and%20reportable%20adverse%20events%20are%20there%20in%20each%20treatment%20arm%3F&tab=roles`
 
 > Maya runs the study, so she has to stay blind to who got which treatment. Same question, same SQL, three
 > people. Maya gets the count but the arm is withheld. Arjun, the unblinded statistician, gets the full

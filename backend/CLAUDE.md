@@ -100,7 +100,7 @@ snapshot date, never `current_date`.
 | `GET /api/crosswalk?role` | site crosswalk, subject match counts |
 | `GET /api/quality?role` | rules, failures, answer-key score |
 | `GET /api/access` | every tagged table and what each role gets |
-| `GET /`, `/static/*` | the front end from `../frontend/` (`server.WEB`) |
+| everything else | the built front end from `../frontend/out/` (`server.WEB`), mounted last. `/ask/` serves `ask/index.html`. If the folder is missing at start-up, `/` explains how to build it |
 
 Catalog metadata is deliberately visible to every role, including for tables whose data is
 withheld. What is hidden for a withheld table or masked column is the data and anything derived

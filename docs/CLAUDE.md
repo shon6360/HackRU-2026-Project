@@ -28,8 +28,8 @@ summary with what is written:
 | Thresholds 0.85, 0.05 margin, 0.70 | README, DECK |
 | Role table (who holds which grant) | README |
 
-`DEMO.md` links assume the server is at `http://127.0.0.1:8040` and depend on the hash format
-`#/ask?q=...&tab=...`. The slide-2 example in `DECK.md` quotes real strings from the feeds,
+`DEMO.md` links assume the server is at `http://127.0.0.1:8040` and depend on the link format
+`/ask/?q=...&tab=...` (the older `#/ask?q=...` form still redirects to it). The slide-2 example in `DECK.md` quotes real strings from the feeds,
 including a misspelling marked (sic); if the feeds are regenerated the strings change.
 
 ## Voice

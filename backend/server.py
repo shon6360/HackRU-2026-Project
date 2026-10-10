@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import FileResponse
+from fastapi.responses import PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
@@ -11,7 +11,7 @@ from harmonizer import config, policy, quality
 from . import ask as asker
 from . import engine
 
-WEB = config.ROOT / "frontend"
+WEB = config.ROOT / "frontend" / "out"  # the static site that `npm run build` writes
 
 app = FastAPI(title="Concord", docs_url="/api/docs", redoc_url=None)
 
@@ -248,9 +248,12 @@ def access_matrix():
 
 
 # ----------------------------------------------------------------------------- front end
-@app.get("/")
-def index():
-    return FileResponse(WEB / "index.html")
-
-
-app.mount("/static", StaticFiles(directory=WEB), name="static")
+# Mounted last, so it only sees what no /api route claimed. html=True serves <page>/index.html for /<page>/.
+if WEB.is_dir():
+    app.mount("/", StaticFiles(directory=WEB, html=True), name="frontend")
+else:
+    @app.get("/")
+    def not_built():
+        return PlainTextResponse("The web app has not been built yet. Run this once, then restart the server:\n\n"
+                                 "    cd frontend && npm install && npm run build\n\n"
+                                 "The API is running: see /api/docs.\n", status_code=503)

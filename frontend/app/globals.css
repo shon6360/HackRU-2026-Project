@@ -1,0 +1,122 @@
+@import "tailwindcss";
+
+/* Colour tokens. Light values here, dark values in the media query below. The utilities (bg-surface,
+   text-ink-2, border-line, ...) read these variables, so every colour follows the system colour scheme
+   and no dark: variants are needed anywhere. */
+:root {
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --surface-2: #f1f3f6;
+  --ink: #111827;
+  --ink-2: #4b5563;
+  --ink-3: #8a93a3;
+  --line: #e3e6ec;
+  --accent: #0f766e;
+  --accent-ink: #0b5d57;
+  --accent-soft: #e3f4f1;
+  --warn: #b45309;
+  --warn-soft: #fef3e2;
+  --bad: #b42318;
+  --bad-soft: #fdecea;
+  --good: #1a7f47;
+  --good-soft: #e5f5ec;
+  --violet: #6d3fc4;
+  --violet-soft: #f0eafb;
+  --rose: #be185d;
+  --rose-soft: #fce8f1;
+  --shadow: 0 1px 2px rgba(16, 24, 40, .06), 0 1px 3px rgba(16, 24, 40, .08);
+  --layer-source: #64748b;
+  --layer-bronze: #a16207;
+  --layer-silver: #5b6b82;
+  --layer-master: #6d3fc4;
+  --layer-gold: #b7791f;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0e1116;
+    --surface: #161a21;
+    --surface-2: #1d222b;
+    --ink: #e8ebf0;
+    --ink-2: #aab2c0;
+    --ink-3: #737d8f;
+    --line: #2a303b;
+    --accent: #2bb3a6;
+    --accent-ink: #5fd0c5;
+    --accent-soft: #12302d;
+    --warn: #f0a94a;
+    --warn-soft: #33260f;
+    --bad: #f47c70;
+    --bad-soft: #361a17;
+    --good: #5cc98a;
+    --good-soft: #14301f;
+    --violet: #b095ee;
+    --violet-soft: #271f3b;
+    --rose: #f08bb8;
+    --rose-soft: #3a1a29;
+    --shadow: 0 1px 2px rgba(0, 0, 0, .4);
+    --layer-source: #94a3b8;
+    --layer-bronze: #d4a54a;
+    --layer-silver: #9fb0c8;
+    --layer-master: #b095ee;
+    --layer-gold: #e6b450;
+  }
+}
+
+/* The default palette and breakpoints are switched off, so the tokens above are the only colours there are.
+   Breakpoints: sm from 641px, md from 981px, xl from 1321px. */
+@theme inline {
+  --color-*: initial;
+  --color-white: #fff;
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-line: var(--line);
+  --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
+  --color-accent-soft: var(--accent-soft);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-bad: var(--bad);
+  --color-bad-soft: var(--bad-soft);
+  --color-good: var(--good);
+  --color-good-soft: var(--good-soft);
+  --color-violet: var(--violet);
+  --color-violet-soft: var(--violet-soft);
+  --color-rose: var(--rose);
+  --color-rose-soft: var(--rose-soft);
+  --color-layer-source: var(--layer-source);
+  --color-layer-bronze: var(--layer-bronze);
+  --color-layer-silver: var(--layer-silver);
+  --color-layer-master: var(--layer-master);
+  --color-layer-gold: var(--layer-gold);
+
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+  --shadow-card: var(--shadow);
+
+  --breakpoint-*: initial;
+  --breakpoint-sm: 641px;
+  --breakpoint-md: 981px;
+  --breakpoint-xl: 1321px;
+}
+
+/* Defaults for bare elements. Anything more specific is a utility class in the component. */
+@layer base {
+  body { background: var(--bg); color: var(--ink); font: 14px/1.5 var(--font-sans); -webkit-font-smoothing: antialiased; }
+  a { color: var(--accent-ink); }
+  a:hover { text-decoration: underline; }
+  h1 { font-size: 22px; line-height: 1.25; font-weight: 700; margin: 0 0 4px; letter-spacing: -.01em; }
+  h2 { font-size: 16px; font-weight: 700; margin: 0 0 8px; }
+  h3 { font-size: 12px; font-weight: 600; margin: 0 0 8px; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-3); }
+  h4 { font-weight: 700; }
+  p { margin: 0 0 10px; }
+  b, strong { font-weight: 700; }
+  code { font-family: var(--font-mono); font-size: 12.5px; }
+  button { cursor: pointer; }
+  input[type="text"], textarea { width: 100%; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 9px; padding: 9px 12px; }
+  input[type="text"]:focus, textarea:focus { outline: 2px solid var(--accent); outline-offset: -1px; border-color: transparent; }
+  summary { cursor: pointer; }
+}
