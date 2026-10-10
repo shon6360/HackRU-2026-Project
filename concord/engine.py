@@ -99,6 +99,8 @@ def preflight(sql: str, role: str) -> dict:
         statements = [s for s in sqlglot.parse(sql, dialect="duckdb") if s is not None]
     except sqlglot.errors.ParseError as e:
         raise QueryRejected(f"Could not parse the SQL: {str(e).splitlines()[0]}") from e
+    if not statements:
+        raise QueryRejected("There is no query to run. Write one SELECT statement.")
     if len(statements) != 1:
         raise QueryRejected("Exactly one statement is allowed.")
     tree = statements[0]
@@ -178,6 +180,9 @@ def execute(sql: str, role: str) -> dict:
         cur = con.execute(f"SELECT * FROM (\n{pre['sql']}\n) AS answer LIMIT {ROW_LIMIT + 1}")
         out["columns"] = [{"name": c[0], "type": str(c[1])} for c in cur.description]
         rows = cur.fetchall()
+    except duckdb.InterruptException:
+        out["error"] = f"The query ran for more than {TIMEOUT_SECONDS} seconds and was stopped. Narrow it down and try again."
+        return out
     except duckdb.Error as e:
         out["error"] = str(e).split("\n\n")[0]
         return out
@@ -217,6 +222,11 @@ def upstream_graph(targets: list[str]) -> dict:
     return {"nodes": nodes, "edges": [[s, d] for s, d in cat["edges"] if s in seen and d in seen], "targets": targets}
 
 
+def _days(hours: float) -> str:
+    n = round(hours / 24)
+    return f"{n} day{'' if n == 1 else 's'}"
+
+
 def answer_context(tables: list[str]) -> dict:
     """What a reader needs in order to trust an answer built from these tables."""
     cat = catalog()
@@ -234,7 +244,7 @@ def answer_context(tables: list[str]) -> dict:
     for f in feeds:
         if f["is_stale"]:
             warnings.append({"kind": "stale", "text": f"The {f['system']} feed is {f['age_hours'] / 24:.0f} days old "
-                             f"(SLA {f['freshness_sla_hours'] / 24:.0f} day). Anything recorded there since "
+                             f"(SLA {_days(f['freshness_sla_hours'])}). Anything recorded there since "
                              f"{f['extracted_at'][:10]} is not in this answer."})
     issues = [r for r in cat["rules"] if r["n_failed"] and r["dataset"] in upstream_ids and r["severity"] != "info"]
     if issues:

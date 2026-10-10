@@ -193,6 +193,7 @@ def quality_view(role: str):
     score = quality.score_answer_key(con)
     con.close()
     planted_keys = {(p["rule_id"], p["record_key"]) for p in score["planted"]}
+    hidden_rules = set()
     rules = []
     for r in cat["rules"]:
         ds = cat["datasets"].get(r["dataset"])
@@ -200,6 +201,8 @@ def quality_view(role: str):
         found = failures.get(r["rule_id"], [])
         for f in found:
             f["planted"] = (r["rule_id"], f["record_key"]) in planted_keys
+        if a["denied"]:
+            hidden_rules.add(r["rule_id"])
         rules.append({**r, "hidden": policy.reason(a["denied_tags"], role) if a["denied"] else None,
                       "failures": [] if a["denied"] else found})
     order = {"critical": 0, "high": 1, "medium": 2, "low": 3, "info": 4}
@@ -216,8 +219,10 @@ def quality_view(role: str):
             n_planted = sum(1 for p in score["planted"] if p["rule_id"] == r["rule_id"])
             if r["n_failed"] > n_planted:
                 by_rule[r["rule_id"]] = {"title": r["title"], "n": r["n_failed"] - n_planted, "dataset": r["dataset"]}
+    # the answer key names the same records as the findings, so it is withheld on the same terms
+    planted = [{**p, "record_key": None, "hidden": True} if p["rule_id"] in hidden_rules else p for p in score["planted"]]
     return {"rules": rules, "dimensions": list(dims.values()), "feeds": list(cat["feeds"].values()),
-            "answer_key": {**score, "additional_by_rule": by_rule},
+            "answer_key": {**score, "planted": planted, "additional_by_rule": by_rule},
             "totals": {"rules": len(rules), "passing": sum(r["n_failed"] == 0 for r in rules),
                        "findings": sum(r["n_failed"] for r in rules)}}
 

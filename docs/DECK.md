@@ -42,5 +42,5 @@ What is simulated is derived from the real data with a fixed seed and written do
 
 **11. Run it yourself**
 `pip install -r requirements.txt && python -m concord serve`. No database server, no API key needed.
-DuckDB, 28 SQL models, 27 quality rules, 9 end-to-end tests, MIT license.
+DuckDB, 28 SQL models, 27 quality rules, 10 end-to-end tests, MIT license.
 What we would build next: a steward's approval screen, column-level lineage, single sign-on for roles.

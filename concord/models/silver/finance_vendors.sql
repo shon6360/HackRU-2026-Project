@@ -3,6 +3,9 @@
 -- @grain one row per vendor
 -- @col vendor_id: ERP vendor identifier
 -- @col legal_name: Vendor legal name, upper-cased with a legal suffix
+-- @col city: Vendor city, upper-cased as the ERP holds it
+-- @col state: Vendor state, two-letter code
+-- @col payment_terms [financial]: Payment terms agreed with the vendor, e.g. NET30
 SELECT
     vendorid           AS vendor_id,
     vendor_legal_name  AS legal_name,

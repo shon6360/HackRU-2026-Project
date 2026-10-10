@@ -220,10 +220,11 @@ def run(con, feeds: list[dict], bronze_rows: dict[str, tuple[str, int, int]]) ->
 
     stale = [f for f in feeds if f["is_stale"]]
     for f in stale:
+        sla_days = round(f["freshness_sla_hours"] / 24)
         con.execute("INSERT INTO dq.failures VALUES (?, ?, ?, ?, NULL, NULL)",
                     ["fresh_feed_within_sla", f["system"],
                      f"extracted {f['extracted_at']}, {f['age_hours'] / 24:.0f} days before the snapshot; "
-                     f"SLA is {f['freshness_sla_hours'] / 24:.0f} day(s)", f["system"]])
+                     f"SLA is {sla_days} day{'' if sla_days == 1 else 's'}", f["system"]])
     short = [(path, t) for path, t in bronze_rows.items() if t[1] != t[2]]
     for path, (_, declared, loaded) in short:
         con.execute("INSERT INTO dq.failures VALUES (?, ?, ?, ?, ?, NULL)",

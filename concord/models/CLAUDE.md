@@ -80,7 +80,8 @@ Currently tagged, as a guide:
   so the kit tables stay usable for site-level supply questions.
 - `unblinded` (column): `arm`, `arm_code`, `kit_type`, `lot`. Kit type and lot reveal the arm.
 - `financial`: `fact_payment` and `silver.finance_payments` as tables; the five money columns of
-  `site_360` as columns, so the rest of `site_360` stays visible to everyone.
+  `site_360` as columns, so the rest of `site_360` stays visible to everyone; and `payment_terms`
+  in the vendor master as a column, so vendor names stay available for matching sites.
 
 A value derived from an unblinded column is unblinded unless you can argue otherwise in the
 description, as `edc_subjects.is_screen_failure` does. `tests/test_concord.py` checks specific

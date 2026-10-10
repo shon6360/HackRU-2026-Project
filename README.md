@@ -24,7 +24,7 @@ Built for the Regeneron challenge at HackRU Fall 2026, starter sheet 40, *One So
 Needs Python 3.10 or newer. Nothing else: no database server, no Docker, no API key.
 
 ```bash
-git clone <this repo> && cd <this repo>
+git clone https://github.com/shon6360/HackRU-2026-Project.git && cd HackRU-2026-Project
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 python -m concord serve
@@ -34,7 +34,7 @@ Open http://127.0.0.1:8040. The first start builds the warehouse from the commit
 
 ```bash
 python -m concord build          # rebuild the warehouse, catalog, quality results and role databases
-python tests/test_concord.py     # 9 end-to-end checks (also runs under pytest)
+python tests/test_concord.py     # 10 end-to-end checks (also runs under pytest)
 python -m concord ask "Which sites are we late paying?" --role finance
 ```
 

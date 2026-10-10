@@ -10,7 +10,12 @@
   {
    "file": "vendors.csv",
    "rows": 18,
-   "description": "Vendor master"
+   "description": "Vendor master",
+   "column_tags": {
+    "payment_terms": [
+     "financial"
+    ]
+   }
   },
   {
    "file": "site_payments.csv",

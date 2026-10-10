@@ -1,6 +1,6 @@
 # tests
 
-One file, nine end-to-end checks. They assert what a judge or an auditor would want to be true,
+One file, ten end-to-end checks. They assert what a judge or an auditor would want to be true,
 not implementation details.
 
 ```bash
@@ -34,7 +34,8 @@ python -m pytest tests/test_concord.py -k headline -q         # one test
 | `test_role_databases_hold_nothing_the_policy_withholds` | In each role database, withheld tables are absent and masked columns hold no values |
 | `test_blinded_role_cannot_learn_the_arm_by_any_route` | Clinops gets NULL for the arm through bronze, silver and gold, including kit type |
 | `test_finance_role_sees_no_patient_rows_and_statistician_no_money` | The other two roles' boundaries, and that site-level aggregates stay available to finance |
-| `test_sandbox_rejects_everything_but_select_on_cataloged_tables` | Pre-flight refuses DDL, multiple statements, table functions, COPY, ATTACH; the role database itself also refuses file access and reconfiguration |
+| `test_pages_that_read_the_full_warehouse_withhold_what_the_role_may_not_see` | The Quality and Crosswalk routes read the unfiltered warehouse: findings, answer-key record keys and subject examples are withheld from a role exactly where the underlying table is, while the counts stay visible |
+| `test_sandbox_rejects_everything_but_select_on_cataloged_tables` | Pre-flight refuses an empty query, DDL, multiple statements, table functions, COPY, ATTACH; the role database itself also refuses file access and reconfiguration |
 | `test_trace_reaches_source_rows_and_respects_policy` | A site traces to all five systems with raw rows, and withheld blocks are reported as withheld |
 | `test_lineage_reaches_a_source_file_for_every_table` | Every table except `gold.snapshot` has a source file upstream |
 
@@ -43,7 +44,8 @@ python -m pytest tests/test_concord.py -k headline -q         # one test
 - A plain function named `test_*` with bare `assert` and a message that names what failed.
   No fixtures, parametrization or classes, so it keeps working under the plain runner.
 - Go through the public surface: `ask.ask`, `engine.execute`, `engine.trace`, `engine.catalog`,
-  `engine.role_connection`. Close any connection you open.
+  `engine.role_connection`, and the route functions in `server` (they are plain functions; no
+  HTTP client is needed). Close any connection you open.
 - Test the policy at both levels when it matters: what `engine.execute` reports, and what is
   physically in the role database.
 - When a model gains a column that reveals the treatment arm, or a new route to patient-level

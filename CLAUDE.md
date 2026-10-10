@@ -18,12 +18,12 @@ python3 -m venv .venv && source .venv/bin/activate && pip install -r requirement
 python -m concord build                    # rebuild build/*.duckdb from feeds/ (about 1-2 s)
 python -m concord serve [--host H --port P] # default 127.0.0.1:8040
 python -m concord ask "Which sites are we late paying?" --role finance   # prints the result JSON
-python tests/test_concord.py               # all 9 tests, no test runner needed
+python tests/test_concord.py               # all 10 tests, no test runner needed
 ```
 
 - A virtual environment does not survive its folder being moved or renamed: `activate` keeps
   the old path and `python` is then not found. Recreate it, or call `.venv/bin/python` directly.
-- `serve` builds only when `build/warehouse.duckdb` is missing. After changing a model, a feed,
+- `serve` and `ask` build only when `build/warehouse.duckdb` is missing. After changing a model, a feed,
   a quality rule or the policy, run `build` yourself.
 - A running server picks up a rebuild without a restart (the catalog cache is keyed on the
   warehouse file's mtime). Changes to Python code need a restart; there is no `--reload`.

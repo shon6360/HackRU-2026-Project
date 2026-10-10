@@ -6,7 +6,7 @@ Read `../CLAUDE.md` first for commands and the rules that must not be broken.
 
 | Module | Role |
 |---|---|
-| `__main__.py` | CLI: `build`, `serve`, `ask`. Imports lazily so `build` does not need FastAPI |
+| `__main__.py` | CLI: `build`, `serve`, `ask`. Imports lazily so `build` does not need FastAPI. `serve` and `ask` build first when there is no warehouse |
 | `config.py` | Paths, `LAYERS`, `LINEAGE_COLUMNS`, `ID_MAPS`, `snapshot_date()`, `platform_now()`, `role_db()` |
 | `models.py` | Loads `models/**/*.sql`: parses the `-- @` header, reads dependencies out of the SQL with sqlglot, orders topologically |
 | `pipeline.py` | `build()`: bronze load, run models, quality, catalog (`meta.*`), role databases |
@@ -135,7 +135,8 @@ snapshot date, never `current_date`.
 
 Catalog metadata is deliberately visible to every role, including for tables whose data is
 withheld. What is hidden for a withheld table or masked column is the data and anything derived
-from it: preview rows, sample values, min and max, failure records.
+from it: preview rows, sample values, min and max, failure records, and the record keys in the
+answer key for rules whose findings are withheld.
 
 Handlers that use `engine.warehouse()` instead of `engine.role_connection(role)` are reading
 unfiltered data and must filter by policy before returning it. Prefer `role_connection`.

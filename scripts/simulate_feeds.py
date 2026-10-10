@@ -103,6 +103,7 @@ CLASSIFICATION = {
     "irt/randomization.csv": {"tags": ["patient_level"], "column_tags": {"trt_cd": ["unblinded"], "trt_desc": ["unblinded"]}},
     "irt/kits.csv": {"column_tags": {"kit_type": ["unblinded"], "lot": ["unblinded"], "disp_subject": ["patient_level"]}},
     "safety/cases.json": {"tags": ["patient_level"]},
+    "finance/vendors.csv": {"column_tags": {"payment_terms": ["financial"]}},
     "finance/site_payments.csv": {"tags": ["financial"]},
 }
 

@@ -4,6 +4,14 @@ from __future__ import annotations
 import argparse
 import json
 
+from . import config, policy
+
+
+def _build_if_missing(verbose: bool = True) -> None:
+    if not config.WAREHOUSE.exists():
+        from .pipeline import build
+        build(verbose=verbose)
+
 
 def main() -> None:
     parser = argparse.ArgumentParser(prog="concord", description="One question across every clinical trial system.")
@@ -14,7 +22,7 @@ def main() -> None:
     serve.add_argument("--port", type=int, default=8040)
     ask = sub.add_parser("ask", help="ask a question from the terminal")
     ask.add_argument("question")
-    ask.add_argument("--role", default="clinops")
+    ask.add_argument("--role", default="clinops", choices=list(policy.ROLES))
     args = parser.parse_args()
 
     if args.command == "build":
@@ -23,14 +31,12 @@ def main() -> None:
     elif args.command == "serve":
         import uvicorn
 
-        from . import config
-        if not config.WAREHOUSE.exists():
-            from .pipeline import build
-            build()
+        _build_if_missing()
         print(f"\nConcord is running at http://{args.host}:{args.port}\n")
         uvicorn.run("concord.server:app", host=args.host, port=args.port, log_level="warning")
     elif args.command == "ask":
         from .ask import ask as run_ask
+        _build_if_missing(verbose=False)
         print(json.dumps(run_ask(args.question, args.role), indent=1, default=str))
 
 

@@ -12,7 +12,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from concord import ask, config, engine, policy, quality  # noqa: E402
+from concord import ask, config, engine, policy, quality, server  # noqa: E402
 from concord.pipeline import build  # noqa: E402
 
 SUMMARY = build(verbose=False)
@@ -83,8 +83,25 @@ def test_finance_role_sees_no_patient_rows_and_statistician_no_money():
     assert engine.execute("SELECT * FROM gold.fact_payment", "biostat")["denied"]
     r = engine.execute("SELECT site_key, overdue_usd FROM gold.site_360", "biostat")
     assert all(row[1] is None for row in r["rows"])
+    r = engine.execute("SELECT vendor_id, payment_terms FROM silver.finance_vendors", "biostat")
+    assert r["rows"] and all(row[1] is None for row in r["rows"]), "payment terms are financial"
     r = engine.execute("SELECT site_key, n_active, overdue_usd FROM gold.site_360", "finance")
     assert not r["error"] and any(row[2] for row in r["rows"]), "site-level aggregates stay available to finance"
+
+
+def test_pages_that_read_the_full_warehouse_withhold_what_the_role_may_not_see():
+    for role in policy.ROLES:
+        q = server.quality_view(role)
+        hidden = {r["rule_id"] for r in q["rules"] if r["hidden"]}
+        assert all(not r["failures"] for r in q["rules"] if r["hidden"]), role
+        for p in q["answer_key"]["planted"]:
+            assert (p["record_key"] is None) == (p["rule_id"] in hidden), (role, p["id"])
+        assert q["answer_key"]["n_planted"] == len(KEY["planted"]), "the score itself stays visible to every role"
+    finance = server.quality_view("finance")
+    assert any(r["hidden"] and r["n_failed"] for r in finance["rules"]), "finance must be told findings exist without seeing them"
+    assert not any(r["hidden"] for r in server.quality_view("clinops")["rules"])
+    assert all(g["example"] is None for g in server.crosswalk("finance")["subjects"]["groups"])
+    assert any(g["example"] for g in server.crosswalk("clinops")["subjects"]["groups"])
 
 
 def test_sandbox_rejects_everything_but_select_on_cataloged_tables():
@@ -93,7 +110,8 @@ def test_sandbox_rejects_everything_but_select_on_cataloged_tables():
                 "SELECT * FROM read_csv('feeds/irt/randomization.csv')",
                 "COPY gold.dim_site TO 'out.csv'",
                 "ATTACH 'build/warehouse.duckdb' AS wh",
-                "SELECT * FROM gold.no_such_table"]:
+                "SELECT * FROM gold.no_such_table",
+                ""]:
         r = engine.execute(sql, "finance")
         assert r["error"], sql
     con = engine.role_connection("finance")
