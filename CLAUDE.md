@@ -10,15 +10,19 @@ no Docker, no build step, no API key required.
 
 ## Commands
 
-Run from this directory (`meow/`). `concord` is not installed; it is imported from the cwd.
+Run from the repository root, with the virtual environment active. `concord` is not installed;
+it is imported from the cwd.
 
 ```bash
+python3 -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt   # once
 python -m concord build                    # rebuild build/*.duckdb from feeds/ (about 1-2 s)
 python -m concord serve [--host H --port P] # default 127.0.0.1:8040
 python -m concord ask "Which sites are we late paying?" --role finance   # prints the result JSON
 python tests/test_concord.py               # all 9 tests, no test runner needed
 ```
 
+- A virtual environment does not survive its folder being moved or renamed: `activate` keeps
+  the old path and `python` is then not found. Recreate it, or call `.venv/bin/python` directly.
 - `serve` builds only when `build/warehouse.duckdb` is missing. After changing a model, a feed,
   a quality rule or the policy, run `build` yourself.
 - A running server picks up a rebuild without a restart (the catalog cache is keyed on the
@@ -37,12 +41,18 @@ concord/            the package (see concord/CLAUDE.md)
   models/           one .sql file per table: silver/, master/, gold/ (see concord/models/CLAUDE.md)
   web/              index.html, app.js, styles.css (see concord/web/CLAUDE.md)
 feeds/              the five mock source systems. Generated and committed (see feeds/CLAUDE.md)
-data/public/        snapshot of the real public data the feeds are derived from
-scripts/            fetch_public_data.py, simulate_feeds.py: regenerate the two folders above
-tests/              test_concord.py: end-to-end checks
-docs/               DATA.md, DEMO.md, DECK.md, screenshots/
+data/public/        snapshot of the real public data the feeds are derived from (see data/CLAUDE.md)
+scripts/            fetch_public_data.py, simulate_feeds.py: regenerate the two folders above (see scripts/CLAUDE.md)
+tests/              test_concord.py: end-to-end checks (see tests/CLAUDE.md)
+docs/               DATA.md, DEMO.md, DECK.md, screenshots/ (see docs/CLAUDE.md)
 build/              generated DuckDB files. Gitignored. Never edit, never commit
+README.md           the project README, then the HackRU challenge brief from the line `# ONE SOURCE OF TRUTH` on
+requirements.txt    the six runtime dependencies. pytest and pandas are not in it
 ```
+
+The top half of `README.md` is the entry point for judges and must stay runnable as written from
+a clean clone. The bottom half is the organisers' brief (starter sheet 40), kept for reference:
+its Good / Better / Best tiers and judging criteria are what the project is measured against.
 
 ## How data flows
 
@@ -59,7 +69,8 @@ build/warehouse.duckdb --policy--> build/role_<role>.duckdb   (one read-only dat
 ```
 
 Current build: 12 bronze, 12 silver, 4 master, 13 gold tables; 27 quality rules, 54 findings;
-25 of 25 planted problems caught; site crosswalk 78 auto, 2 review, 3 unresolved.
+25 of 25 planted problems caught; site crosswalk 78 auto, 2 review, 3 unresolved. The thirteenth
+gold table is `gold.snapshot`, which `pipeline.build()` creates directly; it has no `.sql` file.
 
 ## Rules that must not be broken
 

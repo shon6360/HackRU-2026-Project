@@ -9,7 +9,7 @@ python -m pytest tests/test_concord.py -q                     # same, if pytest 
 python -m pytest tests/test_concord.py -k headline -q         # one test
 ```
 
-`pytest` is not in `requirements.txt`. Run from `meow/`.
+`pytest` is not in `requirements.txt`. Run from the repository root.
 
 ## How they work
 

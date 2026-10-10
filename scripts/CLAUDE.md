@@ -1,7 +1,7 @@
 # scripts
 
 Two scripts that regenerate committed data. Neither is needed to run Concord: a clean clone
-already has `data/public/` and `feeds/`. Run them from `meow/`.
+already has `data/public/` and `feeds/`. Run them from the repository root.
 
 ```
 fetch_public_data.py   internet     -> data/public/   (real public data + SOURCES.json)
