@@ -8,12 +8,22 @@ from harmonizer import config, policy
 
 
 def _build_if_missing(verbose: bool = True) -> None:
+    """Run the harmonizer pipeline when `build/warehouse.duckdb` is not there yet.
+
+    `serve` and `ask` only build on first use. After changing a model, a feed, a quality
+    rule or the policy, rebuild yourself with `python -m harmonizer build`.
+    """
     if not config.WAREHOUSE.exists():
         from harmonizer.pipeline import build
         build(verbose=verbose)
 
 
 def main() -> None:
+    """CLI entry point: `python -m backend serve` or `python -m backend ask QUESTION`.
+
+    Both commands build the warehouse first when it is missing. `serve` starts the FastAPI
+    app; `ask` prints the result JSON for one question and role.
+    """
     parser = argparse.ArgumentParser(prog="backend", description="One question across every clinical trial system.")
     sub = parser.add_subparsers(dest="command", required=True)
     serve = sub.add_parser("serve", help="start the web app")

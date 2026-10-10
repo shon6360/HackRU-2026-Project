@@ -17,6 +17,7 @@ app = FastAPI(title="Concord", docs_url="/api/docs", redoc_url=None)
 
 
 def _role(role: str) -> str:
+    """Return the role if it is one of clinops, biostat or finance; otherwise 400."""
     if role not in policy.ROLES:
         raise HTTPException(400, f"Unknown role {role!r}")
     return role
@@ -35,6 +36,10 @@ class SqlBody(BaseModel):
 # ----------------------------------------------------------------------------- meta
 @app.get("/api/meta")
 def meta():
+    """Return snapshot date, roles, tags, feeds, layer counts, model availability and reviewed questions.
+
+    This is what the front end needs to draw the chrome before anyone asks anything.
+    """
     cat = engine.catalog()
     layers = {}
     for ds in cat["datasets"].values():
@@ -53,22 +58,31 @@ def meta():
 # ----------------------------------------------------------------------------- ask
 @app.post("/api/ask")
 def ask(body: AskBody):
+    """Answer a plain-English question for the given role via `ask.ask()`."""
     return asker.ask(body.question, _role(body.role))
 
 
 @app.post("/api/sql")
 def sql(body: SqlBody):
+    """Run caller-supplied SQL for the given role via `engine.execute()`, tagged as mode `sql`."""
     result = engine.execute(body.sql, _role(body.role))
     return {**result, "mode": "sql", "question": None, "explanation": None, "model": None}
 
 
 @app.get("/api/trace")
 def trace(role: str, column: str, value: str):
+    """Trace one result-column value back to its crosswalk and source rows."""
     return engine.trace(_role(role), column, value)
 
 
 # ----------------------------------------------------------------------------- catalog
 def _fair(ds: dict, cat: dict) -> list[dict]:
+    """Score one dataset on eight fixed FAIR checks, two per letter.
+
+    Two checks are always true by construction (catalog index, metadata readable when data is
+    withheld). The others depend on description coverage, owner and steward, master keys or a
+    published standard, layer, lineage columns, and upstream feed freshness.
+    """
     cols = [c for n, c in ds["columns"].items()]
     described = sum(1 for c in cols if c["description"]) / max(1, len(cols))
     names = set(ds["columns"])
@@ -88,6 +102,11 @@ def _fair(ds: dict, cat: dict) -> list[dict]:
 
 
 def _summary(ds: dict, role: str, cat: dict) -> dict:
+    """Build the catalog-list card for one dataset as this role sees it.
+
+    Includes access (denied / how many columns are masked) and the FAIR pass count. Catalog
+    metadata is visible even when the table's data is withheld.
+    """
     fair = _fair(ds, cat)
     a = engine.access(ds, role)
     return {
@@ -105,6 +124,7 @@ def _summary(ds: dict, role: str, cat: dict) -> dict:
 
 @app.get("/api/catalog")
 def catalog_list(role: str):
+    """List every dataset with a summary, access flags and FAIR score for this role."""
     role = _role(role)
     cat = engine.catalog()
     return {"datasets": [_summary(ds, role, cat) for ds in cat["datasets"].values()]}
@@ -112,6 +132,10 @@ def catalog_list(role: str):
 
 @app.get("/api/dataset/{fqn}")
 def dataset(fqn: str, role: str):
+    """Return one dataset in full: columns, preview, lineage, quality rules and its SQL.
+
+    Sample values, min/max and preview rows are omitted for withheld tables and masked columns.
+    """
     role = _role(role)
     cat = engine.catalog()
     ds = cat["datasets"].get(fqn)
@@ -144,6 +168,7 @@ def dataset(fqn: str, role: str):
 
 @app.get("/api/lineage")
 def lineage():
+    """Return the full lineage graph for every cataloged dataset."""
     cat = engine.catalog()
     return engine.upstream_graph([fqn for fqn in cat["datasets"]])
 
@@ -151,6 +176,11 @@ def lineage():
 # ----------------------------------------------------------------------------- crosswalk
 @app.get("/api/crosswalk")
 def crosswalk(role: str):
+    """Return the site crosswalk grouped by master site, plus subject match counts.
+
+    Reads the full warehouse and applies policy before returning: subject examples are
+    withheld when this role may not see `master.subject_xwalk`.
+    """
     role = _role(role)
     con = engine.warehouse()
     cur = con.execute("""SELECT x.*, s.site_name, s.city, s.state, s.principal_investigator
@@ -187,6 +217,11 @@ def crosswalk(role: str):
 # ----------------------------------------------------------------------------- quality
 @app.get("/api/quality")
 def quality_view(role: str):
+    """Return quality rules, their failures, dimension totals and the answer-key score.
+
+    Failure records and planted-problem keys are withheld for rules on tables this role may
+    not see. Reads the warehouse and filters by policy before returning.
+    """
     role = _role(role)
     cat = engine.catalog()
     con = engine.warehouse()
@@ -234,6 +269,7 @@ def quality_view(role: str):
 # ----------------------------------------------------------------------------- access matrix
 @app.get("/api/access")
 def access_matrix():
+    """Return every tagged table and what each role gets: denied whole, or which columns are masked."""
     cat = engine.catalog()
     out = []
     for fqn, ds in cat["datasets"].items():
@@ -250,6 +286,7 @@ def access_matrix():
 # ----------------------------------------------------------------------------- front end
 @app.get("/")
 def index():
+    """Serve the front-end shell from `frontend/index.html`."""
     return FileResponse(WEB / "index.html")
 
 
