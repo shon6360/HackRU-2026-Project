@@ -1,23 +1,27 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { api } from "@/lib/api";
-import type { Answer, Meta } from "@/lib/types";
+import { api, ApiError, SIGNED_OUT } from "@/lib/api";
+import type { Account, Answer, Meta } from "@/lib/types";
 
-/* Everything that outlives a single page: the metadata from /api/meta, the role, the current answer on the
-   Ask page, the catalog filter and the trace drawer. It lives in the root layout, so it survives navigation. */
+/* Everything that outlives a single page: who is signed in, the metadata from /api/meta, the current answer
+   on the Ask page, the catalog filter and the trace drawer. It lives in the root layout, so it survives
+   navigation. All of it is dropped when the session ends, so one account never sees another's answer. */
 
 export type AnswerTab = "result" | "sql" | "lineage" | "roles";
 export type AskLink = { tab?: string | null; trace?: string | null };
 const TABS: AnswerTab[] = ["result", "sql", "lineage", "roles"];
-const ROLE_KEY = "concord.role";
+const NO_FILTER = { q: "", layer: "all" };
 
 export type App = {
   meta: Meta;
-  role: string;
-  person: string;
+  user: Account;
+  role: string;      // the account's role. For display: the server takes the role from the session, not from here
+  person: string;    // the account's name
   roleName: string;
-  setRole: (role: string) => void;
+  canManageAccounts: boolean;
+  setUser: (user: Account) => void;
+  signOut: () => void;
 
   answer: Answer | null;
   pending: "ask" | "sql" | null;
@@ -35,60 +39,86 @@ export type App = {
   closeTrace: () => void;
 };
 
-const Ctx = createContext<{ app: App | null; error: string | null }>({ app: null, error: null });
+type State = { app: App | null; error: string | null; signedOut: boolean; signIn: (username: string, password: string) => Promise<void> };
 
-/* For the frame, which renders before the metadata has arrived. */
+const Ctx = createContext<State>({ app: null, error: null, signedOut: false, signIn: async () => {} });
+
+/* For the frame, which renders before anyone has signed in. */
 export const useAppState = () => useContext(Ctx);
 
-/* For pages: they are only rendered once the metadata is in. */
+/* For pages: they are only rendered once someone is signed in and the metadata is in. */
 export function useApp(): App {
   const { app } = useContext(Ctx);
-  if (!app) throw new Error("useApp() was called before /api/meta loaded");
+  if (!app) throw new Error("useApp() was called before sign-in");
   return app;
 }
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [meta, setMeta] = useState<Meta | null>(null);
+  const [user, setUser] = useState<Account | null>(null);
+  const [signedOut, setSignedOut] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [role, setRoleState] = useState("clinops");
-  const [answer, setAnswerState] = useState<Answer | null>(null);
+  const [answer, setAnswer] = useState<Answer | null>(null);
   const [pending, setPending] = useState<"ask" | "sql" | null>(null);
   const [tab, setTab] = useState<AnswerTab>("result");
-  const [catalogFilter, setCatalogFilter] = useState({ q: "", layer: "all" });
+  const [catalogFilter, setCatalogFilter] = useState(NO_FILTER);
   const [trace, setTrace] = useState<{ column: string; value: string } | null>(null);
 
-  // the callbacks below are stable, so they read the latest role and answer through refs
-  const roleRef = useRef(role);
-  const answerRef = useRef<Answer | null>(null);
   const lastAsked = useRef<string | null>(null);
   const seq = useRef(0);  // only the most recent request may write the answer
 
-  const setAnswer = useCallback((a: Answer | null) => { answerRef.current = a; setAnswerState(a); }, []);
+  /* Who is signed in, then the metadata. With no session both are refused, which fires SIGNED_OUT (lib/api.ts). */
+  const load = useCallback(async () => {
+    try {
+      const [me, m] = await Promise.all([api<Account>("/api/me"), api<Meta>("/api/meta")]);
+      setError(null);
+      setMeta(m);
+      setUser(me);
+      setSignedOut(false);
+    } catch (e) {
+      if (!(e instanceof ApiError && e.status === 401)) setError((e as Error).message);
+    }
+  }, []);
+
+  /* The session is over: signed out, expired, or the account was deactivated. Drop everything it loaded. */
+  const forget = useCallback(() => {
+    seq.current++;  // an answer still on its way belongs to the account that asked for it
+    lastAsked.current = null;
+    setUser(null);
+    setSignedOut(true);
+    setAnswer(null);
+    setPending(null);
+    setTab("result");
+    setCatalogFilter(NO_FILTER);
+    setTrace(null);
+  }, []);
 
   useEffect(() => {
-    api<Meta>("/api/meta").then((m) => {
-      let saved: string | null = null;
-      try { saved = localStorage.getItem(ROLE_KEY); } catch { /* storage unavailable */ }
-      if (saved && m.roles[saved]) { roleRef.current = saved; setRoleState(saved); }
-      setMeta(m);
-    }, (e: Error) => setError(e.message));
-  }, []);
+    window.addEventListener(SIGNED_OUT, forget);
+    void load();
+    return () => window.removeEventListener(SIGNED_OUT, forget);
+  }, [load, forget]);
+
+  const signIn = useCallback(async (username: string, password: string) => {
+    await api<Account>("/api/login", { username, password });
+    await load();
+  }, [load]);
+
+  const signOut = useCallback(() => { api("/api/logout", {}).catch(() => { /* signed out here either way */ }).finally(forget); }, [forget]);
 
   const openTrace = useCallback((column: string, value: string) => setTrace({ column, value }), []);
   const closeTrace = useCallback(() => setTrace(null), []);
 
-  const runSqlAs = useCallback(async (sql: string, previous: Answer | null, asRole: string) => {
+  const runSql = useCallback(async (sql: string, previous: Answer | null) => {
     const id = ++seq.current;
     setPending("sql");
     let res: Answer;
-    try { res = await api<Answer>("/api/sql", { sql, role: asRole }); } catch (e) { res = { sql, error: (e as Error).message }; }
+    try { res = await api<Answer>("/api/sql", { sql }); } catch (e) { res = { sql, error: (e as Error).message }; }
     if (id !== seq.current) return;
     setAnswer({ ...res, question: previous?.question, explanation: previous?.explanation, mode: previous?.edited ? "sql" : previous?.mode || "sql",
       matched_question: previous?.matched_question, note: previous?.note, model: previous?.model, edited: previous?.edited });
     setPending(null);
-  }, [setAnswer]);
-
-  const runSql = useCallback((sql: string, previous: Answer | null) => { void runSqlAs(sql, previous, roleRef.current); }, [runSqlAs]);
+  }, []);
 
   const ask = useCallback(async (question: string, link?: AskLink) => {
     lastAsked.current = question;
@@ -97,30 +127,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const id = ++seq.current;
     setPending("ask");
     let res: Answer;
-    try { res = await api<Answer>("/api/ask", { question, role: roleRef.current }); } catch (e) { res = { question, error: (e as Error).message, mode: "none" }; }
+    try { res = await api<Answer>("/api/ask", { question }); } catch (e) { res = { question, error: (e as Error).message, mode: "none" }; }
     if (id !== seq.current) return;
     setAnswer(res);
     setTab(TABS.includes(link?.tab as AnswerTab) ? (link!.tab as AnswerTab) : "result");
     setPending(null);
     if (link?.trace) { const [col, ...val] = link.trace.split(":"); openTrace(col, val.join(":")); }
-  }, [setAnswer, openTrace]);
+  }, [openTrace]);
 
   const askFromLink = useCallback((question: string, link: AskLink) => { if (lastAsked.current !== question) void ask(question, link); }, [ask]);
 
-  // changing role re-runs the current answer's SQL for the new role, so the answer on screen is never another role's
-  const setRole = useCallback((next: string) => {
-    roleRef.current = next;
-    setRoleState(next);
-    try { localStorage.setItem(ROLE_KEY, next); } catch { /* ignore */ }
-    const a = answerRef.current;
-    if (a?.sql) void runSqlAs(a.sql, a, next);
-  }, [runSqlAs]);
-
-  const app = useMemo<App | null>(() => meta && {
-    meta, role, person: meta.roles[role].person, roleName: meta.roles[role].name, setRole,
-    answer, pending, tab, setTab, ask: (q, link) => { void ask(q, link); }, askFromLink, runSql,
+  const app = useMemo<App | null>(() => meta && user && {
+    meta, user, role: user.role, person: user.name, roleName: meta.roles[user.role].name,
+    canManageAccounts: !!meta.roles[user.role].manages_accounts, setUser, signOut,
+    answer, pending, tab, setTab, ask: (q, link) => { void ask(q, link); }, askFromLink, runSql: (sql, previous) => { void runSql(sql, previous); },
     catalogFilter, setCatalogFilter, trace, openTrace, closeTrace,
-  }, [meta, role, setRole, answer, pending, tab, ask, askFromLink, runSql, catalogFilter, trace, openTrace, closeTrace]);
+  }, [meta, user, signOut, answer, pending, tab, ask, askFromLink, runSql, catalogFilter, trace, openTrace, closeTrace]);
 
-  return <Ctx.Provider value={useMemo(() => ({ app, error }), [app, error])}>{children}</Ctx.Provider>;
+  return <Ctx.Provider value={useMemo(() => ({ app, error, signedOut, signIn }), [app, error, signedOut, signIn])}>{children}</Ctx.Provider>;
 }

@@ -26,10 +26,10 @@ Accept at 0.85 with a 0.05 margin; queue for a steward below that; never guess b
 Result: 78 automatic, 2 queued, 3 unmatched.
 
 **7. Who is asking changes the answer**
-Screenshot `roles.png`. Maya (blinded) sees no treatment arm, Arjun sees everything clinical, Dana sees money and site counts only.
+Screenshot `roles.png`. Each person signs in to their own account. Maya (blinded) sees no treatment arm, Arjun sees everything clinical, Dana sees money and site counts only.
 
 **8. The model is not the access control**
-Tags on data, grants on roles. One read-only database per role that physically lacks what the role cannot see.
+Tags on data, grants on roles, one role per account. One read-only database per role that physically lacks what the role cannot see.
 The language model gets only that role's schema; its SQL passes the same check as a person's.
 
 **9. We planted 25 problems. The rules caught 25.**
@@ -42,5 +42,5 @@ What is simulated is derived from the real data with a fixed seed and written do
 
 **11. Run it yourself**
 `pip install -r requirements.txt`, `python -m backend build`, then `python -m backend serve`. No database server, no API key needed.
-DuckDB, 28 SQL models, 27 quality rules, 10 end-to-end tests, MIT license.
-What we would build next: a steward's approval screen, column-level lineage, single sign-on for roles.
+DuckDB, 28 SQL models, 27 quality rules, 13 end-to-end tests, MIT license.
+What we would build next: a steward's approval screen, column-level lineage, single sign-on in place of our own passwords.

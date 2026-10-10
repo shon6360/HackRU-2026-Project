@@ -35,8 +35,8 @@ function search(datasets: DatasetSummary[], q: string, layer: string) {
 }
 
 function CatalogList() {
-  const { role, catalogFilter: f, setCatalogFilter } = useApp();
-  const { data, error } = useApi<{ datasets: DatasetSummary[] }>(`/api/catalog?role=${role}`);
+  const { catalogFilter: f, setCatalogFilter } = useApp();
+  const { data, error } = useApi<{ datasets: DatasetSummary[] }>("/api/catalog");
   if (error) return <LoadError message={error} />;
   if (!data) return <Spinner />;
   const found = search(data.datasets, f.q, f.layer);

@@ -53,15 +53,18 @@ app/
   ask/                page.tsx, ask-view.tsx (the form), answer.tsx (the answer card and its four tabs)
   catalog/            page.tsx, catalog-view.tsx (the list and search), dataset-view.tsx (one table)
   lineage/ crosswalk/ quality/ access/    one page.tsx each
+  profile/            page.tsx: your own account, what your role is granted, change your name and password
+  accounts/           page.tsx: every account, and the form that adds, changes and removes one (administrators)
 components/
-  app-context.tsx     state that outlives a page: meta, role, the current answer, catalog filter, trace
-  shell.tsx           top bar (nav, feed dots, role switcher), <main>, the trace drawer
-  ui.tsx              Pill, TagPill, Notice, Card, Btn, PlainTable/Th/Td, TraceLink, Lock, ...
+  app-context.tsx     state that outlives a page: who is signed in, meta, the current answer, catalog filter, trace
+  shell.tsx           top bar (nav, feed dots, account menu), <main> or the sign-in form, the trace drawer
+  sign-in.tsx         the sign-in form, shown in place of every page until someone is signed in
+  ui.tsx              Pill, TagPill, Notice, Card, Btn, Field, Grants, PlainTable/Th/Td, TraceLink, Lock, ...
   data-table.tsx      every result grid, with masked and traceable cells
   lineage-graph.tsx   the lineage graph as inline SVG, and its legend
   trace-drawer.tsx    where a key comes from: crosswalk matches and source rows
 lib/
-  api.ts              api(path, body) and the useApi(path) hook
+  api.ts              api(path, body, method), the useApi(path) hook, and the SIGNED_OUT event
   types.ts            the shapes the API returns
   format.ts           fmtCell, fmtInt, LAYERS, SYSTEMS, tableHref
   graph.ts            layoutGraph: one column per layer, extra columns where a layer depends on itself
@@ -71,9 +74,16 @@ Pages are client components. `ask/page.tsx` and `catalog/page.tsx` are thin serv
 that wrap the view in `<Suspense>`, which a page that calls `useSearchParams()` must have or the
 build fails.
 
-`AppProvider` loads `/api/meta` once. `Shell` renders a page only after it has arrived, so pages
-call `useApp()` and can rely on `meta` being there. The answer on the Ask page and the catalog
-filter live in the provider, which is why they are still there when you come back to the page.
+`AppProvider` loads `/api/me` and `/api/meta` together. `Shell` renders a page only once both have
+arrived, so pages call `useApp()` and can rely on `user` and `meta` being there. Until then it
+shows the sign-in form in the page's place, at the same address, so a deep link opens the page it
+names as soon as the person is in. The answer on the Ask page and the catalog filter live in the
+provider, which is why they are still there when you come back to the page.
+
+`api()` fires the `SIGNED_OUT` event on `window` whenever the server answers 401 (the session
+expired, or the account was deactivated or removed), and the provider's `forget()` then drops
+everything the session loaded: the account, the answer, the trace, the catalog filter. Signing
+out goes the same way. One account's answer is never left on screen for the next.
 
 ## Rules
 
@@ -82,13 +92,17 @@ filter live in the provider, which is why they are still there when you come bac
 - **Show what is withheld, never hide it silently.** A refused query, a masked column, a withheld
   table and a hidden finding each get the `Lock` icon and the reason from the API. This is a
   judging criterion, not decoration.
-- **The role is sent with every request for data**, as `role` in the query string or JSON body.
-  `/api/meta`, `/api/lineage` and `/api/access` take none: they return metadata, which every role
-  may see. The role is kept in `localStorage` under `concord.role`, inside `try/catch` because
-  storage may be unavailable.
-- **Changing role re-runs the current answer's SQL** for the new role (`setRole` in
-  `app-context.tsx`). The answer card names the role the answer was run as (`answer.role`), so
-  while the re-run is in flight it never shows one role's rows under another role's name.
+- **The role is never sent.** The server takes it from the session cookie, which the browser
+  attaches by itself and scripts cannot read. `app.role` is the account's role as last loaded
+  and is for display only. Nothing about the session is kept in `localStorage`.
+- **Nobody sees another role's rows.** There is no role switcher: to see what another role gets
+  you sign in to an account that holds it. The Compare roles tab asks `/api/compare`, which
+  returns only what the policy decides for each role. The answer card names the role the answer
+  was run as (`answer.role`), which the server reports.
+- **The Accounts tab is a convenience.** It is shown when the account's role has
+  `manages_accounts`, and `/accounts` shows a refusal to anyone else, but it is the server that
+  refuses the routes behind it. Forms send only the fields that changed, and show the server's
+  error message as it is.
 - **No `dangerouslySetInnerHTML`.** The data includes free text from source files and SQL written
   by a model. Rendered as JSX children it is escaped by React; keep it that way.
 - **Deep links reproduce an answer:** `/ask?q=<question>&tab=<result|sql|lineage|roles>&trace=<column>:<value>`

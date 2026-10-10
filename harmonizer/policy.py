@@ -10,6 +10,10 @@ It is enforced twice. At build time each role gets its own read-only database th
 contains only what the role may see, so a query cannot leak what is not there, whoever (or
 whatever model) wrote the SQL. At query time the SQL is parsed and checked against the same
 tags, so the user is told exactly what was withheld and why.
+
+A person signs in to an account, and an account holds exactly one role (`backend/accounts.py`).
+`manages_accounts` is the one thing a role can hold that is not about data: it lets the
+administrator create, change and remove accounts.
 """
 from __future__ import annotations
 
@@ -31,21 +35,24 @@ TAGS = {
 ROLES = {
     "clinops": {
         "name": "Clinical Operations Lead",
-        "person": "Maya",
         "blurb": "Runs the study day to day. Blinded: must not learn who is on which treatment.",
         "grants": ["patient_level", "financial"],
     },
     "biostat": {
         "name": "Unblinded Statistician",
-        "person": "Arjun",
         "blurb": "Prepares the safety review for the independent monitoring committee. Sees treatment arms, not site contracts.",
         "grants": ["patient_level", "unblinded"],
     },
     "finance": {
         "name": "Site Payments Analyst",
-        "person": "Dana",
         "blurb": "Pays the sites. Sees money and site-level counts, never individual participants.",
         "grants": ["financial"],
+    },
+    "admin": {
+        "name": "Administrator",
+        "blurb": "Looks after Concord itself. Holds every grant, and creates, changes and removes accounts.",
+        "grants": ["patient_level", "unblinded", "financial"],
+        "manages_accounts": True,
     },
 }
 

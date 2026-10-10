@@ -1,9 +1,10 @@
 # Three-minute demo script
 
 Record at 1440 × 900 or larger. Build if you have not yet (`python -m backend build`),
-start the server (`python -m backend serve`) and open
-http://127.0.0.1:8040 signed in as Maya. Each step has a link that reproduces the screen, in case a click
-goes wrong while recording.
+start the server (`python -m backend serve`), open
+http://127.0.0.1:8040 and sign in as `maya` (password `concord-demo`). Each step has a link that reproduces
+the screen, in case a click goes wrong while recording. A link opened without a session shows the sign-in
+form first and then goes where it pointed.
 
 ## 0:00 The problem (20 seconds)
 
@@ -43,12 +44,13 @@ Close the drawer. Click *How many subjects and reportable adverse events are the
 then the **Compare roles** tab.
 `http://127.0.0.1:8040/ask/?q=How%20many%20subjects%20and%20reportable%20adverse%20events%20are%20there%20in%20each%20treatment%20arm%3F&tab=roles`
 
-> Maya runs the study, so she has to stay blind to who got which treatment. Same question, same SQL, three
-> people. Maya gets the count but the arm is withheld. Arjun, the unblinded statistician, gets the full
-> answer. Dana in finance is refused, because this needs patient-level data.
+> I'm signed in as Maya. She runs the study, so she has to stay blind to who got which treatment. She gets
+> the count but the arm is withheld. This tab shows what the same SQL gets under each role: the unblinded
+> statistician gets the full answer, and finance is refused, because this needs patient-level data.
 >
-> This isn't a filter in the app. Each role has its own database that physically doesn't contain what that
-> role can't see. So it holds whether a person wrote the SQL or the language model did.
+> This isn't a filter in the app. The server takes the role from the account that signed in, and each role
+> has its own database that physically doesn't contain what that role can't see. So it holds whether a
+> person wrote the SQL or the language model did.
 
 ## 2:25 Can you trust the data (25 seconds)
 
@@ -71,6 +73,9 @@ Flash the **Lineage** page, click `site_360`.
 
 ## If there is time for questions
 
+- **Accounts**: sign out, sign in as `admin` and open **Accounts**. Change Dana's role and her open session
+  answers under the new one on her next question. The **profile** page shows any account what its role is
+  granted. Signing in as `arjun` or `dana` shows the other two answers from step 1:40 for real.
 - **Free-form questions**: with `GEMINI_API_KEY` set in `.env`, type any question. The model is shown only the
   schema the current role can see, and the SQL it writes is shown and editable under the **SQL** tab.
 - **Catalog**: search `overdue` or `onset`; open `gold.site_360` to show descriptions, owners, freshness,

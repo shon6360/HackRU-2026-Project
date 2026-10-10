@@ -8,10 +8,10 @@ import { Legend, LineageGraph } from "@/components/lineage-graph";
 import { Btn, Card, Chip, Empty, Joined, Lock, NodeRef, Notice, NoticeList, Pill, Sev, Spinner, SysBadge } from "@/components/ui";
 import { api } from "@/lib/api";
 import { fmtStamp, plural } from "@/lib/format";
-import type { Answer, Role } from "@/lib/types";
+import type { Answer, Comparison, Role } from "@/lib/types";
 
 /* An answer and everything attached to it: how the SQL came about, what was withheld from this role, what
-   might make the numbers wrong, and four tabs (result, SQL, lineage, the same query for every role). */
+   might make the numbers wrong, and four tabs (result, SQL, lineage, what the policy decides for every role). */
 export function AnswerPanel({ onPick }: { onPick: (question: string) => void }) {
   const { answer: a, pending, tab, setTab, meta, role, person } = useApp();
   if (pending === "ask") return <Card pad><Spinner /> &nbsp;Working out which systems hold the answer…</Card>;
@@ -29,7 +29,7 @@ export function AnswerPanel({ onPick }: { onPick: (question: string) => void }) 
     );
   }
 
-  // the card names the role the answer was run as, which for a moment after a role switch is not the current one
+  // the card names the role the answer was run as: the server reads it from the account on every request
   const ran = meta.roles[a.role ?? role] ?? meta.roles[role];
   const systems = [...new Set((a.context?.feeds ?? []).map((f) => f.system))];
   const count = !a.denied && !a.error && a.row_count !== undefined ? ` · ${a.row_count}${a.truncated ? "+" : ""}` : "";
@@ -43,7 +43,7 @@ export function AnswerPanel({ onPick }: { onPick: (question: string) => void }) 
           <div className="mb-1.5 text-[17px] font-[650] tracking-[-.01em]">{a.question || "SQL query"}</div>
           <div className="flex flex-wrap items-center gap-2 text-[12.5px]">
             {a.mode === "vetted" ? <Pill tone="good">Reviewed query</Pill> : a.mode === "model" ? <Pill tone="accent">SQL written by {a.model}</Pill> : <Pill>Your SQL</Pill>}
-            <span className="text-ink-2">as <b>{ran.person}</b>, {ran.name}</span>
+            <span className="text-ink-2">as <b>{person}</b>, {ran.name}</span>
             {systems.length > 0 && <span className="text-ink-2">· reads <Joined sep=" " items={systems.map((s) => <SysBadge key={s} system={s} />)} /></span>}
             {a.elapsed_ms !== undefined && <span className="text-ink-3">· {a.elapsed_ms} ms</span>}
           </div>
@@ -53,7 +53,7 @@ export function AnswerPanel({ onPick }: { onPick: (question: string) => void }) 
           {a.explanation && a.mode !== "sql" && <p className="mb-0 mt-2">{a.explanation}</p>}
         </div>
         <div className="space-y-3.5 px-[18px] py-3.5">
-          <PolicyNotices a={a} ran={ran} />
+          <PolicyNotices a={a} ran={ran} person={person} />
           {a.error && <Notice kind="bad" icon="×"><b>The query did not run.</b> {a.error}</Notice>}
           {!a.denied && !a.error && <TrustNotices a={a} />}
         </div>
@@ -78,20 +78,20 @@ export function AnswerPanel({ onPick }: { onPick: (question: string) => void }) 
 
 /* ------------------------------------------------------------------ notices */
 /* What the policy did to this query. The front end enforces nothing: it reports the decisions the server made. */
-function PolicyNotices({ a, ran }: { a: Answer; ran: Role }) {
+function PolicyNotices({ a, ran, person }: { a: Answer; ran: Role; person: string }) {
   const denies = (a.decisions ?? []).filter((d) => d.action === "deny");
   const masks = (a.decisions ?? []).filter((d) => d.action === "mask");
   return (
     <>
       {denies.length > 0 && (
         <Notice kind="bad" icon={<Lock />}>
-          <b>{ran.person} cannot run this question.</b> It needs data the {ran.name} role is not allowed to see, so nothing was executed.
+          <b>{person} cannot run this question.</b> It needs data the {ran.name} role is not allowed to see, so nothing was executed.
           <NoticeList>{denies.map((d) => <li key={d.object}><code>{d.object}</code> is {d.reason}.</li>)}</NoticeList>
         </Notice>
       )}
       {masks.length > 0 && (
         <Notice kind="policy" icon={<Lock />}>
-          <b>{masks.length} {plural(masks.length, "column")} withheld from {ran.person}.</b>{" "}
+          <b>{masks.length} {plural(masks.length, "column")} withheld from {person}.</b>{" "}
           The query ran, but these come back empty for this role{a.row_count === 0 ? ", which is why a filter on them matches nothing" : ""}.
           <NoticeList>{masks.map((d) => <li key={d.object}><code>{d.object}</code> is {d.reason}.</li>)}</NoticeList>
         </Notice>
@@ -123,7 +123,7 @@ function TrustNotices({ a }: { a: Answer }) {
 
 /* ------------------------------------------------------------------ tabs */
 function ResultTab({ a }: { a: Answer }) {
-  if (a.denied) return <Empty>Nothing to show. Switch role at the top right, or open <b>Compare roles</b> to see who can run this.</Empty>;
+  if (a.denied) return <Empty>Nothing to show. Open <b>Compare roles</b> to see which roles can run this.</Empty>;
   if (a.error) return <Empty>Fix the query under the <b>SQL</b> tab and run it again.</Empty>;
   if (!a.rows?.length) return <Empty>The query ran and returned no rows.</Empty>;
   const traceable = a.traceable ?? [];
@@ -172,52 +172,51 @@ function LineageTab({ a }: { a: Answer }) {
   );
 }
 
-/* The same SQL, once per role, each against that role's own database. Kept per answer, so reopening the tab does not run it again. */
-const compared = new WeakMap<Answer, Promise<Answer[]>>();
+/* What the policy decides about this SQL for each role. The server only checks the query against each role's
+   tags: it is run for the signed-in account alone, so nobody is shown another role's rows. Kept per answer,
+   so reopening the tab does not ask again. */
+const compared = new WeakMap<Answer, Promise<Comparison>>();
 
 function CompareTab({ a }: { a: Answer }) {
-  const { meta, setRole, setTab } = useApp();
-  const [done, setDone] = useState<{ a: Answer; results: Answer[] } | null>(null);
+  const { meta, role: mine } = useApp();
+  const [done, setDone] = useState<{ a: Answer; result: Comparison } | null>(null);
 
   useEffect(() => {
     let live = true;
     let run = compared.get(a);
     if (!run) {
-      run = Promise.all(Object.keys(meta.roles).map((role) => api<Answer>("/api/sql", { sql: a.sql, role }).catch((e: Error): Answer => ({ role, error: e.message }))));
+      run = api<Comparison>("/api/compare", { sql: a.sql }).catch((e: Error): Comparison => ({ error: e.message, roles: [] }));
       compared.set(a, run);
     }
-    run.then((results) => { if (live) setDone({ a, results }); });
+    run.then((result) => { if (live) setDone({ a, result }); });
     return () => { live = false; };
-  }, [a, meta]);
+  }, [a]);
 
   return (
     <>
-      <p className="text-[12.5px] text-ink-2">The same SQL, run for each role against that role&apos;s own database.</p>
-      {done?.a !== a ? <Spinner /> : (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3">
-          {done.results.map((r) => {
-            const id = r.role!, role = meta.roles[id];
-            const masks = (r.decisions ?? []).filter((d) => d.action === "mask");
-            const denies = (r.decisions ?? []).filter((d) => d.action === "deny");
-            const rows = `${r.row_count} ${plural(r.row_count ?? 0, "row")}`;
+      <p className="text-[12.5px] text-ink-2">
+        What the policy decides about this SQL for each role. Only your own role&apos;s answer is run: to see another role&apos;s rows you sign in to an account that holds it.
+      </p>
+      {done?.a !== a ? <Spinner /> : done.result.error ? <Empty>{done.result.error}</Empty> : (
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          {done.result.roles.map((r) => {
+            const masks = r.decisions.filter((d) => d.action === "mask");
+            const denies = r.decisions.filter((d) => d.action === "deny");
             return (
-              <Card key={id} pad flat>
+              <Card key={r.role} pad flat>
                 <div className="flex flex-wrap items-center gap-2">
-                  <h4 className="text-[13.5px]">{role.person}</h4>
+                  <h4 className="text-[13.5px]">{meta.roles[r.role].name}</h4>
+                  {r.role === mine && <Pill tone="accent">your role</Pill>}
                   <span className="flex-1" />
-                  {r.error && !r.denied ? <Pill tone="bad">Error</Pill>
-                    : r.denied ? <Pill tone="bad"><Lock /> Refused</Pill>
+                  {r.denied ? <Pill tone="bad"><Lock /> Refused</Pill>
                     : masks.length ? <Pill tone="violet"><Lock /> {masks.length} withheld</Pill>
                     : <Pill tone="good">Full answer</Pill>}
                 </div>
-                <div className="text-[12.5px] text-ink-2">{role.name}</div>
-                <p className="mb-2.5 mt-2 text-[12.5px]">
-                  {r.error && !r.denied ? r.error
-                    : r.denied ? denies.map((d) => <span key={d.object} className="block"><code>{d.object.split(".").pop()}</code> is {d.tags.map((t) => (meta.tags[t]?.label ?? t).toLowerCase()).join(", ")}</span>)
-                    : masks.length ? <>{rows}, with <Joined items={masks.map((d) => <code key={d.object}>{d.column}</code>)} /> empty</>
-                    : rows}
+                <p className="mb-0 mt-2 text-[12.5px]">
+                  {r.denied ? denies.map((d) => <span key={d.object} className="block"><code>{d.object.split(".").pop()}</code> is {d.tags.map((t) => (meta.tags[t]?.label ?? t).toLowerCase()).join(", ")}</span>)
+                    : masks.length ? <>Runs, with <Joined items={masks.map((d) => <code key={d.object}>{d.column}</code>)} /> empty</>
+                    : "Runs, with nothing withheld"}
                 </p>
-                <Btn size="sm" onClick={() => { setTab("result"); setRole(id); }}>View as {role.person}</Btn>
               </Card>
             );
           })}

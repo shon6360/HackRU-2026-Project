@@ -1,6 +1,5 @@
 "use client";
 
-import { useApp } from "@/components/app-context";
 import { Card, Conf, ConfBadge, LoadError, Lock, Notice, PageHead, PlainTable, Spinner, Stat, SysBadge, Td, Th, TraceLink } from "@/components/ui";
 import { useApi } from "@/lib/api";
 import { fmtInt, SYSTEMS } from "@/lib/format";
@@ -9,8 +8,7 @@ import type { Crosswalk, XwalkSite } from "@/lib/types";
 /* The map that lets one question reach all five systems: every site's id in each of them, with how it was
    matched. Uncertain matches are queued for a steward and unmatched ids are listed, never guessed. */
 export default function CrosswalkPage() {
-  const { role } = useApp();
-  const { data: x, error } = useApi<Crosswalk>(`/api/crosswalk?role=${role}`);
+  const { data: x, error } = useApi<Crosswalk>("/api/crosswalk");
   if (error) return <LoadError message={error} />;
   if (!x) return <Spinner />;
   const review = x.sites.flatMap((site) => site.ids.filter((i) => i.status === "review").map((i) => ({ ...i, site })));

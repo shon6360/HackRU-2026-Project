@@ -1,7 +1,7 @@
 # Back end
 
-The read side: answers questions from what the harmonizer left in `build/`, and serves the JSON
-API and the front end. Read `../CLAUDE.md` first for commands and the rules that must not be
+The read side: answers questions from what the harmonizer left in `build/`, knows who is signed
+in, and serves the JSON API and the front end. Read `../CLAUDE.md` first for commands and the rules that must not be
 broken.
 
 ```bash
@@ -17,10 +17,12 @@ python -m backend ask "Which sites are we late paying?" --role finance
 | `__main__.py` | CLI: `build`, `serve`, `ask`. `build` runs the harmonizer's pipeline, then npm in `frontend/`. The other two run the pipeline first when there is no warehouse |
 | `engine.py` | `catalog()`, `preflight()`, `execute()`, `upstream_graph()`, `answer_context()`, `trace()` |
 | `ask.py` | `VETTED` questions, matching, the Gemini call, `ask()` |
-| `server.py` | FastAPI app: a thin JSON API over the engine, plus the static front end |
+| `accounts.py` | Accounts, passwords and sessions in `state/accounts.db` (SQLite). Says which role a request runs as, and nothing about data |
+| `server.py` | FastAPI app: sign-in, a thin JSON API over the engine, plus the static front end |
 
 Imports point one way. `engine` uses `config` and `policy` from the harmonizer; `ask` uses
-`engine`; `server` uses `ask`, `engine`, and the harmonizer's `policy` and `quality`. The back
+`engine`; `accounts` uses `config` and `policy` and neither of the other two; `server` uses
+`ask`, `engine`, `accounts`, and the harmonizer's `policy` and `quality`. The back
 end imports `harmonizer.config`, `harmonizer.policy` and `harmonizer.quality` and nothing else
 from there, and it never writes to `build/`: the two sides meet only through those files. The
 one exception is `__main__.py`, which calls `harmonizer.pipeline.build()` for `build` and on first
@@ -88,23 +90,76 @@ page (`/api/meta`). A new entry needs `id`, `question`, `systems`, `explanation`
 the SQL against gold tables with schema-qualified names, include a traceable key, and use the
 snapshot date, never `current_date`.
 
+## accounts.py
+
+An account is a username, a display name, one role, a password hash, and whether it is active.
+The role must be a key of `policy.ROLES`, and it is the only thing that connects an account to
+data: `accounts` never opens the warehouse or a role database.
+
+- **Storage.** `state/accounts.db`, SQLite from the standard library, two tables (`accounts`,
+  `sessions`). Not DuckDB and not `build/`: a build deletes `build/`, and DuckDB lets one process
+  write a file, which a server and a test run at the same time would break. `init()` creates the
+  tables and, when there are no accounts at all, the four in `STARTERS`. Every function opens
+  its own connection through `_db()`; `_db(write=True)` takes the write lock first, so a check
+  and the change that depends on it are one transaction.
+- **Passwords.** PBKDF2-SHA256, 600,000 rounds, a salt per account, stored as
+  `pbkdf2_sha256$rounds$salt$hash`. 8 to 200 characters. Never returned: `_public()` is the only
+  way an account leaves the module and it has no hash in it.
+- **Sessions.** `sign_in` returns a random token and stores only its SHA-256, with an expiry 12
+  hours on. `account_for(token)` is called on every request, so a changed role, a deactivation
+  or a deletion applies to sessions that are already open. A new password or a deactivation
+  deletes the account's sessions; changing your own password keeps the session that did it.
+- **Sign-in failures.** An unknown username, a wrong password and a deactivated account get the
+  same message and take the same time (a decoy hash is checked when there is no account). Five
+  failures for one username lock it for five minutes; the count is in memory, so a restart
+  clears it.
+- **There is always an administrator.** `update` and `delete` refuse a change that would leave
+  no active account whose role has `manages_accounts`.
+- `AccountError(message, status)` is raised for anything that cannot be done. The message is
+  written for the person and is shown as it is; `server.py` turns it into a JSON error.
+- This is the one module that uses the real clock (`time.time()`), for `created_at`,
+  `last_login_at` and session expiry.
+
 ## server.py
+
+Routes are declared on `api`, an `APIRouter` whose dependency `_account` refuses any request
+without a live session (401). Only `/api/login`, `/api/logout` and the generated docs sit on
+`app` itself. Put a new route on `api`; a test fails if one that starts with `/api/` is not.
+
+A route that needs the role declares `role: str = Depends(_role)`, which is the signed-in
+account's role. Because that is a default, the route stays a plain function and the tests call
+`server.quality_view("finance")` directly. A route for administrators declares
+`Depends(_admin)` (403 for anyone else). No route reads a role from the query string or the
+body; a `role` a client sends is ignored.
+
+The session token travels in the `concord_session` cookie: `HttpOnly`, `SameSite=Strict`, and
+`Secure` when the request came over HTTPS.
 
 | Route | Returns |
 |---|---|
+| `POST /api/login` `{username, password}` | the account, and sets the session cookie. Public |
+| `POST /api/logout` | ends the session and clears the cookie. Public |
+| `GET /api/me` | the signed-in account |
+| `PATCH /api/me` `{name}` | changes your own name, and nothing else |
+| `POST /api/me/password` `{current, new}` | changes your own password |
+| `GET /api/accounts` | every account. Administrators only, like the next three |
+| `POST /api/accounts` `{username, name, role, password}` | the new account |
+| `PATCH /api/accounts/{id}` `{username?, name?, role?, active?, password?}` | the changed account. Fields left out stay as they are |
+| `DELETE /api/accounts/{id}` | removes the account and its sessions |
 | `GET /api/meta` | snapshot date, roles, tags, feeds, layer counts, model availability, reviewed questions |
-| `POST /api/ask` `{question, role}` | `ask.ask()` result |
-| `POST /api/sql` `{sql, role}` | `engine.execute()` result, `mode: "sql"` |
-| `GET /api/trace?role&column&value` | `engine.trace()` |
-| `GET /api/catalog?role` | dataset summaries with access and FAIR score |
-| `GET /api/dataset/{fqn}?role` | one dataset: columns, preview, lineage, rules, SQL |
+| `POST /api/ask` `{question}` | `ask.ask()` result |
+| `POST /api/sql` `{sql}` | `engine.execute()` result, `mode: "sql"` |
+| `POST /api/compare` `{sql}` | what the policy decides about the query for each role (`preflight` only). Nothing is run, so no row counts and no data |
+| `GET /api/trace?column&value` | `engine.trace()` |
+| `GET /api/catalog` | dataset summaries with access and FAIR score |
+| `GET /api/dataset/{fqn}` | one dataset: columns, preview, lineage, rules, SQL |
 | `GET /api/lineage` | the whole graph |
-| `GET /api/crosswalk?role` | site crosswalk, subject match counts |
-| `GET /api/quality?role` | rules, failures, answer-key score |
+| `GET /api/crosswalk` | site crosswalk, subject match counts |
+| `GET /api/quality` | rules, failures, answer-key score |
 | `GET /api/access` | every tagged table and what each role gets |
 | everything else | the built front end from `../frontend/out/` (`server.WEB`), mounted last. `/ask/` serves `ask/index.html`. If the folder is missing at start-up, `/` explains how to build it |
 
-Catalog metadata is deliberately visible to every role, including for tables whose data is
+Catalog metadata is deliberately visible to every signed-in role, including for tables whose data is
 withheld. What is hidden for a withheld table or masked column is the data and anything derived
 from it: preview rows, sample values, min and max, failure records, and the record keys in the
 answer key for rules whose findings are withheld.

@@ -1,39 +1,152 @@
-"""The web app: a small JSON API over the engine, plus the static front end."""
+"""The web app: a small JSON API over the engine, plus the static front end.
+
+Every route but signing in and out needs a session. The role a request runs as is the role of
+the signed-in account, looked up from the session cookie: no route takes a role from the client.
+"""
 from __future__ import annotations
 
-from fastapi import FastAPI, HTTPException
-from fastapi.responses import PlainTextResponse
+from fastapi import APIRouter, Depends, FastAPI, HTTPException, Request, Response
+from fastapi.responses import JSONResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from harmonizer import config, policy, quality
 
+from . import accounts
 from . import ask as asker
 from . import engine
 
 WEB = config.ROOT / "frontend" / "out"  # the static site that `npm run build` writes
+COOKIE = "concord_session"
 
 app = FastAPI(title="Concord", docs_url="/api/docs", redoc_url=None)
 
 
-def _role(role: str) -> str:
-    if role not in policy.ROLES:
-        raise HTTPException(400, f"Unknown role {role!r}")
-    return role
+# ----------------------------------------------------------------------------- who is asking
+def _account(request: Request) -> dict:
+    """The signed-in account behind a request."""
+    account = accounts.account_for(request.cookies.get(COOKIE))
+    if account is None:
+        raise HTTPException(401, "Sign in to use Concord.")
+    if account["role"] not in policy.ROLES:
+        raise HTTPException(403, f"Your account holds a role that no longer exists ({account['role']}). Ask an administrator to change it.")
+    return account
+
+
+def _role(account: dict = Depends(_account)) -> str:
+    """The role a request runs as: the signed-in account's, never one the client names."""
+    return account["role"]
+
+
+def _admin(account: dict = Depends(_account)) -> dict:
+    if not policy.ROLES[account["role"]].get("manages_accounts"):
+        raise HTTPException(403, "Only an administrator can manage accounts.")
+    return account
+
+
+# Routes go on `api`, not on `app`, so that a new one needs a session unless it is deliberately made public.
+api = APIRouter(dependencies=[Depends(_account)])
+
+
+@app.exception_handler(accounts.AccountError)
+def account_error(_: Request, e: accounts.AccountError):
+    return JSONResponse({"detail": str(e)}, status_code=e.status)
+
+
+class LoginBody(BaseModel):
+    username: str
+    password: str
+
+
+class NameBody(BaseModel):
+    name: str
+
+
+class PasswordBody(BaseModel):
+    current: str
+    new: str
+
+
+class NewAccount(BaseModel):
+    username: str
+    name: str
+    role: str
+    password: str
+
+
+class AccountChanges(BaseModel):
+    username: str | None = None
+    name: str | None = None
+    role: str | None = None
+    active: bool | None = None
+    password: str | None = None
 
 
 class AskBody(BaseModel):
     question: str
-    role: str
 
 
 class SqlBody(BaseModel):
     sql: str
-    role: str
+
+
+# ----------------------------------------------------------------------------- sign-in and your own account
+@app.post("/api/login")
+def login(body: LoginBody, request: Request, response: Response):
+    token, account = accounts.sign_in(body.username, body.password)
+    # HttpOnly keeps the token from scripts; SameSite=Strict keeps other sites from making requests with it
+    response.set_cookie(COOKIE, token, max_age=accounts.SESSION_SECONDS, httponly=True, samesite="strict",
+                        secure=request.url.scheme == "https", path="/")
+    return account
+
+
+@app.post("/api/logout")
+def logout(request: Request, response: Response):
+    accounts.sign_out(request.cookies.get(COOKIE))
+    response.delete_cookie(COOKIE, path="/")
+    return {"ok": True}
+
+
+@api.get("/api/me")
+def me(account: dict = Depends(_account)):
+    return account
+
+
+@api.patch("/api/me")
+def rename_me(body: NameBody, account: dict = Depends(_account)):
+    return accounts.update(account["id"], name=body.name)
+
+
+@api.post("/api/me/password")
+def change_my_password(body: PasswordBody, request: Request, account: dict = Depends(_account)):
+    accounts.change_password(account["id"], body.current, body.new, keep=request.cookies.get(COOKIE))
+    return {"ok": True}
+
+
+# ----------------------------------------------------------------------------- accounts (administrators only)
+@api.get("/api/accounts")
+def account_list(_: dict = Depends(_admin)):
+    return {"accounts": accounts.list_accounts()}
+
+
+@api.post("/api/accounts")
+def account_create(body: NewAccount, _: dict = Depends(_admin)):
+    return accounts.create(body.username, body.name, body.role, body.password)
+
+
+@api.patch("/api/accounts/{account_id}")
+def account_update(account_id: int, body: AccountChanges, _: dict = Depends(_admin)):
+    return accounts.update(account_id, **body.model_dump(exclude_none=True))
+
+
+@api.delete("/api/accounts/{account_id}")
+def account_delete(account_id: int, _: dict = Depends(_admin)):
+    accounts.delete(account_id)
+    return {"ok": True}
 
 
 # ----------------------------------------------------------------------------- meta
-@app.get("/api/meta")
+@api.get("/api/meta")
 def meta():
     cat = engine.catalog()
     layers = {}
@@ -51,20 +164,33 @@ def meta():
 
 
 # ----------------------------------------------------------------------------- ask
-@app.post("/api/ask")
-def ask(body: AskBody):
-    return asker.ask(body.question, _role(body.role))
+@api.post("/api/ask")
+def ask(body: AskBody, role: str = Depends(_role)):
+    return asker.ask(body.question, role)
 
 
-@app.post("/api/sql")
-def sql(body: SqlBody):
-    result = engine.execute(body.sql, _role(body.role))
+@api.post("/api/sql")
+def sql(body: SqlBody, role: str = Depends(_role)):
+    result = engine.execute(body.sql, role)
     return {**result, "mode": "sql", "question": None, "explanation": None, "model": None}
 
 
-@app.get("/api/trace")
-def trace(role: str, column: str, value: str):
-    return engine.trace(_role(role), column, value)
+@api.post("/api/compare")
+def compare(body: SqlBody):
+    """What the policy decides about one query for each role. Nothing is run, so no role's rows reach another."""
+    roles = []
+    for role in policy.ROLES:
+        try:
+            pre = engine.preflight(body.sql, role)
+        except engine.QueryRejected as e:
+            return {"error": str(e), "roles": []}
+        roles.append({"role": role, "denied": pre["denied"], "decisions": pre["decisions"]})
+    return {"error": None, "roles": roles}
+
+
+@api.get("/api/trace")
+def trace(column: str, value: str, role: str = Depends(_role)):
+    return engine.trace(role, column, value)
 
 
 # ----------------------------------------------------------------------------- catalog
@@ -103,16 +229,14 @@ def _summary(ds: dict, role: str, cat: dict) -> dict:
     }
 
 
-@app.get("/api/catalog")
-def catalog_list(role: str):
-    role = _role(role)
+@api.get("/api/catalog")
+def catalog_list(role: str = Depends(_role)):
     cat = engine.catalog()
     return {"datasets": [_summary(ds, role, cat) for ds in cat["datasets"].values()]}
 
 
-@app.get("/api/dataset/{fqn}")
-def dataset(fqn: str, role: str):
-    role = _role(role)
+@api.get("/api/dataset/{fqn}")
+def dataset(fqn: str, role: str = Depends(_role)):
     cat = engine.catalog()
     ds = cat["datasets"].get(fqn)
     if ds is None:
@@ -142,16 +266,15 @@ def dataset(fqn: str, role: str):
     }
 
 
-@app.get("/api/lineage")
+@api.get("/api/lineage")
 def lineage():
     cat = engine.catalog()
     return engine.upstream_graph([fqn for fqn in cat["datasets"]])
 
 
 # ----------------------------------------------------------------------------- crosswalk
-@app.get("/api/crosswalk")
-def crosswalk(role: str):
-    role = _role(role)
+@api.get("/api/crosswalk")
+def crosswalk(role: str = Depends(_role)):
     con = engine.warehouse()
     cur = con.execute("""SELECT x.*, s.site_name, s.city, s.state, s.principal_investigator
                          FROM master.site_xwalk x LEFT JOIN master.site s USING (site_key)
@@ -185,9 +308,8 @@ def crosswalk(role: str):
 
 
 # ----------------------------------------------------------------------------- quality
-@app.get("/api/quality")
-def quality_view(role: str):
-    role = _role(role)
+@api.get("/api/quality")
+def quality_view(role: str = Depends(_role)):
     cat = engine.catalog()
     con = engine.warehouse()
     failures: dict[str, list] = {}
@@ -232,7 +354,7 @@ def quality_view(role: str):
 
 
 # ----------------------------------------------------------------------------- access matrix
-@app.get("/api/access")
+@api.get("/api/access")
 def access_matrix():
     cat = engine.catalog()
     out = []
@@ -246,6 +368,8 @@ def access_matrix():
             out.append({"fqn": fqn, "layer": ds["layer"], "tags": ds["tags"], "column_tags": tagged_cols, "roles": per_role})
     return {"roles": policy.ROLES, "tags": policy.TAGS, "datasets": out}
 
+
+app.include_router(api)
 
 # ----------------------------------------------------------------------------- front end
 # Mounted last, so it only sees what no /api route claimed. html=True serves <page>/index.html for /<page>/.

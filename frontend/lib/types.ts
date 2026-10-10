@@ -3,7 +3,18 @@
 export type Cell = string | number | boolean | null;
 export type Column = { name: string; type: string; label?: string };
 
-export type Role = { name: string; person: string; blurb: string; grants: string[] };
+export type Role = { name: string; blurb: string; grants: string[]; manages_accounts?: boolean };
+
+/* A person's account. It holds one role, and the role decides what the account can see. */
+export type Account = {
+  id: number;
+  username: string;
+  name: string;
+  role: string;
+  active: boolean;
+  created_at: string;
+  last_login_at: string | null;
+};
 export type Tag = { label: string; description: string };
 
 export type Feed = {
@@ -62,6 +73,9 @@ export type Answer = {
   suggestions?: string[];
   edited?: boolean;
 };
+
+/* What the policy decides about one query for each role (/api/compare). Nothing is run. */
+export type Comparison = { error: string | null; roles: { role: string; denied: boolean; decisions: Decision[] }[] };
 
 export type XwalkId = {
   system: string;

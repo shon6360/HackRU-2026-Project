@@ -3,6 +3,7 @@
 import Link from "next/link";
 import type { ComponentProps, ReactNode } from "react";
 import { tableHref } from "@/lib/format";
+import type { Role } from "@/lib/types";
 import { useApp } from "./app-context";
 
 /* The small pieces every page is built from. Tailwind only sees class names that are written out in full,
@@ -116,6 +117,7 @@ const NOTICE_TONE = {
   policy: { box: "border border-violet/25 bg-violet-soft text-ink", icon: "text-violet" },
   warn: { box: "border border-warn/25 bg-warn-soft", icon: "text-warn" },
   bad: { box: "border border-bad/25 bg-bad-soft", icon: "text-bad" },
+  good: { box: "border border-good/25 bg-good-soft", icon: "text-good" },
   info: { box: "bg-surface-2", icon: "" },
 };
 
@@ -141,14 +143,27 @@ const BTN_SIZE = {
   lg: "p-2.5 text-[15px] sm:px-[22px] sm:py-0",
 };
 
-export function Btn({ primary, size = "md", className = "", ...rest }: ComponentProps<"button"> & { primary?: boolean; size?: keyof typeof BTN_SIZE }) {
-  const tone = primary ? "border-accent bg-accent text-white hover:brightness-[1.07]" : "border-line bg-surface text-ink hover:bg-surface-2";
+export function Btn({ primary, danger, size = "md", className = "", ...rest }: ComponentProps<"button"> & { primary?: boolean; danger?: boolean; size?: keyof typeof BTN_SIZE }) {
+  const tone = primary ? "border-accent bg-accent text-white hover:brightness-[1.07]"
+    : danger ? "border-line bg-surface text-bad hover:bg-bad-soft"
+    : "border-line bg-surface text-ink hover:bg-surface-2";
   return <button type="button" className={`rounded-lg border font-semibold disabled:cursor-default disabled:opacity-55 ${BTN_SIZE[size]} ${tone} ${className}`} {...rest} />;
 }
 
 export const Chip = (props: ComponentProps<"button">) => (
   <button type="button" className="rounded-full border border-line bg-surface px-3 py-[5px] text-left text-[13px] text-ink hover:border-accent hover:text-accent-ink" {...props} />
 );
+
+/* A labelled form control. */
+export function Field({ label, hint, children }: { label: string; hint?: ReactNode; children: ReactNode }) {
+  return (
+    <label className="block">
+      <span className="mb-1 block text-[12.5px] font-semibold text-ink-2">{label}</span>
+      {children}
+      {hint && <span className="mt-1 block text-[12px] text-ink-3">{hint}</span>}
+    </label>
+  );
+}
 
 /* ------------------------------------------------------------------ plain tables */
 export function PlainTable({ className = "", ...rest }: ComponentProps<"table">) {
@@ -161,6 +176,20 @@ export function Th({ num, className = "", ...rest }: ComponentProps<"th"> & { nu
 
 export function Td({ num, className = "", ...rest }: ComponentProps<"td"> & { num?: boolean }) {
   return <td className={`border-b border-line px-2.5 py-2 align-top ${num ? "text-right tabular-nums" : ""} ${className}`} {...rest} />;
+}
+
+/* Everything a role holds: each data tag, granted or not, and whether it may manage accounts. */
+export function Grants({ role }: { role: Role }) {
+  const { meta } = useApp();
+  const held = (yes: boolean) => yes ? <span className="font-bold text-good">✓ granted</span> : <span className="font-bold text-bad">× not granted</span>;
+  return (
+    <PlainTable>
+      <tbody>
+        {Object.keys(meta.tags).map((t) => <tr key={t}><Td><TagPill tag={t} /></Td><Td num>{held(role.grants.includes(t))}</Td></tr>)}
+        <tr><Td><Pill>Manage accounts</Pill></Td><Td num>{held(!!role.manages_accounts)}</Td></tr>
+      </tbody>
+    </PlainTable>
+  );
 }
 
 /* ------------------------------------------------------------------ links and code */

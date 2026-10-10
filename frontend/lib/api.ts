@@ -2,18 +2,35 @@
 
 import { useEffect, useState } from "react";
 
+export class ApiError extends Error {
+  status: number;
+  constructor(message: string, status: number) {
+    super(message);
+    this.status = status;
+  }
+}
+
+/* Fired on `window` when the server says there is no session any more, whichever request found out. */
+export const SIGNED_OUT = "concord:signed-out";
+
 /* Every request goes to the back end's /api routes on the same origin: the back end serves the built site,
-   and `next dev` proxies /api to it. A body makes it a POST. */
-export async function api<T>(path: string, body?: unknown): Promise<T> {
-  const res = await fetch(path, body ? { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) } : undefined);
+   and `next dev` proxies /api to it. The session cookie travels with it. A body makes it a POST unless a
+   method is given. */
+export async function api<T>(path: string, body?: unknown, method?: "PATCH" | "DELETE"): Promise<T> {
+  const res = await fetch(path, {
+    method: method ?? (body === undefined ? "GET" : "POST"),
+    ...(body === undefined ? {} : { headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }),
+  });
   if (!res.ok) {
     const detail = (await res.json().catch(() => ({}))).detail;
-    throw new Error(typeof detail === "string" ? detail : res.statusText);
+    // a 401 from the sign-in form itself is a wrong password, not a session that ended
+    if (res.status === 401 && path !== "/api/login") window.dispatchEvent(new Event(SIGNED_OUT));
+    throw new ApiError(typeof detail === "string" ? detail : res.statusText, res.status);
   }
   return res.json();
 }
 
-/* Fetch for a page. While a new path loads (a role switch, say) the previous data stays on screen. */
+/* Fetch for a page. While a new path loads the previous data stays on screen. */
 export function useApi<T>(path: string): { data?: T; error?: string } {
   const [state, setState] = useState<{ data?: T; error?: string }>({});
   useEffect(() => {

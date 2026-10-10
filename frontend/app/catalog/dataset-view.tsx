@@ -13,8 +13,8 @@ import type { Dataset } from "@/lib/types";
    from, the quality rules on it and the SQL that builds it. A role that cannot query the table can still
    read about it; what is withheld is the data and anything derived from it. */
 export function DatasetView({ fqn }: { fqn: string }) {
-  const { role, person } = useApp();
-  const { data: d, error } = useApi<Dataset>(`/api/dataset/${encodeURIComponent(fqn)}?role=${role}`);
+  const { person } = useApp();
+  const { data: d, error } = useApi<Dataset>(`/api/dataset/${encodeURIComponent(fqn)}`);
   if (error) return <LoadError message={error} />;
   if (!d) return <Spinner />;
   const types = new Map(d.columns.map((c) => [c.name, c.type]));

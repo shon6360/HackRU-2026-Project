@@ -14,6 +14,8 @@ load_dotenv(ROOT / ".env")
 FEEDS = ROOT / "feeds"
 BUILD = ROOT / "build"
 WAREHOUSE = BUILD / "warehouse.duckdb"
+# Accounts and sessions. Kept out of build/, which every build deletes and recreates.
+ACCOUNTS = ROOT / "state" / "accounts.db"
 MODELS = Path(__file__).parent / "models"
 
 LAYERS = ["bronze", "silver", "master", "gold"]

@@ -58,9 +58,13 @@ def main() -> None:
     elif args.command == "serve":
         import uvicorn
 
+        from . import accounts
         from .server import WEB
 
         _build_if_missing()
+        starters = accounts.init()
+        if starters:
+            print(f"\nCreated the starter accounts: {', '.join(starters)}. The README gives their password. Change it once you have signed in.")
         if not WEB.is_dir():
             print("\nThe web app has not been built yet, so only the API will be served.\n"
                   "Build it once with:  python -m backend build")

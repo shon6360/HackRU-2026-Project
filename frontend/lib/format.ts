@@ -11,6 +11,10 @@ export const plural = (n: number, word: string) => `${word}${n === 1 ? "" : "s"}
 /* "2014-01-31T06:00:00" -> "2014-01-31 06:00" */
 export const fmtStamp = (iso: string) => iso.slice(0, 16).replace("T", " ");
 
+/* A real moment, such as a sign-in, in the reader's own time zone. Study data never goes through this: it is
+   dated by the snapshot, and fmtStamp shows it as the source wrote it. */
+export const fmtWhen = (iso: string | null) => iso ? new Date(iso).toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short" }) : "never";
+
 /* Formatting is driven by the column's name and type, so naming a new gold column to fit gets it formatted for free. */
 export function fmtCell(value: Cell | undefined, col: Column): string {
   if (value === null || value === undefined) return "—";

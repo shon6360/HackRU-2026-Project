@@ -12,7 +12,7 @@ python -m harmonizer build
 | Module | Role |
 |---|---|
 | `__main__.py` | CLI: `build` |
-| `config.py` | Loads `.env` on import, then paths, `LAYERS`, `LINEAGE_COLUMNS`, `ID_MAPS`, `snapshot_date()`, `platform_now()`, `role_db()` |
+| `config.py` | Loads `.env` on import, then paths (including `ACCOUNTS`, which only the back end uses), `LAYERS`, `LINEAGE_COLUMNS`, `ID_MAPS`, `snapshot_date()`, `platform_now()`, `role_db()` |
 | `models.py` | Loads `models/**/*.sql`: parses the `-- @` header, reads dependencies out of the SQL with sqlglot, orders topologically |
 | `pipeline.py` | `build()`: bronze load, run models, quality, catalog (`meta.*`), role databases |
 | `quality.py` | `RULES`, `FEED_RULES`, `run()`, `score_answer_key()` |
@@ -66,9 +66,14 @@ table  carries a tag the role lacks -> the table does not exist for that role
 column carries a tag the role lacks -> the column is NULL for that role
 ```
 
-Tags: `patient_level`, `unblinded`, `financial`. Roles and grants: `clinops` (Maya:
-patient_level, financial), `biostat` (Arjun: patient_level, unblinded), `finance` (Dana:
-financial). There are no other rules, no row filters and no special cases. Keep it that way:
-the policy is meant to be explainable in one sentence.
+Tags: `patient_level`, `unblinded`, `financial`. Roles and grants: `clinops` (patient_level,
+financial), `biostat` (patient_level, unblinded), `finance` (financial) and `admin` (all three).
+There are no other rules, no row filters and no special cases. Keep it that way: the policy is
+meant to be explainable in one sentence.
+
+A role is not a person. People are accounts, which the back end keeps (`backend/accounts.py`),
+and each account holds one role. `manages_accounts`, which only `admin` has, is the one entry
+in `ROLES` that is not about data: the back end reads it to decide who may create, change and
+remove accounts. Nothing in the harmonizer uses it.
 
 Policy is applied when the role databases are built, so a policy change needs `build`.

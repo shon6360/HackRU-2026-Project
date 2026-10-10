@@ -9,8 +9,8 @@ import type { Quality } from "@/lib/types";
 /* Every rule, what it found, and how the rules score against the answer key of planted problems. Findings
    on a table the role may not see are counted but not shown. */
 export default function QualityPage() {
-  const { role, meta } = useApp();
-  const { data: q, error } = useApi<Quality>(`/api/quality?role=${role}`);
+  const { meta } = useApp();
+  const { data: q, error } = useApi<Quality>("/api/quality");
   if (error) return <LoadError message={error} />;
   if (!q) return <Spinner />;
   const k = q.answer_key;

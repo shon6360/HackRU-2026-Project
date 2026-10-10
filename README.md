@@ -13,7 +13,8 @@ turns into five extract requests and a week of spreadsheet matching, and nobody 
 Concord ingests the five feeds, works out which ids mean the same site and the same subject, and lets a
 study team ask that question in plain English. Every answer shows the SQL that ran, the source rows behind
 each number, how fresh each source is, what data-quality problems touch it, and what the person asking was
-not allowed to see.
+not allowed to see. Each person signs in to their own account, and the role that account holds decides
+what they can see.
 
 Built for the Regeneron challenge at HackRU Fall 2026, starter sheet 40, *One Source of Truth*.
 
@@ -32,13 +33,26 @@ python -m backend build          # the warehouse into build/, the web app into f
 python -m backend serve
 ```
 
-Open http://127.0.0.1:8040. `build` loads the committed feeds into the warehouse in about two seconds, then builds
-the web app with npm. The first run takes longer, while npm downloads the web app's packages.
+Open http://127.0.0.1:8040 and sign in. `build` loads the committed feeds into the warehouse in about two
+seconds, then builds the web app with npm. The first run takes longer, while npm downloads the web app's packages.
+
+The first start creates four accounts, all with the password `concord-demo`:
+
+| Username | Role | Sees |
+|---|---|---|
+| `maya` | Clinical Operations Lead | Patients and money, but not who is on which treatment |
+| `arjun` | Unblinded Statistician | Patients and treatment arms, but not money |
+| `dana` | Site Payments Analyst | Money and site-level counts, never individual patients |
+| `admin` | Administrator | Everything, and the **Accounts** page for adding, changing and removing accounts |
+
+That password is public, so change it before anyone else can reach the server: each person on their
+**profile** page, or set `CONCORD_STARTER_PASSWORD` in `.env` before the first start. Accounts are kept in
+`state/accounts.db`; delete that file to start again from the four above.
 
 ```bash
 python -m backend build          # rebuild everything: the warehouse and the web app
 python -m harmonizer build       # the warehouse half only: catalog, quality results and role databases
-python tests/test_concord.py     # 10 end-to-end checks (also runs under pytest)
+python tests/test_concord.py     # 13 end-to-end checks (also runs under pytest)
 python -m backend ask "Which sites are we late paying?" --role finance
 ```
 
@@ -61,12 +75,16 @@ match) and you can write SQL yourself under any answer.
 2. **Trace.** Click `S718` in the result. The drawer shows how each of the five systems' ids was matched to
    that site, with the evidence, and the raw rows from each source file. The finance match is flagged for a
    data steward, because two sites in the same city have nearly the same name.
-3. **Switch role.** Ask *How many subjects and reportable adverse events are there in each treatment arm?*
-   as Maya (blinded study team): the arm is withheld. Open **Compare roles**: Arjun, the unblinded
-   statistician, gets the full answer; Dana in finance is refused, because the question needs patient-level rows.
-4. **Quality.** The feeds were seeded with 25 documented problems. The rules catch 25 of 25, and 29 more
+3. **Who is asking.** Signed in as `maya` (blinded study team), ask *How many subjects and reportable
+   adverse events are there in each treatment arm?* The arm is withheld. Open **Compare roles** to see what
+   the policy decides for each role: the unblinded statistician gets the full answer, and finance is refused,
+   because the question needs patient-level rows. Sign out and in again as `arjun` or `dana` to see it happen.
+4. **Accounts.** Sign in as `admin` and open **Accounts**. Change Dana's role and her next question is
+   answered under the new one, without her signing in again. Every account has a profile page showing what
+   its role is granted.
+5. **Quality.** The feeds were seeded with 25 documented problems. The rules catch 25 of 25, and 29 more
    findings besides, mostly partial dates in the real CDISC data.
-5. **Catalog and Lineage.** Search for `overdue`, open `gold.site_360`, and follow any number back to the
+6. **Catalog and Lineage.** Search for `overdue`, open `gold.site_360`, and follow any number back to the
    files it came from.
 
 ## How it works
@@ -92,7 +110,8 @@ databases. The **back end** answers questions from what the harmonizer built and
 | Models | `harmonizer/models/**/*.sql` | One SQL file per table. Its documentation lives in the header; its dependencies and lineage are read out of the SQL |
 | Crosswalk | `harmonizer/models/master/` | Maps every system's site and subject ids to master keys, recording method, confidence and evidence |
 | Quality | `harmonizer/quality.py` | 27 rules. Each is a query returning the records that fail, with the source file and row |
-| Policy | `harmonizer/policy.py` | Three tags, three roles. Enforced by building a separate database per role |
+| Policy | `harmonizer/policy.py` | Three tags, four roles. Enforced by building a separate database per role |
+| Accounts | `backend/accounts.py` | Sign-in, sessions, and which role each account holds. Says who is asking; the policy decides what they see |
 | Engine | `backend/engine.py` | Parses a query, checks it against the policy, runs it sandboxed, and attaches lineage, freshness and quality warnings |
 | Ask | `backend/ask.py` | Reviewed questions, plus Gemini writing SQL from the role's own view of the catalog |
 | App | `backend/server.py`, `frontend/` | FastAPI, and a Next.js and Tailwind CSS front end built to static files that FastAPI serves |
@@ -118,11 +137,16 @@ parsed and checked against the same tags, so the person is told exactly what was
 language model is given only the role's schema, and its SQL goes through the same two steps as anyone
 else's. It is a convenience, never the access control.
 
-| Role | Patient-level | Unblinded | Financial |
-|---|---|---|---|
-| Maya, Clinical Operations Lead | yes | no | yes |
-| Arjun, Unblinded Statistician | yes | yes | no |
-| Dana, Site Payments Analyst | no | no | yes |
+| Role | Patient-level | Unblinded | Financial | Manage accounts |
+|---|---|---|---|---|
+| Clinical Operations Lead | yes | no | yes | no |
+| Unblinded Statistician | yes | yes | no | no |
+| Site Payments Analyst | no | no | yes | no |
+| Administrator | yes | yes | yes | yes |
+
+The role a request runs as is the role of the signed-in account, which the server looks up from the session
+on every request. The browser cannot name a role, so there is nothing in the web app to switch. Passwords are
+stored as salted PBKDF2 hashes and session tokens as SHA-256 hashes, in a small SQLite file, `state/accounts.db`.
 
 ## Data
 
@@ -143,7 +167,8 @@ payment problems are not attached to any real institution.
 ## What this is not
 
 - It is a hackathon prototype on a single small study, not a validated system. Nothing here is GxP.
-- Roles are picked from a switcher. A real deployment would take the role from single sign-on.
+- Sign-in is a username and password that Concord keeps itself, and the starter accounts share a public
+  password. A real deployment would use single sign-on, a second factor, and an audit trail of who asked what.
 - The crosswalk queues uncertain matches for a steward but has no screen yet for approving them.
 - Lineage is table-level through the SQL and row-level back to the source file. Column-level lineage is not derived.
 
@@ -157,7 +182,7 @@ feeds/              the five mock source systems (committed, deterministic)
 data/public/        snapshot of the public data the feeds are built from, with SOURCES.json
 scripts/            fetch_public_data.py and simulate_feeds.py, to regenerate the two folders above
 tests/              end-to-end checks
-.env.example        template for the optional .env file that holds the Gemini API key
+.env.example        template for the optional .env file that holds the Gemini API key and the starter password
 docs/               DATA.md, DEMO.md (3-minute script), DECK.md (slide outline), screenshots
 ```
 

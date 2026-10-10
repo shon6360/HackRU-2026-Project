@@ -11,9 +11,9 @@ import { Card, ConfBadge, Lock, NodeRef, Notice, PlainTable, Spinner, SysBadge, 
 /* Where does this key come from? How each system's id was matched to it, then the raw source rows, exactly
    as exported. Shared by every page: any TraceLink opens it. Withheld blocks are shown as withheld. */
 export function TraceDrawer() {
-  const { trace, closeTrace, role, person, roleName } = useApp();
+  const { trace, closeTrace, person, roleName } = useApp();
   const [loaded, setLoaded] = useState<{ key: string; data?: Trace; error?: string } | null>(null);
-  const key = trace ? `/api/trace?role=${encodeURIComponent(role)}&column=${encodeURIComponent(trace.column)}&value=${encodeURIComponent(trace.value)}` : null;
+  const key = trace ? `/api/trace?column=${encodeURIComponent(trace.column)}&value=${encodeURIComponent(trace.value)}` : null;
 
   useEffect(() => {
     if (!key) return;

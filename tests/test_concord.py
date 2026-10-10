@@ -2,22 +2,37 @@
 
 They build the warehouse from the committed feeds and then assert the things a judge (or an
 auditor) would want to be true: the planted problems are caught, the headline question gives
-the documented answer, and no role can read what its policy withholds, by any route.
+the documented answer, no role can read what its policy withholds, by any route, and nobody
+gets a role they did not sign in to.
 """
 from __future__ import annotations
 
 import json
+import sqlite3
 import sys
+import tempfile
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from backend import ask, engine, server  # noqa: E402
+from fastapi.testclient import TestClient  # noqa: E402
+
+from backend import accounts, ask, engine, server  # noqa: E402
 from harmonizer import config, policy, quality  # noqa: E402
 from harmonizer.pipeline import build  # noqa: E402
 
 SUMMARY = build(verbose=False)
 KEY = json.loads((config.FEEDS / "ANSWER_KEY.json").read_text())
+# a throwaway accounts database holding only the starter accounts, so a run never touches the real one
+config.ACCOUNTS = Path(tempfile.mkdtemp(prefix="concord-test-")) / "accounts.db"
+
+
+def signed_in(username: str, password: str | None = None) -> TestClient:
+    """A browser signed in to one account: the client keeps the session cookie the server sets."""
+    client = TestClient(server.app)
+    r = client.post("/api/login", json={"username": username, "password": password or accounts.starter_password()})
+    assert r.status_code == 200, (username, r.json())
+    return client
 
 
 def test_every_planted_problem_is_caught():
@@ -125,6 +140,89 @@ def test_sandbox_rejects_everything_but_select_on_cataloged_tables():
             continue
         raise AssertionError(f"role database allowed: {sql}")
     con.close()
+
+
+def test_nothing_is_served_without_a_session():
+    # routes put straight on the app skip the session check, so there must be none beyond these
+    unguarded = {r.path for r in server.app.routes if getattr(r, "path", "").startswith("/api/")}
+    assert unguarded == {"/api/login", "/api/logout", "/api/docs"}, unguarded
+    visitor, checked = TestClient(server.app), 0
+    for route in server.api.routes:
+        for method in route.methods - {"HEAD", "OPTIONS"}:
+            r = visitor.request(method, route.path.format(fqn="gold.site_360", account_id=1), json={} if method in ("POST", "PATCH") else None)
+            assert r.status_code == 401, f"{method} {route.path} answered {r.status_code} without a session"
+            checked += 1
+    assert checked >= 15, "the walk over the routes found too few of them"
+    for password in ["wrong-password", ""]:
+        assert visitor.post("/api/login", json={"username": "maya", "password": password}).status_code == 401
+    assert visitor.post("/api/login", json={"username": "nobody", "password": accounts.starter_password()}).status_code == 401
+    assert visitor.get("/api/me").status_code == 401, "a failed sign-in must not start a session"
+    maya = signed_in("maya")
+    assert maya.get("/api/me").json()["role"] == "clinops"
+    maya.post("/api/logout")
+    assert maya.get("/api/meta").status_code == 401, "signing out ends the session"
+
+
+def test_the_role_comes_from_the_account_and_never_from_the_request():
+    dana = signed_in("dana")
+    r = dana.post("/api/sql", json={"sql": "SELECT * FROM gold.dim_subject", "role": "admin"}).json()
+    assert r["role"] == "finance" and r["denied"] and not r["rows"], "a role named in the body must be ignored"
+    r = dana.post("/api/ask", json={"question": "How many subjects and reportable adverse events are there in each treatment arm?", "role": "biostat"}).json()
+    assert r["role"] == "finance" and r["denied"]
+    assert any(d["access"]["denied"] for d in dana.get("/api/catalog", params={"role": "admin"}).json()["datasets"])
+    assert dana.get("/api/dataset/gold.dim_subject", params={"role": "admin"}).json()["preview"] is None
+    t = dana.get("/api/trace", params={"role": "admin", "column": "subject_key", "value": "x"}).json()
+    assert t["crosswalk"]["denied"], "the trace runs as the account's role too"
+    # comparing roles shows what the policy decides for each, and never another role's rows
+    compared = dana.post("/api/compare", json={"sql": "SELECT arm, count(*) FROM gold.dim_subject GROUP BY 1"}).json()
+    assert {c["role"]: c["denied"] for c in compared["roles"]} == {"clinops": False, "biostat": False, "finance": True, "admin": False}
+    assert all(set(c) == {"role", "denied", "decisions"} for c in compared["roles"])
+    admin = signed_in("admin").post("/api/sql", json={"sql": "SELECT arm, count(*) FROM gold.dim_subject GROUP BY 1"}).json()
+    assert not admin["decisions"] and all(row[0] for row in admin["rows"]), "the administrator holds every grant"
+
+
+def test_only_an_administrator_manages_accounts_and_changes_take_effect_at_once():
+    admin, arjun = signed_in("admin"), signed_in("arjun")
+    ids = {a["username"]: a["id"] for a in admin.get("/api/accounts").json()["accounts"]}
+    assert set(ids) >= {"maya", "arjun", "dana", "admin"}
+    new = {"username": "sam", "name": "Sam Lee", "role": "finance", "password": "long-enough-1"}
+    for r in [arjun.get("/api/accounts"), arjun.post("/api/accounts", json={**new, "role": "admin"}),
+              arjun.patch(f"/api/accounts/{ids['arjun']}", json={"role": "admin"}), arjun.delete(f"/api/accounts/{ids['dana']}")]:
+        assert r.status_code == 403, "only an administrator may manage accounts"
+    me = arjun.patch("/api/me", json={"name": "Arjun Rao", "role": "admin", "active": True}).json()
+    assert me["name"] == "Arjun Rao" and me["role"] == "biostat", "people change their own name, never their own role"
+
+    sam_id = admin.post("/api/accounts", json=new).json()["id"]
+    assert admin.post("/api/accounts", json=new).status_code == 409, "usernames are unique"
+    assert admin.post("/api/accounts", json={**new, "username": "sam2", "password": "short"}).status_code == 400
+    assert admin.post("/api/accounts", json={**new, "username": "sam2", "role": "root"}).status_code == 400
+    sam = signed_in("sam", "long-enough-1")
+    patients = {"sql": "SELECT count(*) FROM gold.dim_subject"}
+    assert sam.post("/api/sql", json=patients).json()["denied"]
+    admin.patch(f"/api/accounts/{sam_id}", json={"role": "clinops"})
+    assert not sam.post("/api/sql", json=patients).json()["denied"], "a new role applies to a session that is already open"
+
+    assert sam.post("/api/me/password", json={"current": "not-it", "new": "another-long-1"}).status_code == 403
+    assert sam.post("/api/me/password", json={"current": "long-enough-1", "new": "another-long-1"}).status_code == 200
+    assert sam.get("/api/me").status_code == 200, "changing your own password keeps you signed in"
+    assert TestClient(server.app).post("/api/login", json={"username": "sam", "password": "long-enough-1"}).status_code == 401
+    admin.patch(f"/api/accounts/{sam_id}", json={"active": False})
+    assert sam.get("/api/me").status_code == 401, "deactivating an account ends its sessions"
+    assert TestClient(server.app).post("/api/login", json={"username": "sam", "password": "another-long-1"}).status_code == 401
+    assert admin.delete(f"/api/accounts/{sam_id}").status_code == 200
+    assert "sam" not in {a["username"] for a in admin.get("/api/accounts").json()["accounts"]}
+
+    for r in [admin.delete(f"/api/accounts/{ids['admin']}"), admin.patch(f"/api/accounts/{ids['admin']}", json={"role": "clinops"}),
+              admin.patch(f"/api/accounts/{ids['admin']}", json={"active": False})]:
+        assert r.status_code == 409, "there must always be an active administrator"
+    assert admin.get("/api/accounts").status_code == 200
+
+    con = sqlite3.connect(config.ACCOUNTS)
+    stored = " ".join(str(v) for table in ("accounts", "sessions") for row in con.execute(f"SELECT * FROM {table}").fetchall() for v in row)
+    con.close()
+    assert accounts.starter_password() not in stored and "another-long-1" not in stored, "passwords are stored only as hashes"
+    assert admin.cookies[server.COOKIE] not in stored, "session tokens are stored only as hashes"
+    assert all("password" not in key for a in admin.get("/api/accounts").json()["accounts"] for key in a)
 
 
 def test_trace_reaches_source_rows_and_respects_policy():
