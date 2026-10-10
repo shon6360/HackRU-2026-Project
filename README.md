@@ -1,2 +1,2 @@
-# RUbusy
+# RUBusy
 HackRU hackathon project
