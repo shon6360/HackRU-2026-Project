@@ -6,7 +6,7 @@ import json
 import shutil
 import subprocess
 
-from harmonizer import config, policy
+from harmonizer import config
 
 
 def _build_if_missing(verbose: bool = True) -> None:
@@ -48,7 +48,7 @@ def main() -> None:
     serve.add_argument("--port", type=int, default=8040)
     ask = sub.add_parser("ask", help="ask a question from the terminal")
     ask.add_argument("question")
-    ask.add_argument("--role", default="clinops", choices=list(policy.ROLES))
+    ask.add_argument("--role", default="clinops", help="the id of the role to ask as (default: clinops)")
     args = parser.parse_args()
 
     if args.command == "build":
@@ -71,8 +71,11 @@ def main() -> None:
         print(f"\nConcord is running at http://{args.host}:{args.port}\n")
         uvicorn.run("backend.server:app", host=args.host, port=args.port, log_level="warning")
     elif args.command == "ask":
+        from . import accounts
         from .ask import ask as run_ask
         _build_if_missing(verbose=False)
+        if args.role not in accounts.roles():
+            parser.error(f"there is no role with the id {args.role!r}. The roles are: {', '.join(accounts.roles())}")
         print(json.dumps(run_ask(args.question, args.role), indent=1, default=str))
 
 

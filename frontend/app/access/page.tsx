@@ -18,7 +18,7 @@ export default function AccessPage() {
     <>
       <PageHead title="Access">
         The policy is {tags.length} tags and {roles.length} roles, and every account holds one role. A table carrying a tag the role lacks does not exist for that role; a column carrying one comes back empty.
-        Each role queries its own read-only database that physically contains only what it may see, so the rule holds for hand-written SQL and model-written SQL alike.
+        A role queries a read-only database that physically contains only what its grants may see, so the rule holds for hand-written SQL and model-written SQL alike.
       </PageHead>
 
       <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 xl:grid-cols-4">

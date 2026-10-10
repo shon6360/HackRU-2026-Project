@@ -17,9 +17,9 @@ import re
 
 from pydantic import BaseModel, Field
 
-from harmonizer import config, policy
+from harmonizer import config
 
-from . import engine
+from . import accounts, engine
 
 MODEL = os.environ.get("CONCORD_MODEL", "gemini-3.8-flash")
 
@@ -219,10 +219,10 @@ def _schema_prompt(role: str) -> str:
             lines.append(f"- {name} {col['type']}: {col['description']}{mark}{samples}")
         visible.append("\n".join(lines))
     examples = "\n\n".join(f"Q: {v['question']}\n{v['sql']}" for v in VETTED)
-    r = policy.ROLES[role]
+    r = accounts.roles()[role]
     return f"""You write SQL for Concord, a clinical trial data platform that joins five source systems (EDC, CTMS, IRT, the safety database and the finance ERP) on shared master keys. A study team member asks a question in plain English; you return one DuckDB query that answers it.
 
-The person asking holds the role "{r['name']}": {r['blurb']} Their grants are: {', '.join(r['grants'])}. The tables below are exactly what this role can query. Access is enforced by the database itself, so a query that touches a withheld table fails and a masked column is always NULL. When a question needs something withheld or masked, do not work around it: set can_answer to false and say in the explanation what is withheld and why. If a site-level aggregate that is available (gold.site_360) answers the question just as well, use that instead.
+The person asking holds the role "{r['name']}": {r['blurb']} Their grants are: {', '.join(r['grants']) or 'none'}. The tables below are exactly what this role can query. Access is enforced by the database itself, so a query that touches a withheld table fails and a masked column is always NULL. When a question needs something withheld or masked, do not work around it: set can_answer to false and say in the explanation what is withheld and why. If a site-level aggregate that is available (gold.site_360) answers the question just as well, use that instead.
 
 Everything is evaluated as of the snapshot date {config.snapshot_date()}, available as (SELECT as_of FROM gold.snapshot). Do not use current_date.
 

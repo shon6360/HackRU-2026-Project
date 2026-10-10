@@ -145,7 +145,7 @@ function SqlTab({ a }: { a: Answer }) {
   return (
     <>
       <p className="text-[12.5px] text-ink-2">
-        This is exactly what ran. Edit it and run it again: your SQL goes through the same policy check and the same sandboxed, role-specific database.
+        This is exactly what ran. Edit it and run it again: your SQL goes through the same policy check and the same sandboxed database, which holds only what your role is granted.
       </p>
       <textarea className="min-h-[150px] resize-y whitespace-pre font-mono text-[12.5px] leading-[1.55]" spellCheck={false} value={sql} onChange={(e) => setSql(e.target.value)} />
       <div className="mt-2 flex flex-wrap items-center gap-2">

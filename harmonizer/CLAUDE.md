@@ -1,7 +1,7 @@
 # Harmonizer
 
-The write side: turns `feeds/` into `build/warehouse.duckdb` and one `build/role_<role>.duckdb`
-per role. Read `../CLAUDE.md` first for commands and the rules that must not be broken.
+The write side: turns `feeds/` into `build/warehouse.duckdb` and one `build/mart_<grants>.duckdb`
+per combination of grants. Read `../CLAUDE.md` first for commands and the rules that must not be broken.
 
 ```bash
 python -m harmonizer build
@@ -12,11 +12,11 @@ python -m harmonizer build
 | Module | Role |
 |---|---|
 | `__main__.py` | CLI: `build` |
-| `config.py` | Loads `.env` on import, then paths (including `ACCOUNTS`, which only the back end uses), `LAYERS`, `LINEAGE_COLUMNS`, `ID_MAPS`, `snapshot_date()`, `platform_now()`, `role_db()` |
+| `config.py` | Loads `.env` on import, then paths (including `ACCOUNTS`, which only the back end uses), `LAYERS`, `LINEAGE_COLUMNS`, `ID_MAPS`, `snapshot_date()`, `platform_now()`, `mart_db()` |
 | `models.py` | Loads `models/**/*.sql`: parses the `-- @` header, reads dependencies out of the SQL with sqlglot, orders topologically |
-| `pipeline.py` | `build()`: bronze load, run models, quality, catalog (`meta.*`), role databases |
+| `pipeline.py` | `build()`: bronze load, run models, quality, catalog (`meta.*`), marts |
 | `quality.py` | `RULES`, `FEED_RULES`, `run()`, `score_answer_key()` |
-| `policy.py` | `TAGS`, `ROLES`, and four small functions. The whole access policy |
+| `policy.py` | `TAGS`, `grant_sets()`, and four small functions over a set of grants. The whole access policy |
 | `models/` | One `.sql` file per table (see `models/CLAUDE.md`) |
 
 `pipeline` uses `config`, `policy`, `quality` and `models`. Nothing here imports the back end,
@@ -27,11 +27,11 @@ and nothing here needs FastAPI or a model key: the harmonizer runs on DuckDB, sq
 
 The back end never calls `build()` logic or reads `feeds/`. It depends on exactly this:
 
-- The files in `build/`: the warehouse (including the `meta` and `dq` schemas) and the role
-  databases. Changing a table or column name in `meta.*` or `dq.*` breaks `backend/engine.py`
+- The files in `build/`: the warehouse (including the `meta` and `dq` schemas) and the
+  marts. Changing a table or column name in `meta.*` or `dq.*` breaks `backend/engine.py`
   and `backend/server.py`.
-- `config` (paths, snapshot date, `ID_MAPS`, `role_db()`), `policy` (tags, roles and the four
-  functions) and `quality.score_answer_key()`, which the back end imports from this package.
+- `config` (paths, snapshot date, `ID_MAPS`, `mart_db()`), `policy` (tags, `grant_sets()` and the
+  four functions) and `quality.score_answer_key()`, which the back end imports from this package.
 
 ## pipeline.py: the build
 
@@ -49,10 +49,12 @@ The back end never calls `build()` logic or reads `feeds/`. It depends on exactl
 4. `quality.run`: fills `dq.rules` and `dq.failures`.
 5. `_write_catalog`: `meta.feeds`, `meta.datasets`, `meta.columns` (null %, distinct count,
    min, max, four most common values per column), `meta.lineage` (src, dst edges).
-6. `_build_role_marts`: for each role, a fresh database with the four layer schemas. Denied
-   tables are skipped; masked columns are written as `CAST(NULL AS <type>)`.
+6. `_build_marts`: for each combination of grants (`policy.grant_sets()`, eight for three tags), a
+   fresh database with the four layer schemas. Denied tables are skipped; masked columns are
+   written as `CAST(NULL AS <type>)`. All of them are built, whether or not a role holds that
+   combination today, because roles are edited while the server runs and never trigger a build.
 
-`meta` and `dq` exist only in the warehouse, never in a role database.
+`meta` and `dq` exist only in the warehouse, never in a mart.
 
 A model's steward and source system come from the feed whose `owner` string equals the model's
 `@owner` exactly. No match means steward "Data Stewardship".
@@ -66,14 +68,14 @@ table  carries a tag the role lacks -> the table does not exist for that role
 column carries a tag the role lacks -> the column is NULL for that role
 ```
 
-Tags: `patient_level`, `unblinded`, `financial`. Roles and grants: `clinops` (patient_level,
-financial), `biostat` (patient_level, unblinded), `finance` (financial) and `admin` (all three).
-There are no other rules, no row filters and no special cases. Keep it that way: the policy is
-meant to be explainable in one sentence.
+Tags: `patient_level`, `unblinded`, `financial`. There are no other rules, no row filters and no
+special cases. Keep it that way: the policy is meant to be explainable in one sentence.
 
-A role is not a person. People are accounts, which the back end keeps (`backend/accounts.py`),
-and each account holds one role. `manages_accounts`, which only `admin` has, is the one entry
-in `ROLES` that is not about data: the back end reads it to decide who may create, change and
-remove accounts. Nothing in the harmonizer uses it.
+The harmonizer knows tags and sets of grants, and nothing about roles or people. The functions
+take the grants (`table_denied(dataset, grants)`, `masked_columns(dataset, grants)`), and
+`reason(tags, role_name)` only needs a name for its sentence. Roles and accounts belong to the
+back end (`backend/accounts.py`), where an administrator edits them; a role is a name for one of
+the sets of grants that already has a mart.
 
-Policy is applied when the role databases are built, so a policy change needs `build`.
+Tags are applied when the marts are built, so a new tag, or a tag added to a table or column,
+needs `build`. A change to a role does not.

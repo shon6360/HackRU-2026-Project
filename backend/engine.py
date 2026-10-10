@@ -21,6 +21,8 @@ from sqlglot import exp
 
 from harmonizer import config, policy
 
+from . import accounts
+
 ROW_LIMIT = 500
 TIMEOUT_SECONDS = 15
 SANDBOX = {"enable_external_access": False, "lock_configuration": True}
@@ -36,13 +38,23 @@ def warehouse():
     return duckdb.connect(str(config.WAREHOUSE), read_only=True)
 
 
-def role_connection(role: str):
-    """Open a read-only, sandboxed connection to one role's database.
+def grants(role: str) -> list[str]:
+    """The grants a role holds right now. Roles are edited while the server runs, so this is asked every time, never kept."""
+    return accounts.roles()[role]["grants"]
 
-    Tables this role may not see are physically absent and masked columns are physically NULL.
+
+def mart_connection(held):
+    """Open a read-only, sandboxed connection to the database built for one set of grants.
+
+    Tables those grants do not cover are physically absent and masked columns are physically NULL.
     External file and network access are switched off.
     """
-    return duckdb.connect(str(config.role_db(role)), read_only=True, config=SANDBOX)
+    return duckdb.connect(str(config.mart_db(held)), read_only=True, config=SANDBOX)
+
+
+def role_connection(role: str):
+    """Open the database that holds exactly what this role's grants may see."""
+    return mart_connection(grants(role))
 
 
 @lru_cache(maxsize=4)
@@ -109,9 +121,15 @@ def access(dataset: dict, role: str) -> dict:
     Returns whether the table is withheld, which tags caused that, and which columns are
     masked (empty when the whole table is denied).
     """
-    denied = policy.table_denied(dataset, role)
+    held = grants(role)
+    denied = policy.table_denied(dataset, held)
     return {"denied": bool(denied), "denied_tags": denied,
-            "masked": {} if denied else policy.masked_columns(dataset, role)}
+            "masked": {} if denied else policy.masked_columns(dataset, held)}
+
+
+def reason(tags: list[str], role: str) -> str:
+    """Why something carrying these tags is withheld from this role, in words for the person asking."""
+    return policy.reason(tags, accounts.roles()[role]["name"])
 
 
 # ----------------------------------------------------------------------------- policy pre-flight
@@ -164,7 +182,7 @@ def preflight(sql: str, role: str) -> dict:
         a = access(cat["datasets"][fqn], role)
         if a["denied"]:
             decisions.append({"action": "deny", "object": fqn, "tags": a["denied_tags"],
-                              "reason": policy.reason(a["denied_tags"], role)})
+                              "reason": reason(a["denied_tags"], role)})
         else:
             masked_by_table[fqn] = a["masked"]
 
@@ -183,7 +201,7 @@ def preflight(sql: str, role: str) -> dict:
     for fqn, name in sorted(hit):
         tags = masked_by_table[fqn][name]
         decisions.append({"action": "mask", "object": f"{fqn}.{name}", "column": name, "tags": tags,
-                          "reason": policy.reason(tags, role)})
+                          "reason": reason(tags, role)})
 
     return {"sql": tree.sql(dialect="duckdb", pretty=True), "tables": tables, "decisions": decisions,
             "denied": any(d["action"] == "deny" for d in decisions)}
@@ -330,9 +348,9 @@ def _source_rows(con, cat: dict, role: str, gold: str, key_col: str, value: str,
     a = access(ds, role)
     block = {"dataset": gold, "description": ds["description"]}
     if a["denied"]:
-        return {**block, "denied": policy.reason(a["denied_tags"], role)}
+        return {**block, "denied": reason(a["denied_tags"], role)}
     if key_col in a["masked"]:
-        return {**block, "denied": f"{key_col} is {policy.reason(a['masked'][key_col], role)}"}
+        return {**block, "denied": f"{key_col} is {reason(a['masked'][key_col], role)}"}
     refs = con.execute(f'SELECT _src_file, _src_row FROM {gold} WHERE "{key_col}" = ? ORDER BY _src_row', [value]).fetchall()
     if not refs:
         return {**block, "total": 0}
@@ -341,7 +359,7 @@ def _source_rows(con, cat: dict, role: str, gold: str, key_col: str, value: str,
     b = access(cat["datasets"][bronze], role)
     block.update(total=len(refs), file=src_file, bronze=bronze, system=src_file.split("/")[1])
     if b["denied"]:
-        return {**block, "denied": policy.reason(b["denied_tags"], role)}
+        return {**block, "denied": reason(b["denied_tags"], role)}
     wanted = [r[1] for r in refs[:limit]]
     cur = con.execute(f"SELECT * EXCLUDE (_src_system, _src_file) FROM {bronze} WHERE _src_row IN ({', '.join('?' * len(wanted))}) ORDER BY _src_row", wanted)
     cols = [c[0] for c in cur.description]
@@ -371,7 +389,7 @@ def trace(role: str, column: str, value: str) -> dict:
         xwalk = XWALK[key_col]
         xa = access(cat["datasets"][xwalk], role)
         if xa["denied"]:
-            crosswalk = {"denied": policy.reason(xa["denied_tags"], role)}
+            crosswalk = {"denied": reason(xa["denied_tags"], role)}
         else:
             cur = con.execute(f"SELECT * FROM {xwalk} WHERE {key_col} = ? ORDER BY system, native_id", [value])
             cols = [c[0] for c in cur.description]

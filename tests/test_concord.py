@@ -55,27 +55,33 @@ def test_headline_question_matches_the_documented_story():
 def test_every_reviewed_question_runs_or_is_refused_for_every_role():
     for v in ask.VETTED:
         outcomes = set()
-        for role in policy.ROLES:
+        for role in accounts.roles():
             r = engine.execute(v["sql"], role)
             assert r["denied"] or not r["error"], (v["id"], role, r["error"])
             outcomes.add("refused" if r["denied"] else "ran")
         assert "ran" in outcomes, v["id"]
 
 
-def test_role_databases_hold_nothing_the_policy_withholds():
+def test_every_grant_database_holds_nothing_the_policy_withholds():
+    # every combination of grants, not only the ones today's roles hold: an administrator can give a role any of them
     cat = engine.catalog()
-    for role in policy.ROLES:
-        con = engine.role_connection(role)
+    assert len(policy.grant_sets()) == 2 ** len(policy.TAGS)
+    for grants in policy.grant_sets():
+        con = engine.mart_connection(grants)
         present = {f"{s}.{t}" for s, t in con.execute(
             "SELECT table_schema, table_name FROM information_schema.tables").fetchall()}
         for fqn, ds in cat["datasets"].items():
-            a = engine.access(ds, role)
-            if a["denied"]:
-                assert fqn not in present, f"{role} database contains withheld table {fqn}"
+            if policy.table_denied(ds, grants):
+                assert fqn not in present, f"the {grants} database contains withheld table {fqn}"
                 continue
-            for col in a["masked"]:
+            assert fqn in present, f"the {grants} database lacks {fqn}, which those grants allow"
+            for col in policy.masked_columns(ds, grants):
                 n = con.execute(f'SELECT count("{col}") FROM {fqn}').fetchone()[0]
-                assert n == 0, f"{role} can read {fqn}.{col}"
+                assert n == 0, f"{grants} can read {fqn}.{col}"
+        con.close()
+    for role, r in accounts.roles().items():
+        con = engine.role_connection(role)
+        assert con.execute("PRAGMA database_list").fetchone()[2].endswith(config.mart_db(r["grants"]).name), f"{role} reads the wrong database"
         con.close()
 
 
@@ -106,7 +112,7 @@ def test_finance_role_sees_no_patient_rows_and_statistician_no_money():
 
 
 def test_pages_that_read_the_full_warehouse_withhold_what_the_role_may_not_see():
-    for role in policy.ROLES:
+    for role in accounts.roles():
         q = server.quality_view(role)
         hidden = {r["rule_id"] for r in q["rules"] if r["hidden"]}
         assert all(not r["failures"] for r in q["rules"] if r["hidden"]), role
@@ -138,7 +144,7 @@ def test_sandbox_rejects_everything_but_select_on_cataloged_tables():
             con.execute(sql)
         except Exception:
             continue
-        raise AssertionError(f"role database allowed: {sql}")
+        raise AssertionError(f"the finance role's database allowed: {sql}")
     con.close()
 
 
@@ -149,7 +155,7 @@ def test_nothing_is_served_without_a_session():
     visitor, checked = TestClient(server.app), 0
     for route in server.api.routes:
         for method in route.methods - {"HEAD", "OPTIONS"}:
-            r = visitor.request(method, route.path.format(fqn="gold.site_360", account_id=1), json={} if method in ("POST", "PATCH") else None)
+            r = visitor.request(method, route.path.format(fqn="gold.site_360", account_id=1, role_id="clinops"), json={} if method in ("POST", "PATCH") else None)
             assert r.status_code == 401, f"{method} {route.path} answered {r.status_code} without a session"
             checked += 1
     assert checked >= 15, "the walk over the routes found too few of them"
@@ -223,6 +229,47 @@ def test_only_an_administrator_manages_accounts_and_changes_take_effect_at_once(
     assert accounts.starter_password() not in stored and "another-long-1" not in stored, "passwords are stored only as hashes"
     assert admin.cookies[server.COOKIE] not in stored, "session tokens are stored only as hashes"
     assert all("password" not in key for a in admin.get("/api/accounts").json()["accounts"] for key in a)
+
+
+def test_an_administrator_creates_and_edits_roles_and_the_grants_apply_at_once():
+    admin, maya = signed_in("admin"), signed_in("maya")
+    reviewer = {"name": "Safety Reviewer", "blurb": "Reads the cases.", "grants": ["patient_level"]}
+    for r in [maya.post("/api/roles", json=reviewer), maya.patch("/api/roles/clinops", json={"grants": ["patient_level", "unblinded", "financial"]}),
+              maya.patch("/api/roles/clinops", json={"manages_accounts": True}), maya.delete("/api/roles/finance")]:
+        assert r.status_code == 403, "only an administrator may create, change or remove roles"
+
+    role = admin.post("/api/roles", json=reviewer).json()
+    assert role["id"] == "safety_reviewer" and role["grants"] == ["patient_level"] and not role["manages_accounts"]
+    assert admin.post("/api/roles", json=reviewer).status_code == 409, "role names are unique"
+    assert admin.post("/api/roles", json={"name": "Root", "grants": ["everything"]}).status_code == 400, "a grant must be a real tag"
+    assert admin.get("/api/meta").json()["roles"]["safety_reviewer"]["name"] == "Safety Reviewer"
+    assert "safety_reviewer" in admin.get("/api/access").json()["datasets"][0]["roles"]
+
+    account = admin.post("/api/accounts", json={"username": "rev", "name": "Rev", "role": "safety_reviewer", "password": "long-enough-1"}).json()
+    rev = signed_in("rev", "long-enough-1")
+    arm = {"sql": "SELECT subject_key, arm FROM gold.dim_subject"}
+    r = rev.post("/api/sql", json=arm).json()
+    assert r["rows"] and all(row[1] is None for row in r["rows"]), "the new role is blinded: it was not granted unblinded"
+    assert rev.post("/api/sql", json={"sql": "SELECT * FROM gold.fact_payment"}).json()["denied"], "nor financial"
+    admin.patch("/api/roles/safety_reviewer", json={"grants": ["patient_level", "unblinded"], "name": "Unblinded Safety Reviewer"})
+    r = rev.post("/api/sql", json=arm).json()
+    assert all(row[1] for row in r["rows"]) and not r["decisions"], "a grant added to a role reaches a session that is already open"
+    admin.patch("/api/roles/safety_reviewer", json={"grants": []})
+    r = rev.post("/api/sql", json=arm).json()
+    assert r["denied"] and "Unblinded Safety Reviewer" in r["decisions"][0]["reason"], "and so does a grant taken away"
+    assert rev.get("/api/dataset/gold.dim_subject").json()["preview"] is None
+
+    assert admin.delete("/api/roles/safety_reviewer").status_code == 409, "a role that an account holds cannot be removed"
+    assert admin.post("/api/accounts", json={"username": "x9", "name": "X", "role": "no_such_role", "password": "long-enough-1"}).status_code == 400
+    assert admin.patch("/api/roles/admin", json={"manages_accounts": False}).status_code == 409, "somebody must stay able to manage accounts"
+    assert admin.get("/api/accounts").status_code == 200
+    assert rev.post("/api/roles", json={"name": "Mine"}).status_code == 403
+    admin.patch("/api/roles/safety_reviewer", json={"manages_accounts": True})
+    assert rev.get("/api/accounts").status_code == 200, "a role can be given the management of accounts, and it applies at once"
+    admin.delete(f"/api/accounts/{account['id']}")
+    assert admin.delete("/api/roles/safety_reviewer").status_code == 200
+    assert "safety_reviewer" not in admin.get("/api/meta").json()["roles"]
+    assert admin.patch("/api/roles/safety_reviewer", json={"name": "Gone"}).status_code == 404
 
 
 def test_trace_reaches_source_rows_and_respects_policy():

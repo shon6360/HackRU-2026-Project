@@ -178,7 +178,7 @@ export function Td({ num, className = "", ...rest }: ComponentProps<"td"> & { nu
   return <td className={`border-b border-line px-2.5 py-2 align-top ${num ? "text-right tabular-nums" : ""} ${className}`} {...rest} />;
 }
 
-/* Everything a role holds: each data tag, granted or not, and whether it may manage accounts. */
+/* Everything a role holds: each data tag, granted or not, and whether it may manage accounts and roles. */
 export function Grants({ role }: { role: Role }) {
   const { meta } = useApp();
   const held = (yes: boolean) => yes ? <span className="font-bold text-good">✓ granted</span> : <span className="font-bold text-bad">× not granted</span>;
@@ -186,7 +186,7 @@ export function Grants({ role }: { role: Role }) {
     <PlainTable>
       <tbody>
         {Object.keys(meta.tags).map((t) => <tr key={t}><Td><TagPill tag={t} /></Td><Td num>{held(role.grants.includes(t))}</Td></tr>)}
-        <tr><Td><Pill>Manage accounts</Pill></Td><Td num>{held(!!role.manages_accounts)}</Td></tr>
+        <tr><Td><Pill>Manage accounts and roles</Pill></Td><Td num>{held(!!role.manages_accounts)}</Td></tr>
       </tbody>
     </PlainTable>
   );

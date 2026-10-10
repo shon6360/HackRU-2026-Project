@@ -14,7 +14,7 @@ Concord ingests the five feeds, works out which ids mean the same site and the s
 study team ask that question in plain English. Every answer shows the SQL that ran, the source rows behind
 each number, how fresh each source is, what data-quality problems touch it, and what the person asking was
 not allowed to see. Each person signs in to their own account, and the role that account holds decides
-what they can see.
+what they can see. An administrator creates the accounts and the roles.
 
 Built for the Regeneron challenge at HackRU Fall 2026, starter sheet 40, *One Source of Truth*.
 
@@ -43,16 +43,16 @@ The first start creates four accounts, all with the password `concord-demo`:
 | `maya` | Clinical Operations Lead | Patients and money, but not who is on which treatment |
 | `arjun` | Unblinded Statistician | Patients and treatment arms, but not money |
 | `dana` | Site Payments Analyst | Money and site-level counts, never individual patients |
-| `admin` | Administrator | Everything, and the **Accounts** page for adding, changing and removing accounts |
+| `admin` | Administrator | Everything, and the **Accounts** and **Roles** pages for adding, changing and removing both |
 
 That password is public, so change it before anyone else can reach the server: each person on their
 **profile** page, or set `CONCORD_STARTER_PASSWORD` in `.env` before the first start. Accounts are kept in
-`state/accounts.db`; delete that file to start again from the four above.
+`state/accounts.db`, with the roles; delete that file to start again from the four above.
 
 ```bash
 python -m backend build          # rebuild everything: the warehouse and the web app
-python -m harmonizer build       # the warehouse half only: catalog, quality results and role databases
-python tests/test_concord.py     # 13 end-to-end checks (also runs under pytest)
+python -m harmonizer build       # the warehouse half only: catalog, quality results and the access databases
+python tests/test_concord.py     # 14 end-to-end checks (also runs under pytest)
 python -m backend ask "Which sites are we late paying?" --role finance
 ```
 
@@ -79,9 +79,10 @@ match) and you can write SQL yourself under any answer.
    adverse events are there in each treatment arm?* The arm is withheld. Open **Compare roles** to see what
    the policy decides for each role: the unblinded statistician gets the full answer, and finance is refused,
    because the question needs patient-level rows. Sign out and in again as `arjun` or `dana` to see it happen.
-4. **Accounts.** Sign in as `admin` and open **Accounts**. Change Dana's role and her next question is
-   answered under the new one, without her signing in again. Every account has a profile page showing what
-   its role is granted.
+4. **Accounts and roles.** Sign in as `admin`. On **Roles**, create a role and tick what it is granted, or
+   change an existing one: everyone holding it gets the new access on their next question, without signing in
+   again and without a rebuild. On **Accounts**, add people and give each a role. Every account has a profile
+   page showing what its role is granted.
 5. **Quality.** The feeds were seeded with 25 documented problems. The rules catch 25 of 25, and 29 more
    findings besides, mostly partial dates in the real CDISC data.
 6. **Catalog and Lineage.** Search for `overdue`, open `gold.site_360`, and follow any number back to the
@@ -97,10 +98,10 @@ match) and you can write SQL yourself under any answer.
 
                        quality rules ----------------------------------------------->  findings with file + row
                        catalog: descriptions, owners, tags, profile, freshness, lineage (read out of the SQL)
-                       policy: tags -> one read-only database per role
+                       policy: tags -> one read-only database per combination of grants
 ```
 
-The code is in three parts. The **harmonizer** turns the feeds into the warehouse and the per-role
+The code is in three parts. The **harmonizer** turns the feeds into the warehouse and the access
 databases. The **back end** answers questions from what the harmonizer built and serves the API. The
 **front end** is the web app, which talks to the back end over that API and to nothing else.
 
@@ -110,8 +111,8 @@ databases. The **back end** answers questions from what the harmonizer built and
 | Models | `harmonizer/models/**/*.sql` | One SQL file per table. Its documentation lives in the header; its dependencies and lineage are read out of the SQL |
 | Crosswalk | `harmonizer/models/master/` | Maps every system's site and subject ids to master keys, recording method, confidence and evidence |
 | Quality | `harmonizer/quality.py` | 27 rules. Each is a query returning the records that fail, with the source file and row |
-| Policy | `harmonizer/policy.py` | Three tags, four roles. Enforced by building a separate database per role |
-| Accounts | `backend/accounts.py` | Sign-in, sessions, and which role each account holds. Says who is asking; the policy decides what they see |
+| Policy | `harmonizer/policy.py` | Three tags. Enforced by building a separate database for every combination of them |
+| Accounts | `backend/accounts.py` | Sign-in, sessions, the roles and which one each account holds. Says who is asking and what they are granted; the policy decides what that lets them see |
 | Engine | `backend/engine.py` | Parses a query, checks it against the policy, runs it sandboxed, and attaches lineage, freshness and quality warnings |
 | Ask | `backend/ask.py` | Reviewed questions, plus Gemini writing SQL from the role's own view of the catalog |
 | App | `backend/server.py`, `frontend/` | FastAPI, and a Next.js and Tailwind CSS front end built to static files that FastAPI serves |
@@ -131,13 +132,17 @@ corroborated by site, sex and age.
 A table or column carries tags: `patient_level`, `unblinded`, `financial`. A role holds grants. If a table
 carries a tag the role lacks, the table does not exist for that role. If a column does, it comes back empty.
 
-This is enforced twice. At build time each role gets its own read-only DuckDB file that physically contains
-only what the role may see, opened with file and network access switched off. At query time the SQL is
+This is enforced twice. At build time every combination of grants (eight, for three tags) gets its own
+read-only DuckDB file that physically contains only what those grants may see, and a role reads the one
+that matches its grants, opened with file and network access switched off. At query time the SQL is
 parsed and checked against the same tags, so the person is told exactly what was withheld and why. The
 language model is given only the role's schema, and its SQL goes through the same two steps as anyone
 else's. It is a convenience, never the access control.
 
-| Role | Patient-level | Unblinded | Financial | Manage accounts |
+Roles are not fixed. An administrator creates and edits them, and because a database already exists for
+whatever grants a role is given, the change applies at once. A new install starts with these four:
+
+| Role | Patient-level | Unblinded | Financial | Manage accounts and roles |
 |---|---|---|---|---|
 | Clinical Operations Lead | yes | no | yes | no |
 | Unblinded Statistician | yes | yes | no | no |

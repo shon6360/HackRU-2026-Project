@@ -28,7 +28,7 @@ def _account(request: Request) -> dict:
     account = accounts.account_for(request.cookies.get(COOKIE))
     if account is None:
         raise HTTPException(401, "Sign in to use Concord.")
-    if account["role"] not in policy.ROLES:
+    if account["role"] not in accounts.roles():
         raise HTTPException(403, f"Your account holds a role that no longer exists ({account['role']}). Ask an administrator to change it.")
     return account
 
@@ -39,8 +39,8 @@ def _role(account: dict = Depends(_account)) -> str:
 
 
 def _admin(account: dict = Depends(_account)) -> dict:
-    if not policy.ROLES[account["role"]].get("manages_accounts"):
-        raise HTTPException(403, "Only an administrator can manage accounts.")
+    if not accounts.roles()[account["role"]]["manages_accounts"]:
+        raise HTTPException(403, "Only an administrator can manage accounts and roles.")
     return account
 
 
@@ -80,6 +80,20 @@ class AccountChanges(BaseModel):
     role: str | None = None
     active: bool | None = None
     password: str | None = None
+
+
+class NewRole(BaseModel):
+    name: str
+    blurb: str = ""
+    grants: list[str] = []
+    manages_accounts: bool = False
+
+
+class RoleChanges(BaseModel):
+    name: str | None = None
+    blurb: str | None = None
+    grants: list[str] | None = None
+    manages_accounts: bool | None = None
 
 
 class AskBody(BaseModel):
@@ -145,6 +159,24 @@ def account_delete(account_id: int, _: dict = Depends(_admin)):
     return {"ok": True}
 
 
+# ----------------------------------------------------------------------------- roles (administrators only)
+# Everyone reads the roles from /api/meta. Changing them is changing who can see what, so it is the administrator's.
+@api.post("/api/roles")
+def role_create(body: NewRole, _: dict = Depends(_admin)):
+    return accounts.create_role(body.name, body.blurb, body.grants, body.manages_accounts)
+
+
+@api.patch("/api/roles/{role_id}")
+def role_update(role_id: str, body: RoleChanges, _: dict = Depends(_admin)):
+    return accounts.update_role(role_id, **body.model_dump(exclude_none=True))
+
+
+@api.delete("/api/roles/{role_id}")
+def role_delete(role_id: str, _: dict = Depends(_admin)):
+    accounts.delete_role(role_id)
+    return {"ok": True}
+
+
 # ----------------------------------------------------------------------------- meta
 @api.get("/api/meta")
 def meta():
@@ -154,7 +186,7 @@ def meta():
         layers[ds["layer"]] = layers.get(ds["layer"], 0) + 1
     return {
         "as_of": str(config.snapshot_date()),
-        "roles": policy.ROLES,
+        "roles": accounts.roles(),
         "tags": policy.TAGS,
         "feeds": list(cat["feeds"].values()),
         "layers": layers,
@@ -179,7 +211,7 @@ def sql(body: SqlBody, role: str = Depends(_role)):
 def compare(body: SqlBody):
     """What the policy decides about one query for each role. Nothing is run, so no role's rows reach another."""
     roles = []
-    for role in policy.ROLES:
+    for role in accounts.roles():
         try:
             pre = engine.preflight(body.sql, role)
         except engine.QueryRejected as e:
@@ -259,7 +291,7 @@ def dataset(fqn: str, role: str = Depends(_role)):
     return {
         **_summary(ds, role, cat), "sql": ds["sql"], "source_file": ds["source_file"], "columns": columns, "preview": preview,
         "access": {"denied": a["denied"], "denied_tags": a["denied_tags"], "masked": a["masked"],
-                   "reason": policy.reason(a["denied_tags"], role) if a["denied"] else None},
+                   "reason": engine.reason(a["denied_tags"], role) if a["denied"] else None},
         "fair_checks": _fair(ds, cat), "upstream": sorted(cat["upstream"].get(fqn, [])), "downstream": downstream,
         "graph": engine.upstream_graph([fqn]), "rules": rules,
         "feeds": [cat["feeds"][s] for s in ds["upstream_systems"]],
@@ -299,7 +331,7 @@ def crosswalk(role: str = Depends(_role)):
     return {
         "sites": list(sites.values()), "unresolved": unresolved,
         "counts": {s: sum(1 for r in rows if r["status"] == s) for s in ("auto", "review", "unresolved")},
-        "subjects": {"denied": policy.reason(subject_access["denied_tags"], role) if subject_access["denied"] else None,
+        "subjects": {"denied": engine.reason(subject_access["denied_tags"], role) if subject_access["denied"] else None,
                      "groups": [{"system": s, "status": st, "method": m, "n": n,
                                  "example": None if subject_access["denied"] else ex} for s, st, m, n, ex in subj]},
         "feeds": [{"system": f["system"], "system_name": f["system_name"], "id_conventions": f["id_conventions"]}
@@ -329,7 +361,7 @@ def quality_view(role: str = Depends(_role)):
             f["planted"] = (r["rule_id"], f["record_key"]) in planted_keys
         if a["denied"]:
             hidden_rules.add(r["rule_id"])
-        rules.append({**r, "hidden": policy.reason(a["denied_tags"], role) if a["denied"] else None,
+        rules.append({**r, "hidden": engine.reason(a["denied_tags"], role) if a["denied"] else None,
                       "failures": [] if a["denied"] else found})
     order = {"critical": 0, "high": 1, "medium": 2, "low": 3, "info": 4}
     rules.sort(key=lambda r: (r["n_failed"] == 0, order[r["severity"]], -r["n_failed"]))
@@ -360,13 +392,13 @@ def access_matrix():
     out = []
     for fqn, ds in cat["datasets"].items():
         per_role = {}
-        for role in policy.ROLES:
+        for role in accounts.roles():
             a = engine.access(ds, role)
             per_role[role] = {"denied": a["denied"], "masked": sorted(a["masked"])}
         tagged_cols = {n: c["tags"] for n, c in ds["columns"].items() if c["tags"]}
         if ds["tags"] or tagged_cols:
             out.append({"fqn": fqn, "layer": ds["layer"], "tags": ds["tags"], "column_tags": tagged_cols, "roles": per_role})
-    return {"roles": policy.ROLES, "tags": policy.TAGS, "datasets": out}
+    return {"roles": accounts.roles(), "tags": policy.TAGS, "datasets": out}
 
 
 app.include_router(api)

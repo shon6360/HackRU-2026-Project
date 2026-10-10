@@ -1,4 +1,4 @@
-"""Build everything from the feeds: bronze -> silver -> master -> gold, quality, catalog, role marts.
+"""Build everything from the feeds: bronze -> silver -> master -> gold, quality, catalog, marts.
 
     python -m harmonizer build
 
@@ -157,12 +157,16 @@ def _write_catalog(con, datasets: dict[str, dict], feeds: list[dict]) -> None:
             con.execute("INSERT INTO meta.lineage VALUES (?, ?)", [dep, fqn])
 
 
-# ----------------------------------------------------------------------------- role marts
-def _build_role_marts(datasets: dict[str, dict], types: dict[str, list[tuple[str, str]]]) -> dict[str, dict]:
-    """One read-only database per role, holding only what that role may see (see policy.py)."""
+# ----------------------------------------------------------------------------- marts
+def _build_marts(datasets: dict[str, dict], types: dict[str, list[tuple[str, str]]]) -> dict[str, dict]:
+    """One read-only database per combination of grants, holding only what those grants may see (see policy.py).
+
+    Every combination is built, not only the ones today's roles hold, so a role that is created
+    or edited later already has its database.
+    """
     summary = {}
-    for role in policy.ROLES:
-        path = config.role_db(role)
+    for grants in policy.grant_sets():
+        path = config.mart_db(grants)
         path.unlink(missing_ok=True)
         out = duckdb.connect(str(path))
         out.execute(f"ATTACH '{config.WAREHOUSE}' AS wh (READ_ONLY)")
@@ -170,16 +174,16 @@ def _build_role_marts(datasets: dict[str, dict], types: dict[str, list[tuple[str
         for schema in config.LAYERS:
             out.execute(f"CREATE SCHEMA IF NOT EXISTS {schema}")
         for fqn, ds in datasets.items():
-            if policy.table_denied(ds, role):
+            if policy.table_denied(ds, grants):
                 denied += 1
                 continue
-            hidden = policy.masked_columns(ds, role)
+            hidden = policy.masked_columns(ds, grants)
             masked += len(hidden)
             select = ", ".join(f'CAST(NULL AS {dtype}) AS "{col}"' if col in hidden else f'"{col}"' for col, dtype in types[fqn])
             out.execute(f"CREATE TABLE {fqn} AS SELECT {select} FROM wh.{fqn}")
         out.execute("DETACH wh")
         out.close()
-        summary[role] = {"tables_denied": denied, "columns_masked": masked}
+        summary[" + ".join(grants) or "no grants"] = {"tables_denied": denied, "columns_masked": masked}
     return summary
 
 
@@ -214,10 +218,10 @@ def build(verbose: bool = True) -> dict:
     xwalk = dict(con.execute("SELECT status, count(*) FROM master.site_xwalk GROUP BY 1").fetchall())
     con.close()
 
-    roles = _build_role_marts(datasets, types)
+    marts = _build_marts(datasets, types)
     summary = {"seconds": round(time.time() - started, 1), "as_of": str(config.snapshot_date()), "feeds": len(feeds),
                "datasets": counts, "site_crosswalk": xwalk, "quality": dq,
-               "answer_key": {k: score[k] for k in ("n_planted", "n_caught", "n_additional")}, "roles": roles}
+               "answer_key": {k: score[k] for k in ("n_planted", "n_caught", "n_additional")}, "marts": marts}
     if verbose:
         print(f"Concord build finished in {summary['seconds']}s (snapshot date {summary['as_of']})")
         print(f"  feeds      {len(feeds)} systems: " + ", ".join(
@@ -227,6 +231,7 @@ def build(verbose: bool = True) -> dict:
         print(f"  quality    {dq['rules']} rules, {dq['rules_failing']} failing, {dq['findings']} findings")
         print(f"  answer key {score['n_caught']}/{score['n_planted']} planted problems caught, "
               f"{score['n_additional']} more found that were not planted")
-        for role, r in roles.items():
-            print(f"  role mart  {role:8s} {r['tables_denied']} tables withheld, {r['columns_masked']} columns masked")
+        width = max(len(held) for held in marts)
+        for held, m in marts.items():
+            print(f"  mart       {held:{width}s}  {m['tables_denied']} tables withheld, {m['columns_masked']} columns masked")
     return summary

@@ -19,8 +19,9 @@ export type App = {
   role: string;      // the account's role. For display: the server takes the role from the session, not from here
   person: string;    // the account's name
   roleName: string;
-  canManageAccounts: boolean;
+  canManageAccounts: boolean;  // accounts and roles
   setUser: (user: Account) => void;
+  refresh: () => Promise<void>;  // load the account and the metadata again, after a role was changed
   signOut: () => void;
 
   answer: Answer | null;
@@ -99,6 +100,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener(SIGNED_OUT, forget);
   }, [load, forget]);
 
+  /* An administrator changes roles and accounts while other people are signed in. Coming back to the tab
+     picks up the new names and grants. Only the display waits for this: the server reads the role afresh
+     on every request. */
+  useEffect(() => {
+    if (!user) return;
+    const onShow = () => { if (document.visibilityState === "visible") void load(); };
+    document.addEventListener("visibilitychange", onShow);
+    return () => document.removeEventListener("visibilitychange", onShow);
+  }, [user, load]);
+
   const signIn = useCallback(async (username: string, password: string) => {
     await api<Account>("/api/login", { username, password });
     await load();
@@ -139,10 +150,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const app = useMemo<App | null>(() => meta && user && {
     meta, user, role: user.role, person: user.name, roleName: meta.roles[user.role].name,
-    canManageAccounts: !!meta.roles[user.role].manages_accounts, setUser, signOut,
+    canManageAccounts: !!meta.roles[user.role].manages_accounts, setUser, refresh: load, signOut,
     answer, pending, tab, setTab, ask: (q, link) => { void ask(q, link); }, askFromLink, runSql: (sql, previous) => { void runSql(sql, previous); },
     catalogFilter, setCatalogFilter, trace, openTrace, closeTrace,
-  }, [meta, user, signOut, answer, pending, tab, ask, askFromLink, runSql, catalogFilter, trace, openTrace, closeTrace]);
+  }, [meta, user, load, signOut, answer, pending, tab, ask, askFromLink, runSql, catalogFilter, trace, openTrace, closeTrace]);
 
   return <Ctx.Provider value={useMemo(() => ({ app, error, signedOut, signIn }), [app, error, signedOut, signIn])}>{children}</Ctx.Provider>;
 }

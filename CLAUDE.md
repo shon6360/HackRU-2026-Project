@@ -4,14 +4,14 @@ One question across every clinical trial system. Concord ingests exports from fi
 systems (EDC, CTMS, IRT, safety, finance), works out which ids mean the same site and subject,
 and answers cross-system questions with the SQL, lineage, source rows, freshness and
 data-quality warnings attached, under role-based access control. People sign in to an account,
-and the account's role decides what they can see.
+the account's role decides what they can see, and an administrator creates and edits both.
 
 Python 3.10+, DuckDB, sqlglot and FastAPI, with a Next.js and Tailwind CSS front end that is built
 once to static files (Node.js 20.9+). No database server, no Docker, no API key required.
 
 The code is in three parts, each a folder at the repository root:
 
-- **`harmonizer/`** turns the feeds into the warehouse and the per-role databases (the write side).
+- **`harmonizer/`** turns the feeds into the warehouse and one database per combination of grants (the write side).
 - **`backend/`** answers questions from what the harmonizer built and serves the JSON API (the read side).
 - **`frontend/`** is the web app. It talks to the back end over `/api/...` and to nothing else.
 
@@ -29,7 +29,7 @@ python -m backend build                    # everything: build/*.duckdb from fee
 python -m harmonizer build                 # the warehouse half only (about 1-2 s)
 python -m backend serve [--host H --port P] # default 127.0.0.1:8040
 python -m backend ask "Which sites are we late paying?" --role finance   # prints the result JSON
-python tests/test_concord.py               # all 13 tests, no test runner needed
+python tests/test_concord.py               # all 14 tests, no test runner needed
 ```
 
 - A virtual environment does not survive its folder being moved or renamed: `activate` keeps
@@ -47,13 +47,18 @@ python tests/test_concord.py               # all 13 tests, no test runner needed
   warehouse file's mtime). Changes to Python code need a restart; there is no `--reload`.
 - `pytest` is not in `requirements.txt`. The tests are written to run under it, so install it
   if you want to run a single test: `python -m pytest tests/test_concord.py -k headline -q`.
-- Roles are `clinops`, `biostat`, `finance` and `admin` (every grant, and manages accounts).
-- The web app needs a sign-in. The first start creates four starter accounts, `maya` (clinops),
-  `arjun` (biostat), `dana` (finance) and `admin`, all with the password `concord-demo`, or
-  whatever `CONCORD_STARTER_PASSWORD` held at that moment. Accounts are kept in
-  `state/accounts.db` (SQLite, gitignored). Deleting that file brings the starter accounts back,
-  which is also the way out of a forgotten administrator password. `python -m backend ask --role`
-  needs no account: it is a local tool for whoever already has the files.
+- Roles are data, not code. The first start creates `clinops`, `biostat`, `finance` and `admin`
+  (every grant, and manages accounts and roles); after that an administrator adds and edits them
+  on the Roles page, so never assume those four are the whole list or still hold their starter
+  grants. Ask `accounts.roles()`.
+- The web app needs a sign-in. The first start also creates four starter accounts, `maya`
+  (clinops), `arjun` (biostat), `dana` (finance) and `admin`, all with the password
+  `concord-demo`, or whatever `CONCORD_STARTER_PASSWORD` held at that moment. Roles and accounts
+  are kept in `state/accounts.db` (SQLite, gitignored). Deleting that file brings the starter
+  roles and accounts back, which is also the way out of a forgotten administrator password.
+  `python -m backend ask --role <id>` needs no account: it is a local tool for whoever already
+  has the files. It does create `state/accounts.db` if it is missing, because that is where the
+  roles are.
 - Free-form questions need `GEMINI_API_KEY` (or `GOOGLE_API_KEY`). They are written into SQL by
   Gemini through the `google-genai` SDK; `CONCORD_MODEL` overrides the model id (default
   `gemini-3.8-flash`).
@@ -77,7 +82,7 @@ scripts/            fetch_public_data.py, simulate_feeds.py: regenerate the two 
 tests/              test_concord.py: end-to-end checks (see tests/CLAUDE.md)
 docs/               DATA.md, DEMO.md, DECK.md, screenshots/ (see docs/CLAUDE.md)
 build/              generated DuckDB files. Gitignored. Never edit, never commit
-state/              accounts.db: accounts and sessions. Gitignored. Created on first start, survives a build
+state/              accounts.db: roles, accounts and sessions. Gitignored. Created on first start, survives a build
 README.md           the project README, then the HackRU challenge brief from the line `# ONE SOURCE OF TRUTH` on
 requirements.txt    the seven Python runtime dependencies. pytest and pandas are not in it. The front end's are in frontend/package.json
 .env.example        template for .env (the Gemini key, the model id, the starter password). .env itself is gitignored
@@ -98,9 +103,9 @@ feeds/ --harmonizer: pipeline.build()--> build/warehouse.duckdb
     gold     conformed facts and dimensions on master keys; gold.site_360 is the headline table
     meta     the catalog: feeds, datasets, columns (with profiles), lineage
     dq       rules and failures
-build/warehouse.duckdb --policy--> build/role_<role>.duckdb   (one read-only database per role)
+build/warehouse.duckdb --policy--> build/mart_<grants>.duckdb   (one read-only database per combination of grants: 8)
 build/ --backend: engine, ask, server--> /api/... --> frontend
-state/accounts.db --backend: accounts--> which role a request runs as
+state/accounts.db --backend: accounts--> which role a request runs as, and which grants that role holds
 ```
 
 Current build: 12 bronze, 12 silver, 4 master, 13 gold tables; 27 quality rules, 54 findings;
@@ -116,9 +121,12 @@ or `config.platform_now()` (08:00 on the snapshot day, the reference for feed fr
 The one exception is `backend/accounts.py`: a sign-in happens today and a session has to end in
 real hours, so it reads `time.time()`. Nothing about the study may depend on those times.
 
-**The role database is the access control, not the app.** A role's tables are physically
-absent and its masked columns physically NULL in `build/role_<role>.duckdb`. User SQL and
-model-written SQL must only ever run through `engine.execute()`, which uses that database.
+**The database is the access control, not the app.** The build makes one database (a mart) for
+every combination of grants, `build/mart_<grants>.duckdb`, in which the tables those grants do
+not cover are physically absent and the masked columns physically NULL. A role reads the mart
+for the grants it holds at that moment. User SQL and model-written SQL must only ever run
+through `engine.execute()`, which uses that database. Editing a role only changes which mart its
+holders read, so it needs no build; it never changes what a mart contains.
 `engine.warehouse()` opens the full, unfiltered warehouse: anything read through it and returned
 to a client must apply `engine.access()` / `policy` by hand, as `/api/crosswalk` and
 `/api/quality` do. The language model is a convenience and is never trusted with enforcement.
@@ -130,7 +138,7 @@ no session. The front end shows or hides things for convenience and decides noth
 
 **Sensitivity tags do not propagate.** A tag on a bronze file or a silver model is not
 inherited downstream. Every model that exposes a sensitive column must re-declare the tag in
-its own header, or the value leaks into that role's database. See `harmonizer/models/CLAUDE.md`.
+its own header, or the value leaks into the marts of roles that lack the grant. See `harmonizer/models/CLAUDE.md`.
 
 **Row-level provenance is carried everywhere.** Every bronze and silver table, the two golden
 records (`master.site`, `master.subject`), and every gold table that is one row per source
@@ -158,8 +166,9 @@ simulated says so. No real patient, site or payment is described; site names are
 | Add or change a table | a `.sql` file under `harmonizer/models/<layer>/` | `build`, run the tests |
 | Add a quality rule | `RULES` in `harmonizer/quality.py` | `build`; if it is meant to catch a planted problem, plant it in `simulate_feeds.py` |
 | Add a reviewed question | `VETTED` (and optionally `ALSO`) in `backend/ask.py` | run the tests: it must run or be refused cleanly for every role |
-| Add a tag or a role | `TAGS` / `ROLES` in `harmonizer/policy.py`, plus tags in manifests and model headers | `build`; add the tag's colours to `TAG_TONE` in `frontend/components/ui.tsx`. A new role can be given to an account on the Accounts page straight away |
-| Change what an account holds or how sign-in works | `backend/accounts.py` | run the tests. A new column needs a migration in `init()`, or `state/accounts.db` deleted |
+| Add a tag | `TAGS` in `harmonizer/policy.py`, plus the tag in manifests and model headers | `build` (the number of marts doubles with each tag); add the tag's colours to `TAG_TONE` in `frontend/components/ui.tsx`. No role holds a new tag until an administrator grants it |
+| Add or change a role | the Roles page, signed in as an administrator. No code and no build | `STARTER_ROLES` in `backend/accounts.py` only decides what a new, empty install starts with |
+| Change what an account or a role holds, or how sign-in works | `backend/accounts.py` | run the tests. A new column needs a migration in `init()`, or `state/accounts.db` deleted |
 | Make a result column clickable for tracing | `TRACEABLE` in `backend/engine.py` | |
 | Add or change an API route | `backend/server.py` (on `api`, not `app`), then its type in `frontend/lib/types.ts` and the page under `frontend/app/` that calls it | restart the server, rebuild the front end; update the route table in `backend/CLAUDE.md` |
 | Change the simulation | `scripts/simulate_feeds.py` | regenerate, `build`, tests, then update the figures quoted in `README.md` and `docs/` |

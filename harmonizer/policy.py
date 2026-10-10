@@ -6,16 +6,19 @@ model header). A role holds a set of grants. The whole policy is:
     table  carries a tag the role lacks  ->  the table does not exist for that role
     column carries a tag the role lacks  ->  the column is NULL for that role
 
-It is enforced twice. At build time each role gets its own read-only database that physically
-contains only what the role may see, so a query cannot leak what is not there, whoever (or
-whatever model) wrote the SQL. At query time the SQL is parsed and checked against the same
-tags, so the user is told exactly what was withheld and why.
+It is enforced twice. At build time every combination of grants gets its own read-only database
+(a mart) that physically contains only what those grants may see, so a query cannot leak what is
+not there, whoever (or whatever model) wrote the SQL. At query time the SQL is parsed and checked
+against the same tags, so the user is told exactly what was withheld and why.
 
-A person signs in to an account, and an account holds exactly one role (`backend/accounts.py`).
-`manages_accounts` is the one thing a role can hold that is not about data: it lets the
-administrator create, change and remove accounts.
+The tags are fixed here, because they are written into the feed manifests and the model headers.
+The roles are not: an administrator creates and edits them, and they are kept with the accounts
+(`backend/accounts.py`). That is why the marts are built per combination of grants and not per
+role. Whatever grants a role is given, its mart already exists.
 """
 from __future__ import annotations
+
+from itertools import combinations
 
 TAGS = {
     "patient_level": {
@@ -32,51 +35,31 @@ TAGS = {
     },
 }
 
-ROLES = {
-    "clinops": {
-        "name": "Clinical Operations Lead",
-        "blurb": "Runs the study day to day. Blinded: must not learn who is on which treatment.",
-        "grants": ["patient_level", "financial"],
-    },
-    "biostat": {
-        "name": "Unblinded Statistician",
-        "blurb": "Prepares the safety review for the independent monitoring committee. Sees treatment arms, not site contracts.",
-        "grants": ["patient_level", "unblinded"],
-    },
-    "finance": {
-        "name": "Site Payments Analyst",
-        "blurb": "Pays the sites. Sees money and site-level counts, never individual participants.",
-        "grants": ["financial"],
-    },
-    "admin": {
-        "name": "Administrator",
-        "blurb": "Looks after Concord itself. Holds every grant, and creates, changes and removes accounts.",
-        "grants": ["patient_level", "unblinded", "financial"],
-        "manages_accounts": True,
-    },
-}
+
+def grant_sets() -> list[tuple[str, ...]]:
+    """Every combination of grants a role could hold, from none of the tags to all of them."""
+    return [held for n in range(len(TAGS) + 1) for held in combinations(TAGS, n)]
 
 
-def missing_tags(tags: list[str], role: str) -> list[str]:
-    grants = set(ROLES[role]["grants"])
+def missing_tags(tags: list[str], grants) -> list[str]:
     return [t for t in tags if t not in grants]
 
 
-def table_denied(dataset: dict, role: str) -> list[str]:
-    """Tags that keep this role out of the table entirely (empty list = allowed)."""
-    return missing_tags(dataset["tags"], role)
+def table_denied(dataset: dict, grants) -> list[str]:
+    """Tags that keep these grants out of the table entirely (empty list = allowed)."""
+    return missing_tags(dataset["tags"], grants)
 
 
-def masked_columns(dataset: dict, role: str) -> dict[str, list[str]]:
-    """Columns of an allowed table that are nulled for this role, with the tags responsible."""
+def masked_columns(dataset: dict, grants) -> dict[str, list[str]]:
+    """Columns of an allowed table that are nulled for these grants, with the tags responsible."""
     out = {}
     for name, col in dataset["columns"].items():
-        lacking = missing_tags(col["tags"], role)
+        lacking = missing_tags(col["tags"], grants)
         if lacking:
             out[name] = lacking
     return out
 
 
-def reason(tags: list[str], role: str) -> str:
+def reason(tags: list[str], role_name: str) -> str:
     labels = " and ".join(TAGS[t]["label"].lower() for t in tags)
-    return f"tagged {labels}; the {ROLES[role]['name']} role does not hold that grant"
+    return f"tagged {labels}; the {role_name} role does not hold that grant"

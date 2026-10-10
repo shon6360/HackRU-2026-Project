@@ -31,8 +31,9 @@ LINEAGE_COLUMNS = {
 ID_MAPS = {"master.site_xwalk", "master.subject_xwalk"}
 
 
-def role_db(role: str) -> Path:
-    return BUILD / f"role_{role}.duckdb"
+def mart_db(grants) -> Path:
+    """The read-only database holding exactly what this set of grants may see. One is built for every combination."""
+    return BUILD / f"mart_{'+'.join(sorted(grants)) or 'no_grants'}.duckdb"
 
 
 def snapshot_date() -> date:

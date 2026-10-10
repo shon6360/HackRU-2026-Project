@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { useApp } from "@/components/app-context";
 import { Btn, Card, Field, LoadError, Lock, Notice, PageHead, Pill, PlainTable, Spinner, TagPill, Td, Th } from "@/components/ui";
@@ -37,7 +38,7 @@ function Manage() {
   return (
     <>
       <PageHead title="Accounts">
-        Everyone who can sign in to Concord. An account holds one role, and the role decides what data it can see.
+        Everyone who can sign in to Concord. An account holds one role, and the role decides what data it can see. What each role is granted is set on the <Link href="/roles">Roles page</Link>.
         A change of role takes effect on the person&apos;s next request; a new password or a deactivation signs them out.
       </PageHead>
 
@@ -59,7 +60,7 @@ function Manage() {
                     <Td className="whitespace-nowrap">{role?.name ?? a.role}</Td>
                     <Td>
                       {(role?.grants ?? []).map((t) => <span key={t}><TagPill tag={t} />{" "}</span>)}
-                      {role?.manages_accounts && <Pill>Manage accounts</Pill>}
+                      {role?.manages_accounts && <Pill>Manage accounts and roles</Pill>}
                     </Td>
                     <Td>{a.active ? <Pill tone="good">Active</Pill> : <Pill>Deactivated</Pill>}</Td>
                     <Td className="whitespace-nowrap text-[12.5px]">{fmtWhen(a.last_login_at)}</Td>

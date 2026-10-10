@@ -1,10 +1,12 @@
-"""Accounts and sign-in: who is asking, and which role their account holds.
+"""Accounts, roles and sign-in: who is asking, which role their account holds, and what that role is granted.
 
-An account holds exactly one role, and the role alone decides what data it reads
-(`harmonizer/policy.py`). Nothing here grants or withholds data. This module only answers
-"whose request is this, and what is their role?"; the role's own database does the rest.
+An account holds exactly one role. A role is a name for a set of grants, plus whether it may
+manage accounts and roles. Both are data here, so an administrator can create and edit them.
+What a grant lets someone read is not decided here: that is the policy
+(`harmonizer/policy.py`), and it is enforced by the database built for that set of grants. This
+module only answers "whose request is this, and which grants does their role hold?".
 
-Accounts are kept in SQLite (`state/accounts.db`), not in the warehouse. `build/` is deleted and
+Accounts and roles are kept in SQLite (`state/accounts.db`), not in the warehouse. `build/` is deleted and
 recreated by every build, and sign-ins are small writes that can come from the server and a test
 run at once, which DuckDB's one-writer file lock does not allow. SQLite is in the standard
 library, so it adds no dependency.
@@ -20,6 +22,7 @@ from __future__ import annotations
 
 import hashlib
 import hmac
+import json
 import os
 import re
 import secrets
@@ -37,8 +40,32 @@ MIN_PASSWORD, MAX_PASSWORD = 8, 200
 MAX_FAILURES, LOCKOUT_SECONDS = 5, 300
 USERNAME = re.compile(r"[a-z0-9][a-z0-9._-]{1,31}")
 
-# What an empty database starts with, so a clean clone can be signed in to. The password is public
-# (it is in the README): set CONCORD_STARTER_PASSWORD before the first start, or change it afterwards.
+# What an empty database starts with, so a clean clone can be signed in to. After that the database
+# is what counts: editing these changes nothing for an install that already has roles or accounts.
+STARTER_ROLES = {
+    "clinops": {
+        "name": "Clinical Operations Lead",
+        "blurb": "Runs the study day to day. Blinded: must not learn who is on which treatment.",
+        "grants": ["patient_level", "financial"],
+    },
+    "biostat": {
+        "name": "Unblinded Statistician",
+        "blurb": "Prepares the safety review for the independent monitoring committee. Sees treatment arms, not site contracts.",
+        "grants": ["patient_level", "unblinded"],
+    },
+    "finance": {
+        "name": "Site Payments Analyst",
+        "blurb": "Pays the sites. Sees money and site-level counts, never individual participants.",
+        "grants": ["financial"],
+    },
+    "admin": {
+        "name": "Administrator",
+        "blurb": "Looks after Concord itself. Holds every grant, and creates, changes and removes accounts and roles.",
+        "grants": ["patient_level", "unblinded", "financial"],
+        "manages_accounts": True,
+    },
+}
+# The password is public (it is in the README): set CONCORD_STARTER_PASSWORD before the first start, or change it afterwards.
 STARTERS = [("maya", "Maya", "clinops"), ("arjun", "Arjun", "biostat"), ("dana", "Dana", "finance"), ("admin", "Admin", "admin")]
 STARTER_PASSWORD = "concord-demo"
 
@@ -56,6 +83,13 @@ CREATE TABLE IF NOT EXISTS accounts (
     active        INTEGER NOT NULL DEFAULT 1,
     created_at    REAL NOT NULL,
     last_login_at REAL
+);
+CREATE TABLE IF NOT EXISTS roles (
+    id               TEXT PRIMARY KEY,
+    name             TEXT NOT NULL UNIQUE COLLATE NOCASE,
+    blurb            TEXT NOT NULL DEFAULT '',
+    grants           TEXT NOT NULL,
+    manages_accounts INTEGER NOT NULL DEFAULT 0
 );
 CREATE TABLE IF NOT EXISTS sessions (
     token_hash TEXT PRIMARY KEY,
@@ -76,6 +110,7 @@ class AccountError(Exception):
 # ----------------------------------------------------------------------------- the database
 _ready: set[str] = set()
 _failures: dict[str, list[float]] = {}  # username -> times of recent failed sign-ins. In memory: a restart clears it
+_roles_cache: tuple[tuple, dict] | None = None  # (what the database file looked like, the roles read from it)
 
 
 def _connect() -> sqlite3.Connection:
@@ -86,7 +121,7 @@ def _connect() -> sqlite3.Connection:
 
 
 def init() -> list[str]:
-    """Create the accounts database when it is missing, and the starter accounts when it holds none.
+    """Create the accounts database when it is missing, and the starter roles and accounts when it holds none.
 
     Returns the usernames it created, which is an empty list on every start but the first.
     """
@@ -99,10 +134,14 @@ def init() -> list[str]:
     try:
         con.executescript(SCHEMA)
         os.chmod(config.ACCOUNTS, 0o600)
-        if not con.execute("SELECT count(*) FROM accounts").fetchone()[0]:
-            rows = [(username, name, role, _hash(starter_password()), time.time()) for username, name, role in STARTERS]
+        empty = lambda table: not con.execute(f"SELECT count(*) FROM {table}").fetchone()[0]  # noqa: E731
+        if empty("roles") or empty("accounts"):
+            rows = [(username, name, role, _hash(starter_password()), time.time()) for username, name, role in STARTERS] if empty("accounts") else []
             con.execute("BEGIN IMMEDIATE")  # another process may have got here first, so look again under the lock
-            if not con.execute("SELECT count(*) FROM accounts").fetchone()[0]:
+            if empty("roles"):
+                con.executemany("INSERT INTO roles (id, name, blurb, grants, manages_accounts) VALUES (?, ?, ?, ?, ?)",
+                                [(role, r["name"], r["blurb"], json.dumps(r["grants"]), int(r.get("manages_accounts", False))) for role, r in STARTER_ROLES.items()])
+            if rows and empty("accounts"):
                 con.executemany("INSERT INTO accounts (username, name, role, password_hash, created_at) VALUES (?, ?, ?, ?, ?)", rows)
                 created = [row[0] for row in rows]
             con.execute("COMMIT")
@@ -119,6 +158,7 @@ def _db(write: bool = False):
     With `write`, the lock is taken at the start and everything is committed together or not at
     all, so a check and the change that depends on it cannot be split by another request.
     """
+    global _roles_cache
     init()
     con = _connect()
     try:
@@ -133,6 +173,8 @@ def _db(write: bool = False):
         raise
     finally:
         con.close()
+        if write:
+            _roles_cache = None
 
 
 def _get(con: sqlite3.Connection, account_id: int) -> sqlite3.Row:
@@ -189,29 +231,118 @@ def _valid_username(username: str) -> str:
     return username
 
 
-def _valid_role(role: str) -> str:
-    if role not in policy.ROLES:
-        raise AccountError(f"There is no role called {role!r}.")
-    return role
-
-
 def _valid_password(password: str) -> str:
     if not MIN_PASSWORD <= len(password) <= MAX_PASSWORD:
         raise AccountError(f"A password must be between {MIN_PASSWORD} and {MAX_PASSWORD} characters.")
     return password
 
 
-def _manages(row) -> bool:
-    return bool(row["active"]) and bool(policy.ROLES.get(row["role"], {}).get("manages_accounts"))
+def _valid_blurb(blurb: str) -> str:
+    blurb = " ".join(blurb.split())
+    if len(blurb) > 300:
+        raise AccountError("A role's description can be at most 300 characters.")
+    return blurb
 
 
-def _keep_an_administrator(con: sqlite3.Connection, account_id: int) -> None:
-    """Refuse a change that would leave nobody able to manage accounts."""
-    managers = [role for role, spec in policy.ROLES.items() if spec.get("manages_accounts")]
-    others = con.execute(f"SELECT count(*) FROM accounts WHERE active = 1 AND id != ? AND role IN ({', '.join('?' * len(managers))})",
-                         [account_id, *managers]).fetchone()[0]
-    if not others:
-        raise AccountError("This is the only active administrator. Make another account an administrator first.", 409)
+def _valid_grants(grants: list[str]) -> list[str]:
+    unknown = [g for g in grants if g not in policy.TAGS]
+    if unknown:
+        raise AccountError(f"There is no tag called {unknown[0]!r}.")
+    return [t for t in policy.TAGS if t in grants]
+
+
+def _role_row(con: sqlite3.Connection, role: str, status: int = 404) -> sqlite3.Row:
+    row = con.execute("SELECT * FROM roles WHERE id = ?", [role]).fetchone()
+    if row is None:
+        raise AccountError(f"There is no role with the id {role!r}.", status)
+    return row
+
+
+def _keep_an_administrator(con: sqlite3.Connection) -> None:
+    """Refuse a change that leaves nobody able to manage accounts.
+
+    Called after the change, inside its transaction, so raising here undoes it. It covers every
+    way of getting there: removing, deactivating or re-roling an account, or editing a role.
+    """
+    left = con.execute("SELECT count(*) FROM accounts a JOIN roles r ON r.id = a.role WHERE a.active = 1 AND r.manages_accounts = 1").fetchone()[0]
+    if not left:
+        raise AccountError("That would leave no active account able to manage accounts. Give another active account that ability first.", 409)
+
+
+# ----------------------------------------------------------------------------- roles
+def _role(row: sqlite3.Row) -> dict:
+    """A role as the rest of Concord uses it. Grants are kept in the order of `policy.TAGS`; a tag that no longer exists is dropped."""
+    held = json.loads(row["grants"])
+    return {"name": row["name"], "blurb": row["blurb"], "grants": [t for t in policy.TAGS if t in held], "manages_accounts": bool(row["manages_accounts"])}
+
+
+def roles() -> dict[str, dict]:
+    """Every role by id, in the order they were created. Do not change what it returns: it is shared.
+
+    Asked many times per request, so it is read from the database only when the file has changed
+    (or this process has just written to it), the way the catalog is reloaded after a build.
+    """
+    global _roles_cache
+    init()
+    stat = config.ACCOUNTS.stat()
+    seen = (str(config.ACCOUNTS), stat.st_mtime_ns, stat.st_size)
+    cached = _roles_cache
+    if cached is None or cached[0] != seen:
+        with _db() as con:
+            cached = _roles_cache = (seen, {r["id"]: _role(r) for r in con.execute("SELECT * FROM roles ORDER BY rowid").fetchall()})
+    return cached[1]
+
+
+def create_role(name: str, blurb: str = "", grants: list[str] | None = None, manages_accounts: bool = False) -> dict:
+    """Add a role. Its id is made from its name and never changes afterwards, so accounts keep pointing at it when it is renamed."""
+    name, blurb, grants = _valid_name(name), _valid_blurb(blurb), _valid_grants(grants or [])
+    stem = re.sub(r"[^a-z0-9]+", "_", name.lower()).strip("_") or "role"
+    with _db(write=True) as con:
+        taken = {r[0] for r in con.execute("SELECT id FROM roles").fetchall()}
+        role = next(candidate for candidate in [stem, *(f"{stem}_{n}" for n in range(2, len(taken) + 3))] if candidate not in taken)
+        try:
+            con.execute("INSERT INTO roles (id, name, blurb, grants, manages_accounts) VALUES (?, ?, ?, ?, ?)",
+                        [role, name, blurb, json.dumps(grants), int(manages_accounts)])
+        except sqlite3.IntegrityError:
+            raise AccountError(f"There is already a role called {name}.", 409) from None
+        return {"id": role, **_role(_role_row(con, role))}
+
+
+def update_role(role: str, name: str | None = None, blurb: str | None = None, grants: list[str] | None = None,
+                manages_accounts: bool | None = None) -> dict:
+    """Change a role. Whatever is left as None stays as it is.
+
+    Nobody is signed out: every request reads its role's grants afresh, so the change reaches
+    everyone who holds the role on their next request.
+    """
+    changes: dict = {}
+    if name is not None:
+        changes["name"] = _valid_name(name)
+    if blurb is not None:
+        changes["blurb"] = _valid_blurb(blurb)
+    if grants is not None:
+        changes["grants"] = json.dumps(_valid_grants(grants))
+    if manages_accounts is not None:
+        changes["manages_accounts"] = int(manages_accounts)
+    with _db(write=True) as con:
+        _role_row(con, role)
+        if changes:
+            try:
+                con.execute(f"UPDATE roles SET {', '.join(f'{column} = ?' for column in changes)} WHERE id = ?", [*changes.values(), role])
+            except sqlite3.IntegrityError:
+                raise AccountError(f"There is already a role called {changes['name']}.", 409) from None
+            _keep_an_administrator(con)
+        return {"id": role, **_role(_role_row(con, role))}
+
+
+def delete_role(role: str) -> None:
+    """Remove a role that no account holds."""
+    with _db(write=True) as con:
+        _role_row(con, role)
+        held = con.execute("SELECT count(*) FROM accounts WHERE role = ?", [role]).fetchone()[0]
+        if held:
+            raise AccountError(f"{held} account{' holds' if held == 1 else 's hold'} this role. Give {'it' if held == 1 else 'them'} another role first.", 409)
+        con.execute("DELETE FROM roles WHERE id = ?", [role])
 
 
 # ----------------------------------------------------------------------------- signing in and out
@@ -272,8 +403,9 @@ def list_accounts() -> list[dict]:
 
 def create(username: str, name: str, role: str, password: str) -> dict:
     username = _valid_username(username)
-    values = [username, _valid_name(name), _valid_role(role), _hash(_valid_password(password)), time.time()]
+    values = [username, _valid_name(name), role, _hash(_valid_password(password)), time.time()]
     with _db(write=True) as con:
+        _role_row(con, role, 400)
         try:
             cur = con.execute("INSERT INTO accounts (username, name, role, password_hash, created_at) VALUES (?, ?, ?, ?, ?)", values)
         except sqlite3.IntegrityError:
@@ -294,24 +426,25 @@ def update(account_id: int, name: str | None = None, username: str | None = None
     if username is not None:
         changes["username"] = _valid_username(username)
     if role is not None:
-        changes["role"] = _valid_role(role)
+        changes["role"] = role
     if active is not None:
         changes["active"] = int(active)
     if password is not None:
         changes["password_hash"] = _hash(_valid_password(password))
     with _db(write=True) as con:
-        before = _get(con, account_id)
-        after = {**dict(before), **changes}
-        if _manages(before) and not _manages(after):
-            _keep_an_administrator(con, account_id)
+        _get(con, account_id)
+        if "role" in changes:
+            _role_row(con, changes["role"], 400)
         if changes:
             try:
                 con.execute(f"UPDATE accounts SET {', '.join(f'{column} = ?' for column in changes)} WHERE id = ?", [*changes.values(), account_id])
             except sqlite3.IntegrityError:
                 raise AccountError(f"The username {changes['username']} is already taken.", 409) from None
+            _keep_an_administrator(con)
+        after = _get(con, account_id)
         if "password_hash" in changes or not after["active"]:
             con.execute("DELETE FROM sessions WHERE account_id = ?", [account_id])
-        return _public(_get(con, account_id))
+        return _public(after)
 
 
 def change_password(account_id: int, current: str, new: str, keep: str | None = None) -> None:
@@ -332,8 +465,8 @@ def change_password(account_id: int, current: str, new: str, keep: str | None = 
 
 
 def delete(account_id: int) -> None:
-    """Remove an account and its sessions. The last active administrator cannot be removed."""
+    """Remove an account and its sessions. The last active account that can manage accounts cannot be removed."""
     with _db(write=True) as con:
-        if _manages(_get(con, account_id)):
-            _keep_an_administrator(con, account_id)
+        _get(con, account_id)
         con.execute("DELETE FROM accounts WHERE id = ?", [account_id])
+        _keep_an_administrator(con)

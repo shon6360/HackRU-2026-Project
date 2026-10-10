@@ -48,9 +48,9 @@ then the **Compare roles** tab.
 > the count but the arm is withheld. This tab shows what the same SQL gets under each role: the unblinded
 > statistician gets the full answer, and finance is refused, because this needs patient-level data.
 >
-> This isn't a filter in the app. The server takes the role from the account that signed in, and each role
-> has its own database that physically doesn't contain what that role can't see. So it holds whether a
-> person wrote the SQL or the language model did.
+> This isn't a filter in the app. The server takes the role from the account that signed in, and the role
+> reads a database that physically doesn't contain what it isn't granted. So it holds whether a person wrote
+> the SQL or the language model did.
 
 ## 2:25 Can you trust the data (25 seconds)
 
@@ -73,12 +73,14 @@ Flash the **Lineage** page, click `site_360`.
 
 ## If there is time for questions
 
-- **Accounts**: sign out, sign in as `admin` and open **Accounts**. Change Dana's role and her open session
-  answers under the new one on her next question. The **profile** page shows any account what its role is
+- **Accounts and roles**: sign out and sign in as `admin`. On **Roles**, create a role, tick its grants and
+  give it to Dana on **Accounts**: her open session answers under it on her next question. Tick one more
+  grant on the role and that reaches her too, with no rebuild, because a database for every combination of
+  grants is already built. The **profile** page shows any account what its role is
   granted. Signing in as `arjun` or `dana` shows the other two answers from step 1:40 for real.
 - **Free-form questions**: with `GEMINI_API_KEY` set in `.env`, type any question. The model is shown only the
   schema the current role can see, and the SQL it writes is shown and editable under the **SQL** tab.
 - **Catalog**: search `overdue` or `onset`; open `gold.site_360` to show descriptions, owners, freshness,
   the FAIR checklist and the SQL that builds it.
-- **Tests**: `python tests/test_concord.py` checks that no role database contains a single value its
-  policy withholds.
+- **Tests**: `python tests/test_concord.py` checks that no access database contains a single value its
+  grants withhold.

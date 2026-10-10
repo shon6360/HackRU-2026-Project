@@ -17,8 +17,8 @@ const PAGES = ["ask", "catalog", "lineage", "crosswalk", "quality", "access"];
 export function Shell({ children }: { children: ReactNode }) {
   const { app, error, signedOut } = useAppState();
   const page = usePathname().split("/").filter(Boolean)[0] ?? "ask";
-  // the tab is a convenience: the server refuses the accounts routes to anyone but an administrator
-  const pages = app?.canManageAccounts ? [...PAGES, "accounts"] : PAGES;
+  // the tabs are a convenience: the server refuses the accounts and roles routes to anyone but an administrator
+  const pages = app?.canManageAccounts ? [...PAGES, "accounts", "roles"] : PAGES;
   return (
     <>
       <header className="sticky top-0 z-20 flex flex-wrap items-center gap-2 border-b border-line bg-surface px-3 py-2 sm:h-14 sm:flex-nowrap sm:gap-5 sm:px-5 sm:py-0">

@@ -55,6 +55,7 @@ app/
   lineage/ crosswalk/ quality/ access/    one page.tsx each
   profile/            page.tsx: your own account, what your role is granted, change your name and password
   accounts/           page.tsx: every account, and the form that adds, changes and removes one (administrators)
+  roles/              page.tsx: every role, and the form that adds, changes and removes one (administrators)
 components/
   app-context.tsx     state that outlives a page: who is signed in, meta, the current answer, catalog filter, trace
   shell.tsx           top bar (nav, feed dots, account menu), <main> or the sign-in form, the trace drawer
@@ -88,7 +89,7 @@ out goes the same way. One account's answer is never left on screen for the next
 ## Rules
 
 - **The UI does not enforce anything.** It only displays the `decisions`, `denied`, `masked` and
-  `hidden` fields the server returns. The role databases are the access control.
+  `hidden` fields the server returns. The databases the server queries are the access control.
 - **Show what is withheld, never hide it silently.** A refused query, a masked column, a withheld
   table and a hidden finding each get the `Lock` icon and the reason from the API. This is a
   judging criterion, not decoration.
@@ -99,10 +100,16 @@ out goes the same way. One account's answer is never left on screen for the next
   you sign in to an account that holds it. The Compare roles tab asks `/api/compare`, which
   returns only what the policy decides for each role. The answer card names the role the answer
   was run as (`answer.role`), which the server reports.
-- **The Accounts tab is a convenience.** It is shown when the account's role has
-  `manages_accounts`, and `/accounts` shows a refusal to anyone else, but it is the server that
-  refuses the routes behind it. Forms send only the fields that changed, and show the server's
-  error message as it is.
+- **The Accounts and Roles tabs are a convenience.** They are shown when the account's role has
+  `manages_accounts`, and `/accounts` and `/roles` show a refusal to anyone else, but it is the
+  server that refuses the routes behind them. Forms send only the fields that changed, and show
+  the server's error message as it is.
+- **Roles are data.** Never write a role id or a role count into a component: take them from
+  `meta.roles`, which an administrator can add to at any time. The Roles page shows what is in
+  `meta.roles` and calls `refresh()` after a save, which loads the account and the metadata
+  again. Other people's tabs pick a change up when they come back to the tab (`visibilitychange`
+  in `app-context.tsx`). That only affects what is displayed: the server reads the role's grants
+  on every request.
 - **No `dangerouslySetInnerHTML`.** The data includes free text from source files and SQL written
   by a model. Rendered as JSX children it is escaped by React; keep it that way.
 - **Deep links reproduce an answer:** `/ask?q=<question>&tab=<result|sql|lineage|roles>&trace=<column>:<value>`
