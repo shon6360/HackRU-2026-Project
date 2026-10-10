@@ -3,4 +3,5 @@ sqlglot>=25
 fastapi>=0.110
 uvicorn>=0.29
 pydantic>=2
-anthropic>=1.0
+google-genai>=2.29
+python-dotenv>=1.0

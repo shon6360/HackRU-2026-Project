@@ -4,11 +4,11 @@ Two ways to get SQL, and the result always says which one was used:
 
   vetted   a library of cross-system questions with SQL a person has reviewed. Works with no
            API key, instantly and deterministically; this is also what the model is shown as examples.
-  model    Claude writes the SQL from the catalog. It is given only the schema the current role
+  model    Gemini writes the SQL from the catalog. It is given only the schema the current role
            may see, and its SQL goes through exactly the same policy check and sandbox as
            anybody else's. The model is a convenience, never the access control.
 
-Set ANTHROPIC_API_KEY to enable the model. CONCORD_MODEL overrides the model id.
+Put GEMINI_API_KEY in `.env` (or the environment) to enable the model. CONCORD_MODEL overrides the model id.
 """
 from __future__ import annotations
 
@@ -19,7 +19,7 @@ from pydantic import BaseModel, Field
 
 from . import config, engine, policy
 
-MODEL = os.environ.get("CONCORD_MODEL", "claude-opus-5-5")
+MODEL = os.environ.get("CONCORD_MODEL", "gemini-3.8-flash")
 
 VETTED = [
     {
@@ -173,7 +173,7 @@ def match_vetted(question: str) -> tuple[dict | None, float]:
 
 
 def model_available() -> bool:
-    return bool(os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("ANTHROPIC_AUTH_TOKEN"))
+    return bool(os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY"))
 
 
 # ----------------------------------------------------------------------------- the model
@@ -229,29 +229,20 @@ Writing the query:
 
 
 def _call_model(question: str, role: str, retry_note: str | None = None) -> SqlAnswer:
-    import anthropic
+    from google import genai
 
-    client = anthropic.Anthropic()
-    messages = [{"role": "user", "content": question}]
-    if retry_note:
-        messages[0]["content"] = f"{question}\n\n{retry_note}"
-    common = dict(
+    client = genai.Client()
+    interaction = client.interactions.create(
         model=MODEL,
-        max_tokens=8000,
-        system=[{"type": "text", "text": _schema_prompt(role), "cache_control": {"type": "ephemeral"}}],
-        messages=messages,
-        thinking={"type": "adaptive"},
-        output_config={"effort": "low"},
-        output_format=SqlAnswer,
+        system_instruction=_schema_prompt(role),
+        input=f"{question}\n\n{retry_note}" if retry_note else question,
+        generation_config={"thinking_level": "low"},
+        response_format={"type": "text", "mime_type": "application/json", "schema": SqlAnswer.model_json_schema()},
+        store=False,  # one question, one answer: nothing to continue, so nothing is kept on the server
     )
-    try:
-        # Let the API re-run the request on another model if a safety classifier declines it.
-        response = client.beta.messages.parse(**common, betas=["server-side-fallback-2026-07-01"], fallbacks="default")
-    except (anthropic.BadRequestError, TypeError):
-        response = client.messages.parse(**common)
-    if response.stop_reason == "refusal" or response.parsed_output is None:
+    if interaction.status != "completed" or not interaction.output_text:
         return SqlAnswer(can_answer=False, sql="", explanation="The model declined to answer this question.")
-    return response.parsed_output
+    return SqlAnswer.model_validate_json(interaction.output_text)
 
 
 # ----------------------------------------------------------------------------- entry point
@@ -286,7 +277,7 @@ def ask(question: str, role: str) -> dict:
         result = engine.execute(vetted["sql"], role)
         return {**result, "question": question, "mode": "vetted", "explanation": vetted["explanation"],
                 "matched_question": vetted["question"], "model": None, "model_error": model_error,
-                "note": "Answered with the closest reviewed question." + ("" if model_available() else " Set ANTHROPIC_API_KEY to ask anything.")}
+                "note": "Answered with the closest reviewed question." + ("" if model_available() else " Set GEMINI_API_KEY to ask anything.")}
     return {"question": question, "role": role, "mode": "none", "model": None, "model_error": model_error, "suggestions": suggestions,
             "explanation": "No reviewed question is close to this one"
-                           + ("." if model_available() else ", and no language model is configured (set ANTHROPIC_API_KEY to ask anything).")}
+                           + ("." if model_available() else ", and no language model is configured (set GEMINI_API_KEY to ask anything).")}

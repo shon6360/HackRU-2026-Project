@@ -30,8 +30,13 @@ python tests/test_concord.py               # all 10 tests, no test runner needed
 - `pytest` is not in `requirements.txt`. The tests are written to run under it, so install it
   if you want to run a single test: `python -m pytest tests/test_concord.py -k headline -q`.
 - Roles are `clinops`, `biostat`, `finance`.
-- Free-form questions need `ANTHROPIC_API_KEY` (or `ANTHROPIC_AUTH_TOKEN`). `CONCORD_MODEL`
-  overrides the model id. Without a key everything still works from the reviewed questions.
+- Free-form questions need `GEMINI_API_KEY` (or `GOOGLE_API_KEY`). They are written into SQL by
+  Gemini through the `google-genai` SDK; `CONCORD_MODEL` overrides the model id (default
+  `gemini-3.8-flash`).
+- Both settings live in `.env` at the repository root (copy `.env.example`). `concord/config.py`
+  loads it on import; a variable already set in the shell wins. `.env` is gitignored: never
+  commit it, print it or paste its contents anywhere. `.env.example` is committed and must only
+  ever hold placeholders. A running server reads `.env` once, so restart it after a change. Without a key everything still works from the reviewed questions.
 - API docs are served at `/api/docs`.
 
 ## Layout
@@ -47,7 +52,8 @@ tests/              test_concord.py: end-to-end checks (see tests/CLAUDE.md)
 docs/               DATA.md, DEMO.md, DECK.md, screenshots/ (see docs/CLAUDE.md)
 build/              generated DuckDB files. Gitignored. Never edit, never commit
 README.md           the project README, then the HackRU challenge brief from the line `# ONE SOURCE OF TRUTH` on
-requirements.txt    the six runtime dependencies. pytest and pandas are not in it
+requirements.txt    the seven runtime dependencies. pytest and pandas are not in it
+.env.example        template for .env (the Gemini key and model id). .env itself is gitignored
 ```
 
 The top half of `README.md` is the entry point for judges and must stay runnable as written from

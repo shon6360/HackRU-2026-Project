@@ -1,11 +1,16 @@
-"""Paths and the snapshot date everything is evaluated against."""
+"""Paths, settings from `.env`, and the snapshot date everything is evaluated against."""
 from __future__ import annotations
 
 import json
 from datetime import date, datetime, time
 from pathlib import Path
 
+from dotenv import load_dotenv
+
 ROOT = Path(__file__).resolve().parents[1]
+# Every module imports config first, so the key is in place before anything reads it.
+# A variable already set in the shell wins over the file.
+load_dotenv(ROOT / ".env")
 FEEDS = ROOT / "feeds"
 BUILD = ROOT / "build"
 WAREHOUSE = BUILD / "warehouse.duckdb"

@@ -38,8 +38,17 @@ python tests/test_concord.py     # 10 end-to-end checks (also runs under pytest)
 python -m concord ask "Which sites are we late paying?" --role finance
 ```
 
-To ask free-form questions, set `ANTHROPIC_API_KEY` before starting the server. Without it, Concord answers
-from nine reviewed questions (closest match) and you can write SQL yourself under any answer.
+To ask free-form questions, give Concord a Gemini API key. Create one at
+[Google AI Studio](https://aistudio.google.com/apikey), then:
+
+```bash
+cp .env.example .env             # then open .env and paste the key after GEMINI_API_KEY=
+python -m concord serve          # restart the server whenever .env changes
+```
+
+`.env` is gitignored, so the key stays on your machine. A `GEMINI_API_KEY` exported in the shell works too
+and takes precedence over the file. Without a key, Concord answers from nine reviewed questions (closest
+match) and you can write SQL yourself under any answer.
 
 ## What to try
 
@@ -77,7 +86,7 @@ from nine reviewed questions (closest match) and you can write SQL yourself unde
 | Quality | `concord/quality.py` | 27 rules. Each is a query returning the records that fail, with the source file and row |
 | Policy | `concord/policy.py` | Three tags, three roles. Enforced by building a separate database per role |
 | Engine | `concord/engine.py` | Parses a query, checks it against the policy, runs it sandboxed, and attaches lineage, freshness and quality warnings |
-| Ask | `concord/ask.py` | Reviewed questions, plus Claude writing SQL from the role's own view of the catalog |
+| Ask | `concord/ask.py` | Reviewed questions, plus Gemini writing SQL from the role's own view of the catalog |
 | App | `concord/server.py`, `concord/web/` | FastAPI and a dependency-free front end |
 
 ### Matching ids
@@ -138,6 +147,7 @@ feeds/              the five mock source systems (committed, deterministic)
 data/public/        snapshot of the public data the feeds are built from, with SOURCES.json
 scripts/            fetch_public_data.py and simulate_feeds.py, to regenerate the two folders above
 tests/              end-to-end checks
+.env.example        template for the optional .env file that holds the Gemini API key
 docs/               DATA.md, DEMO.md (3-minute script), DECK.md (slide outline), screenshots
 ```
 

@@ -70,7 +70,7 @@ Flash the **Lineage** page, click `site_360`.
 
 ## If there is time for questions
 
-- **Free-form questions**: with `ANTHROPIC_API_KEY` set, type any question. The model is shown only the
+- **Free-form questions**: with `GEMINI_API_KEY` set in `.env`, type any question. The model is shown only the
   schema the current role can see, and the SQL it writes is shown and editable under the **SQL** tab.
 - **Catalog**: search `overdue` or `onset`; open `gold.site_360` to show descriptions, owners, freshness,
   the FAIR checklist and the SQL that builds it.

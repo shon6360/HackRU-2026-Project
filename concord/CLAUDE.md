@@ -7,13 +7,13 @@ Read `../CLAUDE.md` first for commands and the rules that must not be broken.
 | Module | Role |
 |---|---|
 | `__main__.py` | CLI: `build`, `serve`, `ask`. Imports lazily so `build` does not need FastAPI. `serve` and `ask` build first when there is no warehouse |
-| `config.py` | Paths, `LAYERS`, `LINEAGE_COLUMNS`, `ID_MAPS`, `snapshot_date()`, `platform_now()`, `role_db()` |
+| `config.py` | Loads `.env` on import, then paths, `LAYERS`, `LINEAGE_COLUMNS`, `ID_MAPS`, `snapshot_date()`, `platform_now()`, `role_db()` |
 | `models.py` | Loads `models/**/*.sql`: parses the `-- @` header, reads dependencies out of the SQL with sqlglot, orders topologically |
 | `pipeline.py` | `build()`: bronze load, run models, quality, catalog (`meta.*`), role databases |
 | `quality.py` | `RULES`, `FEED_RULES`, `run()`, `score_answer_key()` |
 | `policy.py` | `TAGS`, `ROLES`, and four small functions. The whole access policy |
 | `engine.py` | `catalog()`, `preflight()`, `execute()`, `upstream_graph()`, `answer_context()`, `trace()` |
-| `ask.py` | `VETTED` questions, matching, the Claude call, `ask()` |
+| `ask.py` | `VETTED` questions, matching, the Gemini call, `ask()` |
 | `server.py` | FastAPI app: a thin JSON API over the engine, plus the static front end |
 
 Imports point one way. `pipeline` uses `config`, `policy`, `quality` and `models`; `engine`
@@ -96,11 +96,15 @@ withheld blocks instead of hiding them.
 
 ## ask.py
 
+The key (`GEMINI_API_KEY`) and the model id (`CONCORD_MODEL`) come from the environment, which
+`config.py` fills from `.env` before this module is imported. `MODEL` is read once at import and
+`model_available()` on every call.
+
 `ask(question, role)` resolves in this order and always reports `mode`:
 
 1. Closest `VETTED` question by token overlap (Jaccard, over the question and its `ALSO`
    phrasings). Score >= 0.85: run its reviewed SQL. `mode: "vetted"`.
-2. Else, if a key is set: Claude writes the SQL. `mode: "model"`. One retry if the SQL errors.
+2. Else, if a key is set: Gemini writes the SQL. `mode: "model"`. One retry if the SQL errors.
    The model may decline (`can_answer: false`), which returns `declined: true`.
 3. Else, or if the model call raised: score >= 0.34 runs the closest reviewed question, with a
    `note`. `mode: "vetted"`.
@@ -109,7 +113,9 @@ withheld blocks instead of hiding them.
 The system prompt (`_schema_prompt`) is built from the catalog as the role sees it: only gold
 and master tables, masked columns marked, withheld tables listed by name and description
 without their columns, sample values omitted for masked columns, and every `VETTED` pair as an
-example. It is sent with `cache_control`. Output is parsed into the `SqlAnswer` pydantic model.
+example. It is sent as the `system_instruction` of one `client.interactions.create` call (the
+`google-genai` SDK), with the `SqlAnswer` JSON schema as the response format, low thinking and
+`store=False`. The reply is validated into the `SqlAnswer` pydantic model.
 Whatever the model returns goes through `engine.execute` like anyone else's SQL.
 
 `VETTED` is used in three places: answering, the model's examples, and the chips on the Ask

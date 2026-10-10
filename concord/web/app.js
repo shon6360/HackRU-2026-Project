@@ -163,7 +163,7 @@ function viewAsk() {
       <div class="chips">${m.questions.map((q) => `<button class="chip" data-q="${esc(q.question)}">${esc(q.question)}</button>`).join("")}</div>
       <p class="small faint" style="margin:12px 0 0">${m.model.available
         ? `Free-form questions are written into SQL by ${esc(m.model.id)}. The questions above use reviewed SQL.`
-        : "No language model key is set, so answers come from the reviewed questions above (closest match). Set ANTHROPIC_API_KEY to ask anything, or write SQL yourself under any answer."}</p>
+        : "No language model key is set, so answers come from the reviewed questions above (closest match). Set GEMINI_API_KEY to ask anything, or write SQL yourself under any answer."}</p>
     </div>
     <div id="answer" style="margin-top:16px"></div>`;
   $("#ask-form").addEventListener("submit", (e) => { e.preventDefault(); const q = $("#q").value.trim() || $("#q").placeholder; $("#q").value = q; ask(q); });
