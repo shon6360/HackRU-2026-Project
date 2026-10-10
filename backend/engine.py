@@ -28,15 +28,30 @@ SANDBOX = {"enable_external_access": False, "lock_configuration": True}
 
 # ----------------------------------------------------------------------------- catalog access
 def warehouse():
+    """Open a read-only connection to the full warehouse.
+
+    This is the unfiltered database. Anything read through it and returned to a client must be
+    filtered by policy by hand; user SQL never runs here.
+    """
     return duckdb.connect(str(config.WAREHOUSE), read_only=True)
 
 
 def role_connection(role: str):
+    """Open a read-only, sandboxed connection to one role's database.
+
+    Tables this role may not see are physically absent and masked columns are physically NULL.
+    External file and network access are switched off.
+    """
     return duckdb.connect(str(config.role_db(role)), read_only=True, config=SANDBOX)
 
 
 @lru_cache(maxsize=4)
 def _catalog(build_stamp: float) -> dict:
+    """Load datasets, columns, lineage, feeds and quality rules from the warehouse.
+
+    `build_stamp` is the warehouse file's mtime so a rebuild invalidates the cache. Callers
+    should use `catalog()` rather than this function.
+    """
     con = warehouse()
     datasets = {}
     for row in con.execute("SELECT * FROM meta.datasets").fetchall():
@@ -67,11 +82,18 @@ def _catalog(build_stamp: float) -> dict:
 
 
 def catalog() -> dict:
-    """The catalog as built by the pipeline; reloaded automatically after a rebuild."""
+    """Return the catalog as built by the pipeline.
+
+    Reloads automatically after a rebuild because the cache key is the warehouse file's mtime.
+    """
     return _catalog(config.WAREHOUSE.stat().st_mtime)
 
 
 def jsonable(v):
+    """Turn a DuckDB cell into a JSON-serializable value.
+
+    Dates become ISO strings, decimals become floats, and bytes become UTF-8 text.
+    """
     if isinstance(v, (dt.date, dt.datetime)):
         return v.isoformat()
     if isinstance(v, decimal.Decimal):
@@ -82,6 +104,11 @@ def jsonable(v):
 
 
 def access(dataset: dict, role: str) -> dict:
+    """Say what this role may see of one catalog dataset.
+
+    Returns whether the table is withheld, which tags caused that, and which columns are
+    masked (empty when the whole table is denied).
+    """
     denied = policy.table_denied(dataset, role)
     return {"denied": bool(denied), "denied_tags": denied,
             "masked": {} if denied else policy.masked_columns(dataset, role)}
@@ -93,7 +120,12 @@ class QueryRejected(Exception):
 
 
 def preflight(sql: str, role: str) -> dict:
-    """Parse the SQL and decide, from catalog tags alone, what this role may not see in it."""
+    """Parse the SQL and decide, from catalog tags alone, what this role may not see in it.
+
+    Accepts exactly one SELECT-like statement against cataloged tables. Records a deny
+    decision per withheld table and a mask decision per withheld column the query touches.
+    Raises QueryRejected for anything that is not a single safe SELECT.
+    """
     cat = catalog()
     try:
         statements = [s for s in sqlglot.parse(sql, dialect="duckdb") if s is not None]
@@ -159,7 +191,12 @@ def preflight(sql: str, role: str) -> dict:
 
 # ----------------------------------------------------------------------------- execution
 def execute(sql: str, role: str) -> dict:
-    """Pre-flight, then run inside the role's sandboxed database. Always returns a result dict."""
+    """Pre-flight a query, then run it inside the role's sandboxed database.
+
+    Never raises for bad input. Always returns the same result dict, with problems in `error`
+    and policy outcomes in `decisions` and `denied`. If anything is denied, nothing is executed.
+    Results are capped at ROW_LIMIT rows; a 15-second interrupt stops a runaway query.
+    """
     started = time.time()
     out = {"role": role, "sql": sql, "columns": [], "rows": [], "row_count": 0, "truncated": False,
            "decisions": [], "tables": [], "denied": False, "error": None, "masked_columns": []}
@@ -201,7 +238,11 @@ def execute(sql: str, role: str) -> dict:
 
 # ----------------------------------------------------------------------------- lineage + trust
 def upstream_graph(targets: list[str]) -> dict:
-    """Every dataset and feed file the targets were built from, as nodes and edges."""
+    """Walk lineage from the given tables back to every dataset and feed file they were built from.
+
+    Returns nodes (catalog tables plus source files) and the edges between them, including the
+    id crosswalks so the graph is complete even when the data path skips those tables.
+    """
     cat = catalog()
     seen, order = set(), list(targets)
     while order:
@@ -223,12 +264,19 @@ def upstream_graph(targets: list[str]) -> dict:
 
 
 def _days(hours: float) -> str:
+    """Format a duration in hours as a whole number of days for a warning sentence."""
     n = round(hours / 24)
     return f"{n} day{'' if n == 1 else 's'}"
 
 
 def answer_context(tables: list[str]) -> dict:
-    """What a reader needs in order to trust an answer built from these tables."""
+    """Collect what a reader needs in order to trust an answer built from these tables.
+
+    Returns the upstream lineage graph, the feeds those tables depend on, a stale warning per
+    feed past its SLA, and a quality warning listing failing rules on upstream datasets.
+    Info-severity rules do not raise warnings. The data path skips the id crosswalks so one
+    answer does not appear to depend on every feed.
+    """
     cat = catalog()
     graph = upstream_graph(tables)
     upstream_ids, todo = set(), list(tables)
@@ -272,7 +320,12 @@ XWALK = {"site_key": "master.site_xwalk", "subject_key": "master.subject_xwalk"}
 
 
 def _source_rows(con, cat: dict, role: str, gold: str, key_col: str, value: str, limit: int = 12) -> dict:
-    """Follow one gold table's lineage columns back to the raw rows in bronze."""
+    """Follow one gold table's lineage columns back to the raw rows in bronze.
+
+    Looks up `_src_file` and `_src_row` for the matching key, then loads those bronze rows.
+    Returns a denied reason instead of rows when the gold table, the key, or the bronze file
+    is withheld from this role.
+    """
     ds = cat["datasets"][gold]
     a = access(ds, role)
     block = {"dataset": gold, "description": ds["description"]}
@@ -297,7 +350,13 @@ def _source_rows(con, cat: dict, role: str, gold: str, key_col: str, value: str,
 
 
 def trace(role: str, column: str, value: str) -> dict:
-    """Everything behind one key in an answer: how its ids were matched, and the source rows."""
+    """Return everything behind one key in an answer: how its ids were matched, and the source rows.
+
+    Entity keys (`site_key`, `subject_key`) show the crosswalk plus source rows from every gold
+    table that has the key. Record keys (`case_id`, `doc_no`, and so on) show the one gold
+    table's source rows. Runs in the role's database and reports withheld blocks instead of
+    hiding them. Returns an error if the column is not in TRACEABLE.
+    """
     cat = catalog()
     spec = TRACEABLE.get(column.lower())
     if spec is None:

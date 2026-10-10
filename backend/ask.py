@@ -143,6 +143,10 @@ _STOP = set("a an and are as at be by do does each for from has have how in is i
 
 
 def _tokens(text: str) -> set[str]:
+    """Split a question into a set of content words for Jaccard matching.
+
+    Lowercases, drops stop words, and strips a trailing s so close phrasings still overlap.
+    """
     words = re.findall(r"[a-z0-9]+", text.lower())
     return {w[:-1] if w.endswith("s") and len(w) > 3 else w for w in words if w not in _STOP}
 
@@ -162,7 +166,11 @@ ALSO = {
 
 
 def match_vetted(question: str) -> tuple[dict | None, float]:
-    """Closest vetted question by word overlap."""
+    """Find the closest reviewed question by Jaccard overlap of content words.
+
+    Compares the user's question against each VETTED question and its ALSO phrasings.
+    Returns the best match (or None) and the score in 0..1.
+    """
     q = _tokens(question)
     best, score = None, 0.0
     for v in VETTED:
@@ -175,6 +183,7 @@ def match_vetted(question: str) -> tuple[dict | None, float]:
 
 
 def model_available() -> bool:
+    """True when a Gemini API key is set, so free-form questions can be written into SQL."""
     return bool(os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY"))
 
 
@@ -186,6 +195,12 @@ class SqlAnswer(BaseModel):
 
 
 def _schema_prompt(role: str) -> str:
+    """Build the system prompt Gemini sees for this role.
+
+    Includes only gold and master tables the role may query, marks masked columns, lists
+    withheld tables by name and description without their columns, omits sample values for
+    masked columns, and appends every VETTED question as an example.
+    """
     cat = engine.catalog()
     visible, withheld = [], []
     for fqn, ds in cat["datasets"].items():
@@ -231,6 +246,12 @@ Writing the query:
 
 
 def _call_model(question: str, role: str, retry_note: str | None = None) -> SqlAnswer:
+    """Ask Gemini to write one SELECT for this question, using the role's schema as context.
+
+    Optionally includes a retry note when the previous SQL failed. The reply is validated
+    into SqlAnswer. The model is never trusted with access control; its SQL still goes
+    through engine.execute.
+    """
     from google import genai
 
     client = genai.Client()
@@ -249,6 +270,13 @@ def _call_model(question: str, role: str, retry_note: str | None = None) -> SqlA
 
 # ----------------------------------------------------------------------------- entry point
 def ask(question: str, role: str) -> dict:
+    """Turn a plain-English question into an engine result for this role.
+
+    Tries a close VETTED match first (score >= 0.85). Otherwise Gemini writes the SQL if a
+    key is set, with one retry on a SQL error. If the model is unavailable or raises, a
+    weaker VETTED match (score >= 0.34) is used with a note. Otherwise returns suggestions.
+    The result always includes `mode`: vetted, model, or none.
+    """
     question = question.strip()
     vetted, score = match_vetted(question)
     suggestions = [v["question"] for v in VETTED]
