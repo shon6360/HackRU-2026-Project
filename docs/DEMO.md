@@ -1,8 +1,8 @@
 # Three-minute demo script
 
-Record at 1440 × 900 or larger. Build if you have not yet (`python -m backend build`),
-start the server (`python -m backend serve`), open
-http://127.0.0.1:8040 and sign in as `maya` (password `concord-demo`). Each step has a link that reproduces
+Record at 1440 × 900 or larger. Start the server (`python -m backend serve` in `server/`) and the
+client (`npm start` in `client/`), open
+http://127.0.0.1:3000 and sign in as `maya` (password `concord-demo`). Each step has a link that reproduces
 the screen, in case a click goes wrong while recording. A link opened without a session shows the sign-in
 form first and then goes where it pointed.
 
@@ -18,7 +18,7 @@ On the **Crosswalk** page, pointing at the "What each system calls things" table
 ## 0:20 One question, five systems (40 seconds)
 
 Go to **Ask**. Click the first question.
-`http://127.0.0.1:8040/ask/?q=Which%20sites%20have%20open%20safety%20cases%2C%20low%20drug%20supply%20and%20overdue%20payments%3F`
+`http://127.0.0.1:3000/ask?q=Which%20sites%20have%20open%20safety%20cases%2C%20low%20drug%20supply%20and%20overdue%20payments%3F`
 
 > This is the question from the challenge sheet: which sites have open safety cases, low drug supply and
 > overdue payments. Milliseconds. Two sites. It read all five systems.
@@ -42,7 +42,7 @@ Click `S718` in the result.
 
 Close the drawer. Click *How many subjects and reportable adverse events are there in each treatment arm?*
 then the **Compare roles** tab.
-`http://127.0.0.1:8040/ask/?q=How%20many%20subjects%20and%20reportable%20adverse%20events%20are%20there%20in%20each%20treatment%20arm%3F&tab=roles`
+`http://127.0.0.1:3000/ask?q=How%20many%20subjects%20and%20reportable%20adverse%20events%20are%20there%20in%20each%20treatment%20arm%3F&tab=roles`
 
 > I'm signed in as Maya. She runs the study, so she has to stay blind to who got which treatment. She gets
 > the count but the arm is withheld. This tab shows what the same SQL gets under each role: the unblinded
@@ -78,9 +78,11 @@ Flash the **Lineage** page, click `site_360`.
   grant on the role and that reaches her too, with no rebuild, because a database for every combination of
   grants is already built. The **profile** page shows any account what its role is
   granted. Signing in as `arjun` or `dana` shows the other two answers from step 1:40 for real.
-- **Free-form questions**: with `GEMINI_API_KEY` set in `.env`, type any question. The model is shown only the
-  schema the current role can see, and the SQL it writes is shown and editable under the **SQL** tab.
+- **Free-form questions**: with a Gemini API key saved on the **profile** page (or `GEMINI_API_KEY` set in
+  `server/.env`), type any question. The model is shown only the schema the current role can see, and the SQL it
+  writes is shown under the **SQL** tab. **Open in Write SQL** carries it to the other half of the Ask page,
+  where it can be changed and run again. Without a key, the page says free-form asking is not enabled.
 - **Catalog**: search `overdue` or `onset`; open `gold.site_360` to show descriptions, owners, freshness,
   the FAIR checklist and the SQL that builds it.
-- **Tests**: `python tests/test_concord.py` checks that no access database contains a single value its
+- **Tests**: `python tests/test_concord.py`, run in `server/`, checks that no access database contains a single value its
   grants withhold.

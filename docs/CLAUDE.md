@@ -13,7 +13,7 @@ entry point and must stay runnable as written from a clean clone.
 ## Keeping them true
 
 These files quote results by hand. Nothing checks them. After any change to the simulation, the
-models, the quality rules or the thresholds, run `python -m harmonizer build` and compare its
+models, the quality rules or the thresholds, run `python -m harmonizer build` in `server/` and compare its
 summary with what is written:
 
 | Figure | Where it is quoted |
@@ -26,15 +26,17 @@ summary with what is written:
 | Two sites with all three problems; `S718` used in the walkthrough | README, DEMO |
 | 55 subjects active; feed row counts; 17 sites | DATA |
 | Thresholds 0.85, 0.05 margin, 0.70 | README, DECK |
-| Role table (what the four starter roles hold: `STARTER_ROLES` in `backend/accounts.py`) | README |
-| Starter accounts and their password (`STARTERS` in `backend/accounts.py`) | README, DEMO |
+| Role table (what the four starter roles hold: `STARTER_ROLES` in `server/backend/accounts.py`) | README |
+| Starter accounts and their password (`STARTERS` in `server/backend/accounts.py`) | README, DEMO |
 
 The screenshots were taken before sign-in existed: they show a role switcher at the top right
 where the account menu now is, `roles.png` shows the old Compare roles tab with row counts and
-"View as" buttons, and `access.png` shows three roles. Retake them before they are shown again.
+"View as" buttons, and `access.png` shows three roles. `ask.png` is also from before the Ask page was
+split into Ask a question and Write SQL. Retake them before they are shown again.
 
-`DEMO.md` links assume the server is at `http://127.0.0.1:8040` and depend on the link format
-`/ask/?q=...&tab=...` (the older `#/ask?q=...` form still redirects to it). The slide-2 example in `DECK.md` quotes real strings from the feeds,
+`DEMO.md` links assume the client is at `http://127.0.0.1:3000` and depend on the link format
+`/ask?q=...&tab=...` (the older `/ask/?q=...` and `#/ask?q=...` forms still redirect to it). The run commands in the README, `DEMO.md` and slide 11 of
+`DECK.md` are written out by hand too: the server is started in `server/` and the client in `client/`. The slide-2 example in `DECK.md` quotes real strings from the feeds,
 including a misspelling marked (sic); if the feeds are regenerated the strings change.
 
 ## Voice

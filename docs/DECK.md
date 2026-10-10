@@ -41,6 +41,6 @@ EDC is the real CDISC pilot study. Sites are real ClinicalTrials.gov locations. 
 What is simulated is derived from the real data with a fixed seed and written down in `docs/DATA.md`.
 
 **11. Run it yourself**
-`pip install -r requirements.txt`, `python -m backend build`, then `python -m backend serve`. No database server, no API key needed.
-DuckDB, 28 SQL models, 27 quality rules, 14 end-to-end tests, MIT license.
+In `server/`: `pip install -r requirements.txt`, then `python -m backend serve`. In `client/`: `npm install`, then `npm start`. The two can be on different computers. No database server, no API key needed.
+DuckDB, 28 SQL models, 27 quality rules, 15 end-to-end tests, MIT license.
 What we would build next: a steward's approval screen, column-level lineage, single sign-on in place of our own passwords.

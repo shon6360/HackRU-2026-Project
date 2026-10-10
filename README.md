@@ -22,19 +22,60 @@ Built for the Regeneron challenge at HackRU Fall 2026, starter sheet 40, *One So
 
 ## Run it
 
-Needs Python 3.10 or newer, and Node.js 20.9 or newer to build the web app. No database server, no Docker,
-no API key.
+Concord is two programs. The **server** holds the data and answers the questions. The **client** is the web
+app, and connects to a server on the same computer or on another one.
+
+The server needs Python 3.10 or newer and the client needs Node.js 20.9 or newer. No database server, no
+Docker, no API key.
 
 ```bash
 git clone https://github.com/shon6360/HackRU-2026-Project.git && cd HackRU-2026-Project
+```
+
+In one terminal, the server:
+
+```bash
+cd server
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-python -m backend build          # the warehouse into build/, the web app into frontend/out
 python -m backend serve
 ```
 
-Open http://127.0.0.1:8040 and sign in. `build` loads the committed feeds into the warehouse in about two
-seconds, then builds the web app with npm. The first run takes longer, while npm downloads the web app's packages.
+In a second terminal, the client:
+
+```bash
+cd client
+npm install
+npm start
+```
+
+Open http://127.0.0.1:3000 and sign in. The server's first start loads the committed feeds into the
+warehouse, in about two seconds. `npm start` builds the web app and then serves it. The first
+`npm install` takes longer, while npm downloads the web app's packages.
+
+### On two computers
+
+On the computer that hosts the server, start it so that other computers can connect:
+
+```bash
+cd server
+python -m backend serve --host 0.0.0.0
+```
+
+It prints the address a client needs, for example `http://192.168.1.20:8040`. The other computer needs
+Node.js and only the `client/` folder. Give the client that address and start it:
+
+```bash
+cd client
+npm install
+cp .env.example .env             # then open .env and set CONCORD_SERVER=http://192.168.1.20:8040
+npm start
+```
+
+Then open http://127.0.0.1:3000 on that computer. Any number of clients can connect to one server. The
+client's computer must be able to reach the host on port 8040, so they need to be on the same network and
+the host's firewall has to let the connection in. If the client says that no Concord server answered, that
+is the first thing to check.
 
 The first start creates four accounts, all with the password `concord-demo`:
 
@@ -46,27 +87,32 @@ The first start creates four accounts, all with the password `concord-demo`:
 | `admin` | Administrator | Everything, and the **Accounts** and **Roles** pages for adding, changing and removing both |
 
 That password is public, so change it before anyone else can reach the server: each person on their
-**profile** page, or set `CONCORD_STARTER_PASSWORD` in `.env` before the first start. Accounts are kept in
-`state/accounts.db`, with the roles; delete that file to start again from the four above.
+**profile** page, or set `CONCORD_STARTER_PASSWORD` in `server/.env` before the first start. Accounts are
+kept in `server/state/accounts.db`, with the roles; delete that file to start again from the four above.
+
+More commands, all run in `server/`:
 
 ```bash
-python -m backend build          # rebuild everything: the warehouse and the web app
-python -m harmonizer build       # the warehouse half only: catalog, quality results and the access databases
-python tests/test_concord.py     # 14 end-to-end checks (also runs under pytest)
+python -m backend build          # rebuild the warehouse, catalog, quality results and the access databases
+python tests/test_concord.py     # 15 end-to-end checks (also runs under pytest)
 python -m backend ask "Which sites are we late paying?" --role finance
 ```
 
-To ask free-form questions, give Concord a Gemini API key. Create one at
-[Google AI Studio](https://aistudio.google.com/apikey), then:
+The **Ask** page has two halves. **Ask a question** takes plain English, and **Write SQL** takes the query
+itself. To ask free-form questions, Concord needs a Gemini API key. Create one at
+[Google AI Studio](https://aistudio.google.com/apikey). Each person can paste their own on their **profile**
+page, which needs no restart and is used only for their own questions. Or give the server one that everyone
+without their own key uses:
 
 ```bash
+cd server
 cp .env.example .env             # then open .env and paste the key after GEMINI_API_KEY=
 python -m backend serve          # restart the server whenever .env changes
 ```
 
-`.env` is gitignored, so the key stays on your machine. A `GEMINI_API_KEY` exported in the shell works too
-and takes precedence over the file. Without a key, Concord answers from nine reviewed questions (closest
-match) and you can write SQL yourself under any answer.
+`.env` is gitignored, so the key stays on the server's computer. A client never holds it. A `GEMINI_API_KEY` exported in the shell works too
+and takes precedence over the file. Without either key, the Ask page says that free-form asking is not
+enabled: Concord answers from nine reviewed questions (closest match), and Write SQL works as always.
 
 ## What to try
 
@@ -101,21 +147,24 @@ match) and you can write SQL yourself under any answer.
                        policy: tags -> one read-only database per combination of grants
 ```
 
-The code is in three parts. The **harmonizer** turns the feeds into the warehouse and the access
+The server is in two parts. The **harmonizer** turns the feeds into the warehouse and the access
 databases. The **back end** answers questions from what the harmonizer built and serves the API. The
-**front end** is the web app, which talks to the back end over that API and to nothing else.
+**client** is the web app. It runs its own small web server, which serves the pages and passes every API
+request on to the Concord server it was pointed at, so the browser only ever talks to the client. The
+client holds no data and decides nothing about access.
 
 | Piece | Where | What it does |
 |---|---|---|
-| Feeds | `feeds/` | Exports from five mock systems, each with a manifest giving its owner, extract time, freshness SLA and sensitivity tags |
-| Models | `harmonizer/models/**/*.sql` | One SQL file per table. Its documentation lives in the header; its dependencies and lineage are read out of the SQL |
-| Crosswalk | `harmonizer/models/master/` | Maps every system's site and subject ids to master keys, recording method, confidence and evidence |
-| Quality | `harmonizer/quality.py` | 27 rules. Each is a query returning the records that fail, with the source file and row |
-| Policy | `harmonizer/policy.py` | Three tags. Enforced by building a separate database for every combination of them |
-| Accounts | `backend/accounts.py` | Sign-in, sessions, the roles and which one each account holds. Says who is asking and what they are granted; the policy decides what that lets them see |
-| Engine | `backend/engine.py` | Parses a query, checks it against the policy, runs it sandboxed, and attaches lineage, freshness and quality warnings |
-| Ask | `backend/ask.py` | Reviewed questions, plus Gemini writing SQL from the role's own view of the catalog |
-| App | `backend/server.py`, `frontend/` | FastAPI, and a Next.js and Tailwind CSS front end built to static files that FastAPI serves |
+| Feeds | `server/feeds/` | Exports from five mock systems, each with a manifest giving its owner, extract time, freshness SLA and sensitivity tags |
+| Models | `server/harmonizer/models/**/*.sql` | One SQL file per table. Its documentation lives in the header; its dependencies and lineage are read out of the SQL |
+| Crosswalk | `server/harmonizer/models/master/` | Maps every system's site and subject ids to master keys, recording method, confidence and evidence |
+| Quality | `server/harmonizer/quality.py` | 27 rules. Each is a query returning the records that fail, with the source file and row |
+| Policy | `server/harmonizer/policy.py` | Three tags. Enforced by building a separate database for every combination of them |
+| Accounts | `server/backend/accounts.py` | Sign-in, sessions, the roles and which one each account holds. Says who is asking and what they are granted; the policy decides what that lets them see |
+| Engine | `server/backend/engine.py` | Parses a query, checks it against the policy, runs it sandboxed, and attaches lineage, freshness and quality warnings |
+| Ask | `server/backend/ask.py` | Reviewed questions, plus Gemini writing SQL from the role's own view of the catalog |
+| API | `server/backend/server.py` | FastAPI. Every route but signing in and out needs a session |
+| Client | `client/` | A Next.js and Tailwind CSS web app, and the few lines that pass its API requests on to the server |
 
 ### Matching ids
 
@@ -151,7 +200,7 @@ whatever grants a role is given, the change applies at once. A new install start
 
 The role a request runs as is the role of the signed-in account, which the server looks up from the session
 on every request. The browser cannot name a role, so there is nothing in the web app to switch. Passwords are
-stored as salted PBKDF2 hashes and session tokens as SHA-256 hashes, in a small SQLite file, `state/accounts.db`.
+stored as salted PBKDF2 hashes and session tokens as SHA-256 hashes, in a small SQLite file, `server/state/accounts.db`.
 
 ## Data
 
@@ -174,21 +223,28 @@ payment problems are not attached to any real institution.
 - It is a hackathon prototype on a single small study, not a validated system. Nothing here is GxP.
 - Sign-in is a username and password that Concord keeps itself, and the starter accounts share a public
   password. A real deployment would use single sign-on, a second factor, and an audit trail of who asked what.
+- A Gemini API key saved on a profile page is never shown again, but it is kept unencrypted in
+  `server/state/accounts.db`, readable by whoever can read that file. A real deployment would keep it in a secrets store.
+- The client and the server talk over plain HTTP. On a network you do not trust, a password or a session
+  could be read on its way between them. A real deployment would put HTTPS in front of the server.
 - The crosswalk queues uncertain matches for a steward but has no screen yet for approving them.
 - Lineage is table-level through the SQL and row-level back to the source file. Column-level lineage is not derived.
 
 ## Layout
 
 ```
-harmonizer/         feeds -> warehouse: pipeline, SQL models, crosswalk, quality rules, access policy
-backend/            warehouse -> answers: query engine, question answering, the JSON API
-frontend/           the web app: Next.js and Tailwind CSS, built to static files in frontend/out
-feeds/              the five mock source systems (committed, deterministic)
-data/public/        snapshot of the public data the feeds are built from, with SOURCES.json
-scripts/            fetch_public_data.py and simulate_feeds.py, to regenerate the two folders above
-tests/              end-to-end checks
-.env.example        template for the optional .env file that holds the Gemini API key and the starter password
-docs/               DATA.md, DEMO.md (3-minute script), DECK.md (slide outline), screenshots
+server/               the program that holds the data and answers questions
+  harmonizer/         feeds -> warehouse: pipeline, SQL models, crosswalk, quality rules, access policy
+  backend/            warehouse -> answers: query engine, question answering, accounts, the JSON API
+  feeds/              the five mock source systems (committed, deterministic)
+  data/public/        snapshot of the public data the feeds are built from, with SOURCES.json
+  scripts/            fetch_public_data.py and simulate_feeds.py, to regenerate the two folders above
+  tests/              end-to-end checks
+  requirements.txt    the server's Python packages
+  .env.example        template for the optional .env file that holds the Gemini API key and the starter password
+client/               the web app that connects to a server: Next.js and Tailwind CSS
+  .env.example        template for the optional .env file that holds the server's address
+docs/                 DATA.md, DEMO.md (3-minute script), DECK.md (slide outline), screenshots
 ```
 
 ## License
