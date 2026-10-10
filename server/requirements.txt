@@ -1,6 +1,6 @@
 # Python packages for the server: the harmonizer and the back end.
-# The client needs none of them. Its packages (Next.js, React, Tailwind CSS) are Node packages,
-# listed in client/package.json and installed with: cd client && npm install
+# The web app's packages (Next.js, React, Tailwind CSS) are Node packages, so they cannot go in this file.
+# They are listed in client/package.json, and `python -m backend build` installs them when they are missing.
 duckdb>=1.1
 sqlglot>=25
 fastapi>=0.110

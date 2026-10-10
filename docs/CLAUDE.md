@@ -34,9 +34,9 @@ where the account menu now is, `roles.png` shows the old Compare roles tab with 
 "View as" buttons, and `access.png` shows three roles. `ask.png` is also from before the Ask page was
 split into Ask a question and Write SQL. Retake them before they are shown again.
 
-`DEMO.md` links assume the client is at `http://127.0.0.1:3000` and depend on the link format
-`/ask?q=...&tab=...` (the older `/ask/?q=...` and `#/ask?q=...` forms still redirect to it). The run commands in the README, `DEMO.md` and slide 11 of
-`DECK.md` are written out by hand too: the server is started in `server/` and the client in `client/`. The slide-2 example in `DECK.md` quotes real strings from the feeds,
+`DEMO.md` links assume the server is at `http://127.0.0.1:8040` and depend on the link format
+`/ask/?q=...&tab=...` (the older `#/ask?q=...` form still redirects to it). The run commands in the README, `DEMO.md` and slide 11 of
+`DECK.md` are written out by hand too, and are run in `server/`. The slide-2 example in `DECK.md` quotes real strings from the feeds,
 including a misspelling marked (sic); if the feeds are regenerated the strings change.
 
 ## Voice

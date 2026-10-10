@@ -1,13 +1,14 @@
-"""The server: a small JSON API over the engine. It serves no pages; the client in `client/` is the web app.
+"""The server: a small JSON API over the engine, plus the web app that `client/` builds to static files.
 
-The client runs wherever its user is and forwards its `/api/...` requests here, so everything it needs is
-under `/api`. Every route but signing in and out needs a session. The role a request runs as is the role of
+One process on one address serves both, so another computer needs only a browser and every request the web
+app makes is same-origin. Every route but signing in and out needs a session. The role a request runs as is the role of
 the signed-in account, looked up from the session cookie: no route takes a role from the client.
 """
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, FastAPI, HTTPException, Request, Response
 from fastapi.responses import JSONResponse, PlainTextResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from harmonizer import config, policy, quality
@@ -16,9 +17,10 @@ from . import accounts
 from . import ask as asker
 from . import engine
 
+WEB = config.ROOT.parent / "client" / "out"  # the static site that `npm run build` writes in client/
 COOKIE = "concord_session"
 
-# The schema sits under /api with the docs page that loads it, so the page also works through a client.
+# The schema sits under /api with the docs page that loads it, so the page also works through `npm run dev`, which forwards only /api.
 app = FastAPI(title="Concord", docs_url="/api/docs", openapi_url="/api/openapi.json", redoc_url=None)
 
 
@@ -419,9 +421,13 @@ def access_matrix():
 
 app.include_router(api)
 
-# ----------------------------------------------------------------------------- the address itself
-@app.get("/", include_in_schema=False)
-def index():
-    return PlainTextResponse("This is the Concord server. It answers the API under /api and serves no pages: see /api/docs.\n\n"
-                             "To use Concord, start the client (the client/ folder) on your own computer, with\n"
-                             "CONCORD_SERVER set to this server's address, and open the page the client gives you.\n")
+# ----------------------------------------------------------------------------- the web app
+# Mounted last, so it only sees what no /api route claimed. html=True serves <page>/index.html for /<page>/.
+if WEB.is_dir():
+    app.mount("/", StaticFiles(directory=WEB, html=True), name="client")
+else:
+    @app.get("/", include_in_schema=False)
+    def not_built():
+        return PlainTextResponse("The web app has not been built yet. Run this once in server/, then restart the server:\n\n"
+                                 "    python -m backend build\n\n"
+                                 "The API is running: see /api/docs.\n", status_code=503)

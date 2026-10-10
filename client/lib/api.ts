@@ -13,9 +13,9 @@ export class ApiError extends Error {
 /* Fired on `window` when the server says there is no session any more, whichever request found out. */
 export const SIGNED_OUT = "concord:signed-out";
 
-/* Every request goes to /api on the client's own address, and the client passes it on to the Concord server
-   (app/api/[...path]/route.ts). The browser never needs the server's address, and the session cookie travels
-   with the request. A body makes it a POST unless a method is given. */
+/* Every request goes to the server's /api routes on the same origin: the server serves the built site, and
+   `next dev` forwards /api to it. The session cookie travels with the request. A body makes it a POST unless
+   a method is given. */
 export async function api<T>(path: string, body?: unknown, method?: "PATCH" | "DELETE"): Promise<T> {
   const res = await fetch(path, {
     method: method ?? (body === undefined ? "GET" : "POST"),

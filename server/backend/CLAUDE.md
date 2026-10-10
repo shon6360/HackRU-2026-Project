@@ -1,13 +1,13 @@
 # Back end
 
 The read side: answers questions from what the harmonizer left in `build/`, knows who is signed
-in, and serves the JSON API that clients connect to. It serves no pages: the web app is `client/`. Read
+in, and serves the JSON API and the web app that `client/` builds. Read
 `../../CLAUDE.md` first for commands and the rules that must not be broken. Commands run in `server/`, and
 paths here are relative to it.
 
 ```bash
-python -m backend build                         # the warehouse: the same as python -m harmonizer build
-python -m backend serve [--host H --port P]     # default 127.0.0.1:8040. --host 0.0.0.0 lets other computers connect
+python -m backend build                         # the warehouse, then the web app
+python -m backend serve [--host H --port P]     # default 127.0.0.1:8040. --host 0.0.0.0 lets other computers open it
 python -m backend ask "Which sites are we late paying?" --role finance
 ```
 
@@ -15,11 +15,11 @@ python -m backend ask "Which sites are we late paying?" --role finance
 
 | Module | Role |
 |---|---|
-| `__main__.py` | CLI: `build`, `serve`, `ask`. `build` runs the harmonizer's pipeline. The other two run it first when there is no warehouse. `serve` prints where it is listening and, when that is beyond this computer, the address to give a client |
+| `__main__.py` | CLI: `build`, `serve`, `ask`. `build` runs the harmonizer's pipeline, then npm in `../client/`. The other two run the pipeline first when there is no warehouse. `serve` prints where it is listening and, when that is beyond this computer, the address to open from another one |
 | `engine.py` | `catalog()`, `preflight()`, `execute()`, `upstream_graph()`, `answer_context()`, `trace()` |
 | `ask.py` | `VETTED` questions, matching, the Gemini call, `ask()` |
 | `accounts.py` | Roles, accounts, passwords, sessions and each account's own Gemini key in `state/accounts.db` (SQLite). Says which role a request runs as and which grants that role holds |
-| `server.py` | FastAPI app: sign-in and a thin JSON API over the engine. Nothing else: no pages, no static files |
+| `server.py` | FastAPI app: sign-in, a thin JSON API over the engine, plus the built web app as static files |
 
 Imports point one way. `accounts` uses `config` and `policy` from the harmonizer and nothing
 else here; `engine` uses those and `accounts` (for a role's grants); `ask` uses `engine` and
@@ -165,13 +165,12 @@ from the query string or the body; a `role` a client sends is ignored.
 The session token travels in the `concord_session` cookie: `HttpOnly`, `SameSite=Strict`, and
 `Secure` when the request came over HTTPS.
 
-A browser does not call these routes directly. It calls the same paths on its client, which passes
-the request on with its cookie and passes the answer back (`client/app/api/[...path]/route.ts`). So
-to the browser the cookie belongs to the client's address, the requests are same-origin, and this
-app needs no CORS middleware: do not add one, because `SameSite=Strict` and the absence of CORS are
-what stop another site from using a signed-in browser. A client forwards `/api/...` and nothing
-else, so anything a client needs must live under `/api`, which is why the OpenAPI schema is at
-`/api/openapi.json`.
+The pages and the API come from this one app on one address, so every request the web app makes
+is same-origin and there is no CORS middleware: do not add one, because `SameSite=Strict` and the
+absence of CORS are what stop another site from using a signed-in browser. That is also what makes
+hosting simple: `--host 0.0.0.0`, and another computer needs only a browser. `npm run dev` in
+`client/` forwards `/api/...` and nothing else, so anything the web app needs must live under
+`/api`, which is why the OpenAPI schema is at `/api/openapi.json`.
 
 | Route | Returns |
 |---|---|
@@ -201,7 +200,7 @@ else, so anything a client needs must live under `/api`, which is why the OpenAP
 | `GET /api/quality` | rules, failures, answer-key score |
 | `GET /api/access` | every tagged table and what each role gets |
 | `GET /api/docs`, `GET /api/openapi.json` | the interactive API docs and the schema they load. Public |
-| `GET /` | a few lines of plain text saying that this is the server and that the web app is the client. Public. There is nothing else outside `/api` |
+| everything else | the built web app from `../client/out/` (`server.WEB`), mounted last. `/ask/` serves `ask/index.html`. If the folder is missing at start-up, `/` explains how to build it |
 
 Catalog metadata is deliberately visible to every signed-in role, including for tables whose data is
 withheld. What is hidden for a withheld table or masked column is the data and anything derived

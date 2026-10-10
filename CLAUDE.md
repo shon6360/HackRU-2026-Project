@@ -6,60 +6,58 @@ and answers cross-system questions with the SQL, lineage, source rows, freshness
 data-quality warnings attached, under role-based access control. People sign in to an account,
 the account's role decides what they can see, and an administrator creates and edits both.
 
-Concord is two programs. The **server** (`server/`) is Python 3.10+, DuckDB, sqlglot and FastAPI: it
-holds the data and answers every question. The **client** (`client/`) is a Next.js and Tailwind CSS
-web app (Node.js 20.9+) that connects to a server on the same computer or on another one. No
-database server, no Docker, no API key required.
+Concord is hosted on one computer and opened from any other with a browser. The **server**
+(`server/`) is Python 3.10+, DuckDB, sqlglot and FastAPI: it holds the data, answers every question,
+and serves the web app. The **client** (`client/`) is the source of that web app, Next.js and
+Tailwind CSS, built once to static files (Node.js 20.9+). No database server, no Docker, no API key
+required.
 
 The code is in three parts:
 
 - **`server/harmonizer/`** turns the feeds into the warehouse and one database per combination of grants (the write side).
-- **`server/backend/`** answers questions from what the harmonizer built and serves the JSON API (the read side). It serves no pages.
-- **`client/`** is the web app. Its own small web server serves the pages and forwards `/api/...` to the
-  server it was pointed at. It talks to nothing else.
+- **`server/backend/`** answers questions from what the harmonizer built and serves the JSON API (the read side), and the built web app beside it.
+- **`client/`** is the web app. It talks to the back end over `/api/...` and to nothing else.
 
 Dependencies point one way: client -> back end (HTTP only) -> harmonizer (the files in
 `server/build/`, plus `config`, `policy` and `quality`). The harmonizer imports neither of the others.
-Nothing in `server/` reads `client/` and nothing in `client/` reads `server/`, so either folder can be
-copied to another computer by itself.
+The one thing the server takes from `client/` is the folder of built files, `client/out`.
 
 Paths in a CLAUDE.md under `server/` are relative to `server/`, which is also where its commands run.
 
 ## Commands
 
+Run in `server/`, with the virtual environment active. `harmonizer` and `backend` are not
+installed; they are imported from the cwd.
+
 ```bash
-# the server: run in server/, with its virtual environment active
 python3 -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt   # once
-python -m backend serve [--host H --port P] # default 127.0.0.1:8040, this computer only. --host 0.0.0.0 lets other computers connect
-python -m backend build                    # build/*.duckdb from feeds/ (about 1-2 s). The same as python -m harmonizer build
+python -m backend build                    # everything: build/*.duckdb from feeds/, then ../client/out with npm
+python -m harmonizer build                 # the warehouse half only (about 1-2 s)
+python -m backend serve [--host H --port P] # default 127.0.0.1:8040, this computer only. --host 0.0.0.0 lets other computers open it
 python -m backend ask "Which sites are we late paying?" --role finance   # prints the result JSON
 python tests/test_concord.py               # all 15 tests, no test runner needed
-
-# the client: run in client/
-npm install                                # once
-npm start                                  # builds the web app, then serves it at http://127.0.0.1:3000
-npm run dev                                # the same address with hot reload, for work on the client
 ```
 
-- `harmonizer` and `backend` are not installed; they are imported from the cwd, which is why the
-  server's commands run in `server/`.
 - A virtual environment does not survive its folder being moved or renamed: `activate` keeps
   the old path and `python` is then not found. Recreate it, or call `.venv/bin/python` directly.
-- `serve` and `ask` build only when `build/warehouse.duckdb` is missing. After changing a model, a
-  feed, a quality rule or the policy, run `python -m harmonizer build` yourself.
-- The server serves no pages: its `/` says so in plain text. The web app is the client.
-  `npm start` is `next build` followed by `next start`, so it never serves a stale build.
-- The client finds its server from `CONCORD_SERVER`, in `client/.env` (copy `client/.env.example`)
-  or the shell, which wins. The default is `http://127.0.0.1:8040`. It is read on each request, so
-  a change needs the client restarted but not rebuilt.
-- **On two computers:** on the host, `python -m backend serve --host 0.0.0.0` prints the address
-  to give a client (`CONCORD_SERVER=http://<address>:8040`). The other computer needs only the
-  `client/` folder and Node.js. The browser only ever talks to the client, which forwards to the
-  server (`client/app/api/[...path]/route.ts`), so the session cookie stays same-origin and the
-  server sets no CORS headers. Do not add them.
-- The client's scripts listen on `127.0.0.1` only, on purpose: a client listening on the network
-  would hand a server that listens only on its own computer to everyone on that network. To show
-  the client to other devices, run `npx next start -H 0.0.0.0` in `client/` after a build.
+- `python -m backend build` is the one build command: it runs the harmonizer's pipeline, then
+  `npm run build` in `client/` (and `npm install` first when `client/node_modules` is missing).
+  Each half still runs alone: `python -m harmonizer build`, or `npm run build` in `client/`.
+- `serve` and `ask` build only when `build/warehouse.duckdb` is missing, and never build the web
+  app. After changing a model, a feed, a quality rule or the policy, run `python -m harmonizer build`
+  yourself.
+- The server serves the web app from `client/out`. If that folder is missing when it starts, `/`
+  says how to build it and only the API is served; build, then restart.
+- **Hosting.** `python -m backend serve --host 0.0.0.0` prints the address to open from another
+  computer, which needs a browser and nothing else. One process on one address serves the pages
+  and the API, so every request the web app makes is same-origin: that is why the session cookie
+  can be `SameSite=Strict` and the server sets no CORS headers. Do not add them, and do not split
+  the web app onto another address. The default host stays `127.0.0.1`, because the starter
+  accounts' password is public. The host needs Node.js only for the build; `client/out` can also
+  be built on another machine and copied over.
+- For work on the web app, run `npm run dev` in `client/` beside the server: it serves on
+  `127.0.0.1:3000` with hot reload and forwards `/api` to the server at `CONCORD_SERVER` (default
+  `http://127.0.0.1:8040`; set it in the shell or in `client/.env` to work against a hosted server).
 - A running server picks up a rebuild without a restart (the catalog cache is keyed on the
   warehouse file's mtime). Changes to Python code need a restart; there is no `--reload`.
 - `pytest` is not in `requirements.txt`. The tests are written to run under it, so install it
@@ -83,13 +81,13 @@ npm run dev                                # the same address with hot reload, f
   enabled and a typed question is matched to the closest reviewed one.
 - The Ask page has two halves: **Ask a question** (reviewed questions and free-form) and **Write
   SQL** (the query itself, no language model). Each keeps its own answer.
-- The server's settings, and `CONCORD_STARTER_PASSWORD`, live in `server/.env` (copy
+- These settings, and `CONCORD_STARTER_PASSWORD`, live in `server/.env` (copy
   `server/.env.example`). `harmonizer/config.py` loads it on import; a variable already set in the
-  shell wins. Both `.env` files are gitignored: never commit one, print it or paste its contents
-  anywhere. The `.env.example` files are committed and must only ever hold placeholders. A running
-  server reads `.env` once, so restart it after a change. Without a key everything still works
-  from the reviewed questions and from Write SQL. The client never holds a key.
-- API docs are served at `/api/docs`, on the server's address and through a client.
+  shell wins. `.env` is gitignored: never commit it, print it or paste its contents anywhere.
+  `.env.example` is committed and must only ever hold placeholders. A running server reads `.env`
+  once, so restart it after a change. Without a key everything still works from the reviewed
+  questions and from Write SQL.
+- API docs are served at `/api/docs`.
 
 ## Layout
 
@@ -106,8 +104,7 @@ server/               everything that holds or builds data. Its commands run her
   state/              accounts.db: roles, accounts (with any Gemini key an account saved) and sessions. Gitignored. Created on first start, survives a build
   requirements.txt    the seven Python runtime dependencies. pytest and pandas are not in it
   .env.example        template for server/.env (the Gemini key, the model id, the starter password). .env itself is gitignored
-client/               the Next.js and Tailwind app: app/, components/, lib/ (see client/CLAUDE.md). Its dependencies are in package.json
-  .env.example        template for client/.env (CONCORD_SERVER, the address of the server). .env itself is gitignored
+client/               the Next.js and Tailwind app: app/, components/, lib/; built to out/, which the server serves (see client/CLAUDE.md). Its dependencies are in package.json
 docs/                 DATA.md, DEMO.md, DECK.md, screenshots/ (see docs/CLAUDE.md)
 README.md             the project README, then the HackRU challenge brief from the line `# ONE SOURCE OF TRUTH` on
 ```
@@ -128,9 +125,9 @@ server/feeds/ --harmonizer: pipeline.build()--> server/build/warehouse.duckdb
     meta     the catalog: feeds, datasets, columns (with profiles), lineage
     dq       rules and failures
 server/build/warehouse.duckdb --policy--> server/build/mart_<grants>.duckdb   (one read-only database per combination of grants: 8)
-server/build/ --backend: engine, ask, server--> /api/... on the server's address
+server/build/ --backend: engine, ask, server--> /api/... --> the web app, in a browser on any computer
 server/state/accounts.db --backend: accounts--> which role a request runs as, and which grants that role holds
-browser --> client (pages, and /api forwarded as it is) --> /api/... on the server
+client/ --npm run build--> client/out --backend: server--> the pages, from the same address as /api
 ```
 
 Current build: 12 bronze, 12 silver, 4 master, 13 gold tables; 27 quality rules, 54 findings;
@@ -159,8 +156,7 @@ to a client must apply `engine.access()` / `policy` by hand, as `/api/crosswalk`
 **The role comes from the session, never from the request.** A route gets its role from
 `Depends(_role)` in `server/backend/server.py`, which reads the signed-in account. No route takes a
 role as a parameter, and routes are declared on the `api` router, which refuses a request with
-no session. The client shows or hides things for convenience and decides nothing, and the part of it
-that forwards requests passes the cookie along without reading it.
+no session. The client shows or hides things for convenience and decides nothing.
 
 **Sensitivity tags do not propagate.** A tag on a bronze file or a silver model is not
 inherited downstream. Every model that exposes a sensitive column must re-declare the tag in
@@ -196,8 +192,7 @@ simulated says so. No real patient, site or payment is described; site names are
 | Add or change a role | the Roles page, signed in as an administrator. No code and no build | `STARTER_ROLES` in `server/backend/accounts.py` only decides what a new, empty install starts with |
 | Change what an account or a role holds, or how sign-in works | `server/backend/accounts.py` | run the tests. A new column needs a migration in `init()`, or `server/state/accounts.db` deleted |
 | Make a result column clickable for tracing | `TRACEABLE` in `server/backend/engine.py` | |
-| Add or change an API route | `server/backend/server.py` (on `api`, not `app`, and under `/api/`, which is all a client forwards), then its type in `client/lib/types.ts` and the page under `client/app/` that calls it | restart the server and the client; update the route table in `server/backend/CLAUDE.md`. A method other than GET, POST, PATCH or DELETE must also be exported from `client/app/api/[...path]/route.ts` |
-| Change how the client reaches the server | `client/app/api/[...path]/route.ts` | restart the client. It must stay a plain pass-through: no decisions about access |
+| Add or change an API route | `server/backend/server.py` (on `api`, not `app`, and under `/api/`, which is all `npm run dev` forwards), then its type in `client/lib/types.ts` and the page under `client/app/` that calls it | restart the server, rebuild the client; update the route table in `server/backend/CLAUDE.md` |
 | Change the simulation | `server/scripts/simulate_feeds.py` | regenerate, `build`, tests, then update the figures quoted in `README.md` and `docs/` |
 
 The figures in `README.md`, `docs/DATA.md`, `docs/DEMO.md` and `docs/DECK.md` (25 planted, 29
@@ -222,9 +217,9 @@ out by hand. If the data or the rules change, they go stale silently, and so do 
 A hackathon prototype on one small study, nothing GxP. Sign-in is a username and a password
 kept by Concord itself, with starter accounts whose password is public: there is no single
 sign-on, no second factor, no password reset by email and no audit trail of who asked what. A
-Gemini key an account saves is kept unencrypted in `server/state/accounts.db`. The client and
-the server talk over plain HTTP, so on a network that is not trusted a password or a session token
-can be read on its way. The
+Gemini key an account saves is kept unencrypted in `server/state/accounts.db`. The server speaks
+plain HTTP, so on a network that is not trusted a password or a session token can be read on its
+way; hosting it for real needs HTTPS in front. The
 crosswalk queues uncertain matches but
 has no approval screen. Lineage is table-level through the SQL and row-level to the source file;
 column-level lineage is not derived. These are listed in `README.md`; keep that list truthful.

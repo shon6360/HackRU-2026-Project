@@ -22,60 +22,33 @@ Built for the Regeneron challenge at HackRU Fall 2026, starter sheet 40, *One So
 
 ## Run it
 
-Concord is two programs. The **server** holds the data and answers the questions. The **client** is the web
-app, and connects to a server on the same computer or on another one.
-
-The server needs Python 3.10 or newer and the client needs Node.js 20.9 or newer. No database server, no
-Docker, no API key.
+Needs Python 3.10 or newer, and Node.js 20.9 or newer to build the web app. No database server, no Docker,
+no API key.
 
 ```bash
-git clone https://github.com/shon6360/HackRU-2026-Project.git && cd HackRU-2026-Project
-```
-
-In one terminal, the server:
-
-```bash
-cd server
+git clone https://github.com/shon6360/HackRU-2026-Project.git && cd HackRU-2026-Project/server
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
+python -m backend build          # the warehouse into server/build, the web app into client/out
 python -m backend serve
 ```
 
-In a second terminal, the client:
+Open http://127.0.0.1:8040 and sign in. `build` loads the committed feeds into the warehouse in about two
+seconds, then builds the web app with npm. The first run takes longer, while npm downloads the web app's packages.
+
+### Hosting it for other computers
+
+Concord runs on one computer and everyone else opens it in a browser. Nothing is installed anywhere else.
+Start it so that other computers can reach it:
 
 ```bash
-cd client
-npm install
-npm start
-```
-
-Open http://127.0.0.1:3000 and sign in. The server's first start loads the committed feeds into the
-warehouse, in about two seconds. `npm start` builds the web app and then serves it. The first
-`npm install` takes longer, while npm downloads the web app's packages.
-
-### On two computers
-
-On the computer that hosts the server, start it so that other computers can connect:
-
-```bash
-cd server
 python -m backend serve --host 0.0.0.0
 ```
 
-It prints the address a client needs, for example `http://192.168.1.20:8040`. The other computer needs
-Node.js and only the `client/` folder. Give the client that address and start it:
-
-```bash
-cd client
-npm install
-cp .env.example .env             # then open .env and set CONCORD_SERVER=http://192.168.1.20:8040
-npm start
-```
-
-Then open http://127.0.0.1:3000 on that computer. Any number of clients can connect to one server. The
-client's computer must be able to reach the host on port 8040, so they need to be on the same network and
-the host's firewall has to let the connection in. If the client says that no Concord server answered, that
-is the first thing to check.
+It prints the address to open, for example `http://192.168.1.20:8040`. The other computers must be able to
+reach the host on port 8040, so they need to be on the same network and the host's firewall has to let the
+connection in. Change the starter password below first, and see [What this is not](#what-this-is-not)
+before putting it anywhere but a network you trust.
 
 The first start creates four accounts, all with the password `concord-demo`:
 
@@ -93,7 +66,8 @@ kept in `server/state/accounts.db`, with the roles; delete that file to start ag
 More commands, all run in `server/`:
 
 ```bash
-python -m backend build          # rebuild the warehouse, catalog, quality results and the access databases
+python -m backend build          # rebuild everything: the warehouse and the web app
+python -m harmonizer build       # the warehouse half only: catalog, quality results and the access databases
 python tests/test_concord.py     # 15 end-to-end checks (also runs under pytest)
 python -m backend ask "Which sites are we late paying?" --role finance
 ```
@@ -110,7 +84,7 @@ cp .env.example .env             # then open .env and paste the key after GEMINI
 python -m backend serve          # restart the server whenever .env changes
 ```
 
-`.env` is gitignored, so the key stays on the server's computer. A client never holds it. A `GEMINI_API_KEY` exported in the shell works too
+`.env` is gitignored, so the key stays on the computer that runs Concord. A `GEMINI_API_KEY` exported in the shell works too
 and takes precedence over the file. Without either key, the Ask page says that free-form asking is not
 enabled: Concord answers from nine reviewed questions (closest match), and Write SQL works as always.
 
@@ -149,9 +123,8 @@ enabled: Concord answers from nine reviewed questions (closest match), and Write
 
 The server is in two parts. The **harmonizer** turns the feeds into the warehouse and the access
 databases. The **back end** answers questions from what the harmonizer built and serves the API. The
-**client** is the web app. It runs its own small web server, which serves the pages and passes every API
-request on to the Concord server it was pointed at, so the browser only ever talks to the client. The
-client holds no data and decides nothing about access.
+**client** is the web app, which talks to the back end over that API and to nothing else. It is built to
+plain files that the server serves from the same address as the API, so one program is all that is hosted.
 
 | Piece | Where | What it does |
 |---|---|---|
@@ -163,8 +136,7 @@ client holds no data and decides nothing about access.
 | Accounts | `server/backend/accounts.py` | Sign-in, sessions, the roles and which one each account holds. Says who is asking and what they are granted; the policy decides what that lets them see |
 | Engine | `server/backend/engine.py` | Parses a query, checks it against the policy, runs it sandboxed, and attaches lineage, freshness and quality warnings |
 | Ask | `server/backend/ask.py` | Reviewed questions, plus Gemini writing SQL from the role's own view of the catalog |
-| API | `server/backend/server.py` | FastAPI. Every route but signing in and out needs a session |
-| Client | `client/` | A Next.js and Tailwind CSS web app, and the few lines that pass its API requests on to the server |
+| App | `server/backend/server.py`, `client/` | FastAPI, and a Next.js and Tailwind CSS web app built to static files that FastAPI serves |
 
 ### Matching ids
 
@@ -225,15 +197,15 @@ payment problems are not attached to any real institution.
   password. A real deployment would use single sign-on, a second factor, and an audit trail of who asked what.
 - A Gemini API key saved on a profile page is never shown again, but it is kept unencrypted in
   `server/state/accounts.db`, readable by whoever can read that file. A real deployment would keep it in a secrets store.
-- The client and the server talk over plain HTTP. On a network you do not trust, a password or a session
-  could be read on its way between them. A real deployment would put HTTPS in front of the server.
+- The server speaks plain HTTP. On a network you do not trust, a password or a session could be read on
+  its way to it. A real deployment would put HTTPS in front of the server.
 - The crosswalk queues uncertain matches for a steward but has no screen yet for approving them.
 - Lineage is table-level through the SQL and row-level back to the source file. Column-level lineage is not derived.
 
 ## Layout
 
 ```
-server/               the program that holds the data and answers questions
+server/               the program that is hosted: it holds the data, answers questions and serves the web app
   harmonizer/         feeds -> warehouse: pipeline, SQL models, crosswalk, quality rules, access policy
   backend/            warehouse -> answers: query engine, question answering, accounts, the JSON API
   feeds/              the five mock source systems (committed, deterministic)
@@ -242,8 +214,7 @@ server/               the program that holds the data and answers questions
   tests/              end-to-end checks
   requirements.txt    the server's Python packages
   .env.example        template for the optional .env file that holds the Gemini API key and the starter password
-client/               the web app that connects to a server: Next.js and Tailwind CSS
-  .env.example        template for the optional .env file that holds the server's address
+client/               the web app: Next.js and Tailwind CSS, built to static files in client/out
 docs/                 DATA.md, DEMO.md (3-minute script), DECK.md (slide outline), screenshots
 ```
 

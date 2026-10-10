@@ -1,10 +1,10 @@
 # Client
 
-The web app: Next.js (App Router, TypeScript) and Tailwind CSS. It is a program of its own, with
-its own small web server (`next start`), and it connects to a Concord server that may be on another
-computer. Everything it shows comes from that server's `/api/...` routes, listed in
-`server/backend/CLAUDE.md`. It makes no other requests, holds no data, and reads nothing from
-`server/`, so this folder can be copied to another computer by itself.
+The web app: Next.js (App Router, TypeScript) and Tailwind CSS. `npm run build` exports it as plain
+files into `out/`, and the server serves that folder (`server/backend/server.py`, `server.WEB`)
+from the same address as the API. So one program is hosted, there is no Node process at run time,
+and another computer needs only a browser. Everything the app shows comes from the server's
+`/api/...` routes, listed in `server/backend/CLAUDE.md`. It makes no other requests.
 
 This is Next.js 16. Its conventions differ from older versions: read `AGENTS.md` here, and the
 guides it points to under `node_modules/next/dist/docs/`, before changing configuration or routing.
@@ -15,50 +15,39 @@ Run in `client/`. Needs Node.js 20.9 or newer.
 
 ```bash
 npm install          # once
-npm start            # next build, then next start: http://127.0.0.1:3000
-npm run dev          # the same address with hot reload
-npm run build        # the build alone. It type-checks
+npm run build        # writes out/, which `python -m backend serve` serves at http://127.0.0.1:8040
+npm run dev          # http://127.0.0.1:3000 with hot reload; forwards /api to the server
 npm run typecheck    # generates the route types, then tsc
 ```
 
-- The server it connects to is `CONCORD_SERVER`, in `.env` here (copy `.env.example`) or in the
-  shell, which wins. The default is `http://127.0.0.1:8040`, a server on the same computer.
-  `192.168.1.20:8040` with no `http://` in front is accepted. Restart the client after a change;
-  no rebuild is needed.
-- Both scripts listen on `127.0.0.1` only. That is on purpose: a client listening on the network
-  would let everyone on it reach a server that listens only on its own computer. To show the
-  client to other devices, build and then run `npx next start -H 0.0.0.0`.
-- Add `-- -p <port>` to use another port: `npm start -- -p 3001`.
-- The build needs neither the server nor the warehouse. Nothing is fetched at build time.
+- In `server/`, `python -m backend build` does the install (when `node_modules/` is missing) and
+  the build, after rebuilding the warehouse.
+- `npm run dev` needs a server running. It forwards `/api` to `http://127.0.0.1:8040`; set
+  `CONCORD_SERVER`, in the shell or in `.env` here, to work against a server on another computer.
+  It listens on `127.0.0.1` only, so that it does not hand a server that listens only on its own
+  computer to the rest of the network.
+- A change shows on port 8040 only after `npm run build`. The running server picks the new files
+  up without a restart, unless `out/` did not exist when it started.
 - There is no test and no linter here. `npm run build` type-checks.
-- `.next/`, `node_modules/` and `.env` are gitignored. `package-lock.json` is committed.
+- `out/`, `.next/`, `node_modules/` and `.env` are gitignored. `package-lock.json` is committed.
 
-## How it reaches the server
+## Why a static export
 
-The browser only ever talks to the client. Pages call `/api/...` on the client's own address
-(`lib/api.ts`), and `app/api/[...path]/route.ts`, the only server-side code here, passes each
-request on to `CONCORD_SERVER` and passes the answer back. The consequences:
+`next.config.ts` returns two configurations. For `next build` it sets `output: "export"` and
+`trailingSlash: true`, so each page is `out/<page>/index.html`, which is the layout FastAPI's
+static file handler serves with no routing rules. For `next dev` it sets a rewrite that forwards
+`/api`. The consequences:
 
-- **The browser never learns the server's address**, and to the browser every request is
-  same-origin. That is why the session cookie can stay `HttpOnly` and `SameSite=Strict` and the
-  server needs no CORS rules. Do not make pages call the server directly: between two
-  different addresses the browser only sends a cookie marked `SameSite=None; Secure`, which needs
-  HTTPS, and the alternative is a token that scripts can read.
-- **The forwarder decides nothing.** It passes on the method, the path, the query string, the
-  body and three request headers (`cookie`, `content-type`, `accept`), and passes back the
-  status, the body and the headers, `Set-Cookie` included. It does not read the cookie, add a
-  role, cache, or retry. Keep it that way: the server checks the session on every request.
-- **It exports GET, POST, PATCH and DELETE.** A server route with another method needs it added
-  to the export line.
-- **`CONCORD_SERVER` is read on each request**, not at build time, so one build works against any
-  server. Do not rename it to `NEXT_PUBLIC_...`: that would freeze it into the build and send it
-  to the browser.
-- **When the server cannot be reached** the forwarder answers 502 with a plain-English `detail`
-  naming the address it tried. `api()` shows `detail` like any other error, so the sign-in screen
-  says what is wrong.
-- No dynamic route segments for tables, because the table names are only known from the API. One
-  table is `/catalog?table=<schema.name>`, not `/catalog/<schema.name>`.
-- Every page fetches in the browser, as a client component.
+- The pages and the API share one address, so every request is same-origin. That is what lets the
+  session cookie be `HttpOnly` and `SameSite=Strict` with no CORS rules on the server. Do not make
+  pages call a server at another address.
+- Nothing that needs a Node server: no server actions, route handlers that read the request,
+  rewrites or redirects in production, and no Cache Components (the build refuses it with
+  `output: "export"`).
+- No dynamic route segments, because the table names are only known from the API. One table is
+  `/catalog?table=<schema.name>`, not `/catalog/<schema.name>`.
+- Every page fetches in the browser. Nothing is fetched at build time, so the build does not need
+  the server or the warehouse, and `out/` can be built on one machine and copied to the host.
 
 ## Layout
 
@@ -73,7 +62,6 @@ app/
   profile/            page.tsx: your own account, what your role is granted, change your name and password, keep your Gemini API key
   accounts/           page.tsx: every account, and the form that adds, changes and removes one (administrators)
   roles/              page.tsx: every role, and the form that adds, changes and removes one (administrators)
-  api/[...path]/      route.ts: passes every /api request on to the Concord server. The only server-side code
 components/
   app-context.tsx     state that outlives a page: who is signed in, meta, both halves of the Ask page, catalog filter, trace
   shell.tsx           top bar (nav, feed dots, account menu), <main> or the sign-in form, the trace drawer
@@ -83,7 +71,7 @@ components/
   lineage-graph.tsx   the lineage graph as inline SVG, and its legend
   trace-drawer.tsx    where a key comes from: crosswalk matches and source rows
 lib/
-  api.ts              api(path, body, method), the useApi(path) hook, and the SIGNED_OUT event. Calls /api on the client's own address
+  api.ts              api(path, body, method), the useApi(path) hook, and the SIGNED_OUT event
   types.ts            the shapes the API returns
   format.ts           fmtCell, fmtInt, LAYERS, SYSTEMS, tableHref
   graph.ts            layoutGraph: one column per layer, extra columns where a layer depends on itself
@@ -91,7 +79,7 @@ lib/
 
 Pages are client components. `ask/page.tsx` and `catalog/page.tsx` are thin server components
 that wrap the view in `<Suspense>`, which a page that calls `useSearchParams()` must have or the
-build fails. `.env.example`, beside `package.json`, is the template for `.env`.
+build fails.
 
 `AppProvider` loads `/api/me` and `/api/meta` together. `Shell` renders a page only once both have
 arrived, so pages call `useApp()` and can rely on `user` and `meta` being there. Until then it
@@ -146,8 +134,8 @@ out goes the same way. One account's answer is never left on screen for the next
   on every request.
 - **No `dangerouslySetInnerHTML`.** The data includes free text from source files and SQL written
   by a model. Rendered as JSX children it is escaped by React; keep it that way.
-- **Deep links reproduce an answer:** `/ask?q=<question>&tab=<result|sql|lineage|roles>&trace=<column>:<value>`.
-  `docs/DEMO.md` relies on them. The form with a slash, `/ask/?...`, is redirected to it by Next.js. A link opens the Ask a question half; a query
+- **Deep links reproduce an answer:** `/ask?q=<question>&tab=<result|sql|lineage|roles>&trace=<column>:<value>`
+  (served as `/ask/?...`). `docs/DEMO.md` relies on them. A link opens the Ask a question half; a query
   run under Write SQL has no link of its own. Links in the old form, `#/ask?q=...`
   and `#/catalog/<table>`, are redirected by `app/page.tsx`; do not remove that.
 - `LAYERS` and `SYSTEMS` in `lib/format.ts` repeat what the server knows. A new layer or source
