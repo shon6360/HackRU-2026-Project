@@ -11,10 +11,10 @@ safety database and a vendor's legal name in finance. So a simple question like
 turns into five extract requests and a week of spreadsheet matching, and nobody fully trusts the answer.
 
 Concord ingests the five feeds, works out which ids mean the same site and the same subject, and lets a
-study team ask that question: in plain English, by filling in a filter form, or in SQL. Every answer shows the SQL that ran, the source rows behind
-each number, how fresh each source is, what data-quality problems touch it, and what the person asking was
-not allowed to see. Each person signs in to their own account, and the role that account holds decides
-what they can see. An administrator creates the accounts and the roles.
+study team ask that question: in plain English, by filling in a filter form, or in SQL. Every answer shows
+the SQL that ran, the source rows behind each number, how fresh each source is, what data-quality problems
+touch it, and what the person asking was not allowed to see. Each person signs in to their own account, and
+the role that account holds decides what they can see. An administrator creates the accounts and the roles.
 
 Built for the Regeneron challenge at HackRU Fall 2026, starter sheet 40, *One Source of Truth*.
 
@@ -36,21 +36,9 @@ python -m backend serve
 Open http://127.0.0.1:8040 and sign in. `build` loads the committed feeds into the warehouse in about two
 seconds, then builds the web app with npm. The first run takes longer, while npm downloads the web app's packages.
 
-### Hosting it for other computers
+### Sign in
 
-Concord runs on one computer and everyone else opens it in a browser. Nothing is installed anywhere else.
-Start it so that other computers can reach it:
-
-```bash
-python -m backend serve --host 0.0.0.0
-```
-
-It prints the address to open, for example `http://192.168.1.20:8040`. The other computers must be able to
-reach the host on port 8040, so they need to be on the same network and the host's firewall has to let the
-connection in. Change the starter password below first, and see [What this is not](#what-this-is-not)
-before putting it anywhere but a network you trust.
-
-The first start creates four accounts, all with the password `concord-demo`: (placeholder names are used)
+The first start creates four accounts, all with the password `concord-demo`. The people are invented.
 
 | Username | Role | Sees |
 |---|---|---|
@@ -63,14 +51,21 @@ That password is public, so change it before anyone else can reach the server: e
 **profile** page, or set `CONCORD_STARTER_PASSWORD` in `server/.env` before the first start. Accounts are
 kept in `server/state/accounts.db`, with the roles; delete that file to start again from the four above.
 
-More commands, all run in `server/`:
+### Hosting it for other computers
+
+Concord runs on one computer and everyone else opens it in a browser. Nothing is installed anywhere else.
+Start it so that other computers can reach it:
 
 ```bash
-python -m backend build          # rebuild everything: the warehouse and the web app
-python -m harmonizer build       # the warehouse half only: catalog, quality results and the access databases
-python tests/test_concord.py     # 19 end-to-end checks (also runs under pytest)
-python -m backend ask "Which sites are we late paying?" --role finance   # a typed question: needs a Gemini API key, see below
+python -m backend serve --host 0.0.0.0
 ```
+
+It prints the address to open, for example `http://192.168.1.20:8040`. The other computers must be able to
+reach the host on port 8040, so they need to be on the same network and the host's firewall has to let the
+connection in. Change the starter password first, and see [What this is not](#what-this-is-not) before
+putting it anywhere but a network you trust.
+
+### Three ways to ask
 
 The **Ask** page has three ways to ask, and only the first involves a language model:
 
@@ -91,9 +86,20 @@ cp .env.example .env             # then open .env and paste the key after GEMINI
 python -m backend serve          # restart the server whenever .env changes
 ```
 
-`.env` is gitignored, so the key stays on the computer that runs Concord. A `GEMINI_API_KEY` exported in the shell works too
-and takes precedence over the file. Without either key, **Ask a question** is grayed out on the Ask
-page, which opens on **Filter** instead. Filter works as always, as does Write SQL.
+`.env` is gitignored, so the key stays on the computer that runs Concord. A `GEMINI_API_KEY` exported in the
+shell works too and takes precedence over the file. Without either key, **Ask a question** is grayed out on
+the Ask page, which opens on **Filter** instead. Filter and Write SQL work as always.
+
+### Other commands
+
+All run in `server/`, with the virtual environment active:
+
+```bash
+python -m backend build          # rebuild everything: the warehouse and the web app
+python -m harmonizer build       # the warehouse half only: catalog, quality results and the access databases
+python tests/test_concord.py     # 19 end-to-end checks (also runs under pytest)
+python -m backend ask "Which sites are we late paying?" --role finance   # a typed question: needs a Gemini API key
+```
 
 ## What to try
 
@@ -111,14 +117,20 @@ page, which opens on **Filter** instead. Filter works as always, as does Write S
    offer *Arm* to filter on. Open **Compare roles** to see what the policy decides for each role: the
    unblinded statistician gets the full answer, and finance is refused, because these are patient-level
    rows. Sign out and in again as `arjun` or `dana` to see it happen.
-4. **Accounts and roles.** Sign in as `admin`. On **Roles**, create a role and tick what it is granted, or
+4. **Access.** The **Access** page lays the policy out. The tags are the key at the top. Under **Tables**,
+   every tagged table says what your role gets and which roles it is withheld from or masked for. Under
+   **Roles**, every role says what it is granted.
+5. **Accounts and roles.** Sign in as `admin`. On **Roles**, create a role and tick what it is granted, or
    change an existing one: everyone holding it gets the new access on their next question, without signing in
    again and without a rebuild. On **Accounts**, add people and give each a role. Every account has a profile
    page showing what its role is granted.
-5. **Quality.** The feeds were seeded with 25 documented problems. The rules catch 25 of 25, and 29 more
+6. **Quality.** The feeds were seeded with 25 documented problems. The rules catch 25 of 25, and 29 more
    findings besides, mostly partial dates in the real CDISC data, which are shown as warnings.
-6. **Catalog and Lineage.** Search for `overdue`, open `gold.site_360`, and follow any number back to the
-   files it came from. On **Lineage**, search for a site by name to see where its rows come from: its id in each system, the source files, and the path between.
+7. **Catalog and Lineage.** Search for `overdue`, open `gold.site_360`, and follow any number back to the
+   files it came from. On **Lineage**, search for a site by name to see where its rows come from: its id in
+   each system, the source files, and the path between.
+8. **Crosswalk.** Every id each system uses for a site, the master key it was matched to, and how sure the
+   match is: 78 accepted, 2 flagged for review, 3 left unmatched.
 
 ## How it works
 
@@ -202,6 +214,39 @@ including the answer key for the planted problems, is in [docs/DATA.md](docs/DAT
 No real patient, site or payment is described. Site names are invented so that the simulated safety and
 payment problems are not attached to any real institution.
 
+### The twelve files
+
+| Feed | File | What it holds | Rows |
+|---|---|---|---|
+| EDC, the trial database | `dm.csv` | One row per screened subject: site, age, sex, key dates, treatment arm | 270 |
+| | `ae.csv` | Adverse events: onset, end, severity, seriousness, outcome | 997 |
+| | `sv.csv` | Each visit a subject made, and when | 2,795 |
+| | `ds.csv` | Disposition: milestones such as completing the study or leaving it | 412 |
+| CTMS, trial management | `study.json` | The study's master record | 1 |
+| | `sites.csv` | The site master: number, name, investigator, address, status, monitor | 18 |
+| | `monitoring_visits.csv` | The log of monitor visits to each site | 160 |
+| IRT, randomization and drug supply | `randomization.csv` | Which subject was assigned to which treatment, and when | 229 |
+| | `kits.csv` | Every drug kit: site, type, lot, expiry, status, who it was dispensed to | 1,535 |
+| Safety, the pharmacovigilance database | `cases.json` | One case per serious or severe adverse event, open or closed | 37 |
+| Finance, the payments ledger | `vendors.csv` | Each site as a legal entity, with its payment terms | 18 |
+| | `site_payments.csv` | Payment documents to sites: invoice, due and paid dates, amount, status | 96 |
+
+There are 17 sites. `sites.csv` has 18 rows because one site is listed twice on purpose, and `vendors.csv`
+has 18 because one vendor is a courier that is not a site. Both are planted problems.
+
+### How it was generated
+
+Two scripts in `server/scripts/` made the data, and what they wrote is committed, so neither needs to run.
+
+1. `fetch_public_data.py` downloads the public sources into `server/data/public/` and records each file's
+   address, SHA-256 hash and retrieval time in `SOURCES.json`.
+2. `simulate_feeds.py` turns that snapshot into `server/feeds/`. It keeps the real EDC rows dated on or
+   before the snapshot, then builds the other four systems from them, each with its own ids and date format.
+   It gives a few sites real trouble (open cases, low supply, overdue payments, no recent monitoring), so
+   that cross-system questions have answers, and plants the 25 problems, which it lists in
+   `server/feeds/ANSWER_KEY.json`. The quality rules never read that file. The seed is fixed, so the script
+   reproduces the feeds byte for byte.
+
 ## What this is not
 
 - It is a hackathon prototype on a single small study, not a validated system. Nothing here is GxP.
@@ -219,11 +264,13 @@ payment problems are not attached to any real institution.
 ```
 server/               the program that is hosted: it holds the data, answers questions and serves the web app
   harmonizer/         feeds -> warehouse: pipeline, SQL models, crosswalk, quality rules, access policy
-  backend/            warehouse -> answers: query engine, question answering, accounts, the JSON API
+  backend/            warehouse -> answers: query engine, question answering, filter form, accounts, the JSON API
   feeds/              the five mock source systems (committed, deterministic)
   data/public/        snapshot of the public data the feeds are built from, with SOURCES.json
   scripts/            fetch_public_data.py and simulate_feeds.py, to regenerate the two folders above
   tests/              end-to-end checks
+  build/              the warehouse and the access databases. Made by the build, not committed
+  state/              accounts.db: accounts, roles and sessions. Made on the first start, not committed
   requirements.txt    the server's Python packages
   .env.example        template for the optional .env file that holds the Gemini API key and the starter password
 client/               the web app: Next.js and Tailwind CSS, built to static files in client/out

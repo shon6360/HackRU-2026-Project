@@ -60,6 +60,7 @@ app/
   catalog/            page.tsx, catalog-view.tsx (the list and search), dataset-view.tsx (one table)
   lineage/            page.tsx: the whole graph, and the search by site name that shows one site's lineage
   crosswalk/ quality/ access/    one page.tsx each
+                      access/page.tsx is the tags as a key, then two lists on tabs: Tables (what each tagged table gives each role) and Roles (what each role is granted)
   profile/            page.tsx: your own account, what your role is granted, change your name and password, keep your Gemini API key
   accounts/           page.tsx: every account, and the form that adds, changes and removes one (administrators)
   roles/              page.tsx: every role, and the form that adds, changes and removes one (administrators)

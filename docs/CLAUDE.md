@@ -21,10 +21,11 @@ summary with what is written:
 | 25 planted problems, 25 caught | README, DATA, DEMO, DECK |
 | 29 further findings, 23 of them partial dates in the real CDISC data, shown as warnings | README (29), DATA (29 and 23), DEMO and DECK (23) |
 | 27 quality rules, 28 SQL models, 19 tests | README, DECK |
-| Crosswalk: 78 automatic, 2 flagged, 3 unmatched | DECK |
+| Crosswalk: 78 automatic, 2 flagged, 3 unmatched | README, DECK |
 | Finance feed 24 days stale against a 7-day SLA | README, DATA, DEMO |
 | Two sites with all three problems; `S718` used in the walkthrough | README, DEMO |
-| 55 subjects active; feed row counts; 17 sites | DATA |
+| 55 subjects active | DATA |
+| Feed row counts (the `rows` in each `server/feeds/<system>/_manifest.json`); 17 sites | README, DATA |
 | Thresholds 0.85, 0.05 margin, 0.70 | README, DECK |
 | Role table (what the four starter roles hold: `STARTER_ROLES` in `server/backend/accounts.py`) | README |
 | Starter accounts and their password (`STARTERS` in `server/backend/accounts.py`) | README, DEMO |
