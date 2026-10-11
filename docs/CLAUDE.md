@@ -29,11 +29,12 @@ summary with what is written:
 | Role table (what the four starter roles hold: `STARTER_ROLES` in `server/backend/accounts.py`) | README |
 | Starter accounts and their password (`STARTERS` in `server/backend/accounts.py`) | README, DEMO |
 
-The screenshots were taken before sign-in existed: they show a role switcher at the top right
-where the account menu now is, `roles.png` shows the old Compare roles tab with row counts and
-"View as" buttons, and `access.png` shows three roles. `ask.png` is also from before the Ask page had
-its three ways to ask (Ask a question, Filter, Write SQL): it shows the reviewed-question chips, which are
-gone. Retake them before they are shown again.
+The screenshots show a fresh install: signed in as `maya`, the four starter roles, no Gemini key (so
+**Ask a question** is grayed out, as it is for a judge on a clean clone), the light theme, 1400 pixels wide
+(`lineage.png` 1800) at 1x. `ask.png` and `trace.png` are the headline filter link from `DEMO.md`, the second
+with `S718` clicked; `roles.png` is the subjects link with `&tab=roles`; `quality.png` and `catalog.png` are the
+top of the page and the rest are the whole page. They go stale like the figures above: retake the ones a
+change to a page, a figure or a wording touches.
 
 `DEMO.md` and the README's "What to try" link to `http://127.0.0.1:8040` and depend on the link format
 `/ask/?filter=<the picks as JSON>&tab=...`, which needs no Gemini key. The field names in those links
