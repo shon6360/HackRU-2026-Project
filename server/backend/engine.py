@@ -452,14 +452,29 @@ def site_list(role: str) -> dict:
         con.close()
 
 
-def site_lineage(role: str, site_key: str) -> dict:
-    """Where one site's data comes from, for the search by site name on the Lineage page.
+def _chain(start: str, end: str) -> list[str]:
+    """The longest run of lineage edges from one node down to another on the data path, both ends included."""
+    cat, runs = catalog(), {}
 
-    Returns how each system's id was matched to the site and, for every gold table kept per site,
-    how many of its rows are this site's and which source files those rows were read from. The
-    graph is the path those rows travelled: each table that holds some, the files its rows name,
-    and what lies between the two. Row counts in it are this site's rows, not the table's.
-    Runs in the role's database: a withheld table is reported as withheld and left out of the graph.
+    def longest(node: str) -> list[str] | None:
+        if node not in runs:
+            above = [r for p in sorted(cat["upstream"].get(node, ())) if p not in config.ID_MAPS and (r := longest(p))]
+            runs[node] = [node] if node == start else max(above, key=len) + [node] if above else None
+        return runs[node]
+
+    return longest(end) or [start, end]  # a row can name a file its table reaches only through a crosswalk
+
+
+def site_lineage(role: str, site_key: str) -> dict:
+    """Every source file one site's data came from, and where each file's rows went.
+
+    A file is listed when rows of a gold table that belong to the site name it in `_src_file`, with
+    how many of its rows are this site's and, for each such table, the chain of tables between the
+    two and the summary tables that count those rows again. A file that holds only the site's id
+    in its system, such as a vendor list, is listed with the chain to the crosswalk that matched
+    it and no row count. The graph is all of those chains together, and its row counts are this
+    site's rows, not the tables'. Runs in the role's database: the files behind a withheld table
+    are not listed, and the table is reported as withheld.
     """
     cat = catalog()
     listed = site_list(role)
@@ -470,40 +485,67 @@ def site_lineage(role: str, site_key: str) -> dict:
         return {"error": "There is no site with that key."}
     con = role_connection(role)
     try:
-        tables, on_path, site_rows, file_rows = [], set(), {}, {}
+        withheld, reached, file_rows, site_rows, summaries = [], {}, {}, {}, set()
         for fqn, ds in cat["datasets"].items():
             if ds["layer"] != "gold" or "site_key" not in ds["columns"]:
                 continue
             a = access(ds, role)
-            block = {"dataset": fqn, "description": ds["description"]}
             hidden = a["denied_tags"] or a["masked"].get("site_key")
             if hidden:
-                tables.append({**block, "denied": reason(hidden, role)})
-                continue
-            if "_src_row" not in ds["columns"]:  # a summary: it has rows for the site, but they point at no source row
+                withheld.append({"dataset": fqn, "denied": reason(hidden, role)})
+            elif "_src_row" not in ds["columns"]:  # a summary: it has rows for the site, but they point at no source row
                 n = con.execute(f"SELECT count(*) FROM {fqn} WHERE site_key = ?", [site_key]).fetchone()[0]
-                summary_of = sorted(p for p in cat["upstream"].get(fqn, ()) if "site_key" in cat["datasets"].get(p, {}).get("columns", ()))
-                tables.append({**block, "rows": n, "files": [], "summary_of": summary_of})
+                if n:
+                    site_rows[fqn] = n
+                    summaries.add(fqn)
             else:
                 refs = con.execute(f"SELECT _src_file, _src_row FROM {fqn} WHERE site_key = ?", [site_key]).fetchall()
-                n, upstream = len(refs), data_path([fqn])
-                files = sorted({f for f, _ in refs})
-                tables.append({**block, "rows": n, "files": [{"file": f, "system": f.split("/")[1], "rows": sum(1 for g, _ in refs if g == f)} for f in files]})
-                for f, row in refs:
-                    file_rows.setdefault(f, set()).add(row)
-                for f in files:
-                    on_path |= {node for node in upstream if f in data_path([node])}
-            if n:
-                on_path.add(fqn)
-                site_rows[fqn] = n
+                if refs:
+                    site_rows[fqn] = len(refs)
+                for f in sorted({f for f, _ in refs}):
+                    reached.setdefault(f, []).append({"dataset": fqn, "rows": sum(1 for g, _ in refs if g == f)})
+                    file_rows.setdefault(f, set()).update(row for g, row in refs if g == f)
         crosswalk = _crosswalk(con, cat, role, "site_key", site_key)
     finally:
         con.close()
-    for f, rows in file_rows.items():  # one source row can reach more than one gold table: count it once
-        site_rows[f] = site_rows[cat["by_file"][f]] = len(rows)
-    graph = _graph(on_path, sorted(t["dataset"] for t in tables if t.get("rows")))
+
+    ids: dict[str, list] = {}
+    for x in crosswalk.get("rows", []):
+        ids.setdefault(x["system"], []).append(x["native_id"])
+    xwalk = XWALK["site_key"]
+    if ids:  # the files that were read only to work out which of a system's ids is this site
+        site_rows[xwalk] = sum(len(v) for v in ids.values())
+        for node in sorted(data_path([xwalk])):
+            if node not in cat["datasets"] and node.split("/")[1] in ids and node not in reached:
+                reached[node] = [{"dataset": xwalk, "rows": len(ids[node.split("/")[1]])}]
+
+    below: dict[str, set] = {}
+    for src, dst in cat["edges"]:
+        below.setdefault(src, set()).add(dst)
+
+    def downstream(node: str, seen: set) -> set:
+        for nxt in below.get(node, ()):
+            if nxt not in seen:
+                seen.add(nxt)
+                downstream(nxt, seen)
+        return seen
+
+    files, on_path = [], set(summaries) | ({xwalk} if ids else set())
+    for f in sorted(reached):
+        system = f.split("/")[1]
+        for t in reached[f]:
+            t["path"] = _chain(f, t["dataset"])
+            t["also"] = sorted(downstream(t["dataset"], set()) & summaries) if f in file_rows else []
+            on_path |= {node for node in data_path([t["dataset"]]) if f in data_path([node])}
+        # one source row can reach more than one gold table: count it once
+        n = len(file_rows[f]) if f in file_rows else None
+        files.append({"file": f, "system": system, "stale": cat["feeds"][system]["is_stale"], "bronze": cat["by_file"][f],
+                      "rows": n, "ids": ids.get(system, []), "tables": reached[f]})
+        if n is not None:
+            site_rows[f] = site_rows[cat["by_file"][f]] = n
+    graph = _graph(on_path, sorted(t for t in site_rows if t in cat["datasets"] and cat["datasets"][t]["layer"] == "gold"))
     for node in graph["nodes"]:
         node.pop("rows", None)  # the whole table's count would be read as this site's
         if node["id"] in site_rows:
             node["rows"] = site_rows[node["id"]]
-    return {"site": site, "crosswalk": crosswalk, "tables": tables, "graph": graph}
+    return {"site": site, "crosswalk": crosswalk, "files": files, "withheld": withheld, "graph": graph}

@@ -1,12 +1,14 @@
 "use client";
 
-import { fmtCell } from "@/lib/format";
+import { fmtCell, fmtHeader } from "@/lib/format";
 import type { Cell, Column } from "@/lib/types";
 import { Lock, TraceLink } from "./ui";
 
 /* Every result grid: an answer, the source rows in the trace drawer. A masked column that
-   came back empty says so; a traceable key opens the trace drawer. */
-export function DataTable({ columns, rows, masked = [], traceable = [] }: { columns: Column[]; rows: Cell[][]; masked?: string[]; traceable?: string[] }) {
+   came back empty says so; a traceable key opens the trace drawer. With `readable` a column is headed
+   by its name in words: right for an answer, wrong for source rows and for someone's own SQL, which
+   are shown as written. */
+export function DataTable({ columns, rows, masked = [], traceable = [], readable }: { columns: Column[]; rows: Cell[][]; masked?: string[]; traceable?: string[]; readable?: boolean }) {
   const isMasked = new Set(masked.map((m) => m.toLowerCase()));
   const isTraceable = new Set(traceable.map((m) => m.toLowerCase()));
   const cell = "border-b border-line px-[11px] py-1.5 align-top";
@@ -18,8 +20,8 @@ export function DataTable({ columns, rows, masked = [], traceable = [] }: { colu
             {columns.map((c, i) => {
               const hidden = isMasked.has(c.name.toLowerCase());
               return (
-                <th key={i} className={`sticky top-0 z-[1] whitespace-nowrap border-b border-line bg-surface-2 px-[11px] py-[7px] text-left font-mono text-[12px] font-semibold ${hidden ? "text-violet" : "text-ink-2"}`}>
-                  {hidden && <><Lock />{" "}</>}{c.label ?? c.name}
+                <th key={i} className={`sticky top-0 z-[1] whitespace-nowrap border-b border-line bg-surface-2 px-[11px] py-[7px] text-left text-[12px] font-semibold ${readable ? "" : "font-mono"} ${hidden ? "text-violet" : "text-ink-2"}`}>
+                  {hidden && <><Lock />{" "}</>}{c.label ?? (readable ? fmtHeader(c.name) : c.name)}
                 </th>
               );
             })}

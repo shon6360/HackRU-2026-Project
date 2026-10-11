@@ -40,7 +40,7 @@ export default function QualityPage() {
                   <Td className="text-[12.5px]">{f.owner}</Td>
                   <Td className="whitespace-nowrap text-[12.5px]">{fmtStamp(f.extracted_at)}</Td>
                   <Td>
-                    {f.is_stale ? <Pill tone="warn">{Math.round(f.age_hours / 24)} days old · SLA {Math.round(f.freshness_sla_hours / 24)}d</Pill> : <Pill tone="good">{Math.round(f.age_hours)}h old</Pill>}
+                    {f.is_stale ? <Pill tone="warn">{Math.round(f.age_hours / 24)} days old · limit {Math.round(f.freshness_sla_hours / 24)} days</Pill> : <Pill tone="good">{Math.round(f.age_hours)}h old</Pill>}
                   </Td>
                 </tr>
               ))}
@@ -78,13 +78,14 @@ export default function QualityPage() {
 
       <Card className="mt-3.5">
         {q.rules.map((r) => (
-          <details key={r.rule_id} className="border-t border-line first:border-t-0">
-            <summary className="grid list-none grid-cols-[70px_1fr_60px] items-center gap-3 px-4 py-2.5 hover:bg-surface-2 sm:grid-cols-[84px_1fr_130px_110px_70px] [&::-webkit-details-marker]:hidden">
+          <details key={r.rule_id} className="group border-t border-line first:border-t-0">
+            <summary className="grid list-none grid-cols-[10px_70px_1fr_88px] items-center gap-3 px-4 py-2.5 hover:bg-surface-2 sm:grid-cols-[10px_84px_1fr_130px_110px_92px] [&::-webkit-details-marker]:hidden">
+              <span aria-hidden="true" className="text-[11px] text-ink-3 transition-transform group-open:rotate-90">▶</span>
               <Sev severity={r.severity} />
               <span>{r.title}<div className="text-[12.5px] text-ink-3"><code>{r.dataset}</code></div></span>
               <span className="hidden text-[12.5px] text-ink-2 sm:block">{r.dimension}</span>
               <span className="hidden text-right text-[12.5px] tabular-nums text-ink-2 sm:block">{fmtInt(r.n_checked)} checked</span>
-              <span className="text-right">{r.n_failed ? <Pill tone={r.severity === "warning" ? "warn" : "bad"}>{r.n_failed}</Pill> : <Pill tone="good">pass</Pill>}</span>
+              <span className="text-right">{r.n_failed ? <Pill tone={r.severity === "warning" ? "warn" : "bad"}>{r.n_failed} {plural(r.n_failed, "finding")}</Pill> : <Pill tone="good">pass</Pill>}</span>
             </summary>
             <div className="px-4 pb-3.5 pt-0.5">
               {r.hidden ? (

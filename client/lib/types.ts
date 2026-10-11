@@ -123,22 +123,26 @@ export type XwalkId = {
 export type SiteRef = { site_key: string; site_name: string; city: string | null; state: string | null };
 export type SiteList = { sites: SiteRef[]; denied: string | null };
 
-/* One site's lineage (/api/lineage/site). A table the role may not see has `denied` and no counts. `files` are
-   the source files this site's rows in a table were read from; a summary table has `summary_of` instead. Row
-   counts in `graph` are this site's rows, not the tables'. */
-export type SiteTable = {
-  dataset: string;
-  description: string;
-  denied?: string;
-  rows?: number;
-  files?: { file: string; system: string; rows: number }[];
-  summary_of?: string[];
+/* One site's lineage (/api/lineage/site): every source file its data came from. `rows` is how many of the
+   file's rows are this site's, or null for a file that holds only the site's id in that system (`ids`). Each
+   entry of `tables` is where those rows went: `path` runs from the file to the table, and `also` names the
+   summary tables that count them again. `bronze` is the file as received, which has a page in the catalog.
+   The files behind a table in `withheld` are not listed. Row counts in `graph` are this site's rows. */
+export type SiteFile = {
+  file: string;
+  system: string;
+  stale: boolean;
+  bronze: string;
+  rows: number | null;
+  ids: string[];
+  tables: { dataset: string; rows: number; path: string[]; also: string[] }[];
 };
 export type SiteLineage = {
   error?: string;
   site?: SiteRef;
   crosswalk?: { denied?: string; rows?: XwalkId[] };
-  tables?: SiteTable[];
+  files?: SiteFile[];
+  withheld?: { dataset: string; denied: string }[];
   graph?: Graph;
 };
 

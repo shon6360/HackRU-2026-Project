@@ -83,12 +83,15 @@ that wrap the view in `<Suspense>`, which a page that calls `useSearchParams()` 
 build fails.
 
 The search on the Lineage page is by site name. The names come from `/api/lineage/sites`, which
-the server reads for the signed-in role, and are matched in the browser as the person types.
-Picking a site (a click, or Enter for the first match) shows `/api/lineage/site?site_key=...` in
-place of the whole graph: the site's id in each system, its rows and their source files per gold
-table, and a graph of only what those rows passed through, where a node's row count is the
-site's. A table the role may not see is listed as withheld. The site key is a `TraceLink`, so the
-raw source rows are one click further.
+the server reads for the signed-in role, and are matched in the browser as the person types. A
+name that matches one site shows that site at once; with several, the list is offered and one is
+picked with a click, or Enter for the first. The site's lineage (`/api/lineage/site?site_key=...`)
+takes the place of the whole graph: every source file its data came from, each a link to the file
+as received (its bronze table in the catalog) with how many of its rows are the site's and the
+chain of tables they went through, then the site's id in each system, then a graph of all of it,
+where a node's row count is the site's. Tables the role may not see are named in a notice, and the
+files behind them are not listed. The site key is a `TraceLink`, so the raw source rows are one
+click further.
 
 `AppProvider` loads `/api/me` and `/api/meta` together. `Shell` renders a page only once both have
 arrived, so pages call `useApp()` and can rely on `user` and `meta` being there. Until then it
@@ -127,6 +130,10 @@ out goes the same way. One account's answer is never left on screen for the next
 
 ## Rules
 
+- **Say it in a study team's words.** An answer's columns are headed in words (`fmtHeader` in
+  `lib/format.ts`, the same rule as `_label` in `server/backend/filters.py`: change both together).
+  Source rows in the trace drawer and the result of someone's own SQL keep their column names as
+  written. Do not add hover hints to explain a term.
 - **Keep the words on a page few.** One short sentence under a page title, a label on a control, and a
   notice only when something was refused, withheld, stale or failed. Do not explain how the platform
   works on the page: that is what the README and `docs/` are for.

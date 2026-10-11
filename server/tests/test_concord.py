@@ -400,7 +400,7 @@ def test_lineage_reaches_a_source_file_for_every_table():
         assert any(n["layer"] == "source" for n in nodes), fqn
 
 
-def test_a_site_found_by_name_shows_where_its_rows_come_from_and_respects_policy():
+def test_a_site_found_by_name_shows_every_source_file_it_came_from_and_respects_policy():
     cat = engine.catalog()
     key = "S" + KEY["story_sites"]["all_three_problems"][0]
     con = engine.warehouse()
@@ -412,33 +412,46 @@ def test_a_site_found_by_name_shows_where_its_rows_come_from_and_respects_policy
     assert [s["site_key"] for s in listed["sites"] if s["site_name"] == name] == [key], "the name leads to the one site"
 
     seen = server.lineage_site(key, "clinops")
-    assert seen["site"]["site_name"] == name
+    assert seen["site"]["site_name"] == name and seen["withheld"] == []
     assert {x["system"] for x in seen["crosswalk"]["rows"]} == {"ctms", "edc", "irt", "safety", "finance"}
-    per_site = {fqn for fqn, ds in cat["datasets"].items() if ds["layer"] == "gold" and "site_key" in ds["columns"]}
-    assert {t["dataset"] for t in seen["tables"]} == per_site
+    files = {f["file"]: f for f in seen["files"]}
     nodes = {n["id"]: n for n in seen["graph"]["nodes"]}
-    for t in seen["tables"]:
-        fqn = t["dataset"]
-        assert "denied" not in t, f"{fqn}: clinops holds every grant these tables need"
-        assert t["rows"] == con.execute(f"SELECT count(*) FROM {fqn} WHERE site_key = ?", [key]).fetchone()[0], fqn
-        if "_src_file" in cat["datasets"][fqn]["columns"]:
-            assert sum(f["rows"] for f in t["files"]) == t["rows"], fqn
-            assert {f["file"] for f in t["files"]} == {f for f, in con.execute(f"SELECT DISTINCT _src_file FROM {fqn} WHERE site_key = ?", [key]).fetchall()}, fqn
-        if t["rows"]:
-            assert nodes[fqn]["rows"] == t["rows"], f"{fqn}: the graph counts this site's rows, not the table's"
-            assert all(f["file"] in nodes for f in t["files"]), fqn
+    edges = {(a, b) for a, b in cat["edges"]}
+    # every file the site's rows name, in any gold table, is listed with the rows that name it
+    per_site = [fqn for fqn, ds in cat["datasets"].items() if ds["layer"] == "gold" and "site_key" in ds["columns"] and "_src_file" in ds["columns"]]
+    named: dict = {}
+    for fqn in per_site:
+        for f, n in con.execute(f"SELECT _src_file, count(*) FROM {fqn} WHERE site_key = ? GROUP BY 1", [key]).fetchall():
+            named.setdefault(f, {})[fqn] = n
     con.close()
-    assert seen["graph"]["targets"] == sorted(t["dataset"] for t in seen["tables"] if t["rows"])
-    # payments reach the site through one finance file and the tables between; a table kept per study is not on any site's path
-    assert {"feeds/finance/site_payments.csv", "bronze.finance_site_payments", "silver.finance_payments", "gold.fact_payment"} <= set(nodes)
-    assert "gold.dim_study" not in nodes and "feeds/finance/vendors.csv" not in nodes
+    assert {f for f, x in files.items() if x["rows"] is not None} == set(named)
+    for f, x in files.items():
+        assert x["bronze"] == cat["by_file"][f] and x["system"] == f.split("/")[1], f
+        assert x["ids"], f"{f}: the site has an id in every system here"
+        if x["rows"] is not None:
+            assert {t["dataset"]: t["rows"] for t in x["tables"]} == named[f], f
+            assert nodes[f]["rows"] == nodes[x["bronze"]]["rows"] == x["rows"], f"{f}: the graph counts this site's rows, not the file's"
+        for t in x["tables"]:
+            path = t["path"]
+            assert path[0] == f and path[-1] == t["dataset"] and set(path) <= set(nodes), f
+            assert all(step in edges for step in zip(path, path[1:])), f"{f}: every arrow in the chain is a lineage edge"
+    # payments come through one finance file; the vendor list holds only the site's finance id; a per-study table is on no site's path
+    payment = files["feeds/finance/site_payments.csv"]["tables"][0]
+    assert payment["path"] == ["feeds/finance/site_payments.csv", "bronze.finance_site_payments", "silver.finance_payments", "gold.fact_payment"]
+    assert "gold.site_360" in payment["also"]
+    vendors = files["feeds/finance/vendors.csv"]
+    assert vendors["rows"] is None and vendors["tables"][0]["path"][-1] == "master.site_xwalk" and vendors["tables"][0]["also"] == []
+    assert "gold.dim_study" not in nodes and "feeds/ctms/study.json" not in files
     assert all(a in nodes and b in nodes for a, b in seen["graph"]["edges"])
 
     finance = server.lineage_site(key, "finance")
-    withheld = {t["dataset"] for t in finance["tables"] if t.get("denied")}
+    withheld = {w["dataset"] for w in finance["withheld"]}
     assert "gold.dim_subject" in withheld and "gold.fact_payment" not in withheld
-    assert all("rows" not in t and "files" not in t for t in finance["tables"] if t.get("denied")), "a withheld table says nothing about the site"
     assert not withheld & {n["id"] for n in finance["graph"]["nodes"]}
+    reached = {t["dataset"] for f in finance["files"] for t in f["tables"]} | {d for f in finance["files"] for t in f["tables"] for d in t["also"]}
+    assert not withheld & reached, "a withheld table says nothing about the site"
+    assert "feeds/edc/ae.csv" not in {f["file"] for f in finance["files"]}, "a file that only a withheld table reads is not listed"
+    assert {f["file"] for f in finance["files"] if f["rows"] is not None} == {"feeds/ctms/sites.csv", "feeds/ctms/monitoring_visits.csv", "feeds/finance/site_payments.csv", "feeds/irt/kits.csv"}
 
     assert server.lineage_site("S000", "clinops") == {"error": "There is no site with that key."}
     assert server.lineage_site("' OR 1=1 --", "clinops") == {"error": "There is no site with that key."}

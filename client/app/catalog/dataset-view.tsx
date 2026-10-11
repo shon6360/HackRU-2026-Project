@@ -55,7 +55,7 @@ export function DatasetView({ fqn }: { fqn: string }) {
                     <Td><SysBadge system={f.system} /></Td>
                     <Td className="text-[12.5px]">{fmtStamp(f.extracted_at)}</Td>
                     <Td>
-                      {f.is_stale ? <Pill tone="warn">{Math.round(f.age_hours / 24)}d old · SLA {Math.round(f.freshness_sla_hours / 24)}d</Pill> : <Pill tone="good">within SLA</Pill>}
+                      {f.is_stale ? <Pill tone="warn">{Math.round(f.age_hours / 24)} days old · limit {Math.round(f.freshness_sla_hours / 24)} days</Pill> : <Pill tone="good">up to date</Pill>}
                     </Td>
                   </tr>
                 ))}

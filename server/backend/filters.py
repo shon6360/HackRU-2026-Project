@@ -40,6 +40,7 @@ MAX_CHOICES = 25      # a text column with more distinct values than this is sea
 MAX_CONDITIONS = 20
 MAX_TEXT = 200
 NUMERIC = ("TINYINT", "SMALLINT", "INTEGER", "BIGINT", "HUGEINT", "FLOAT", "REAL", "DOUBLE", "DECIMAL")
+# client/lib/format.ts repeats SPOKEN and _label (fmtHeader), so an answer's column headings read like the form's fields
 SPOKEN = {"ae": "AE", "sae": "SAE", "edc": "EDC", "usd": "USD", "id": "ID", "cra": "CRA", "usubjid": "USUBJID",
           "no": "number", "num": "number", "seq": "sequence", "pt": "term", "doc": "document", "rand": "randomization",
           "recon": "reconciliation", "diff": "difference", "followup": "follow-up", "followups": "follow-ups", "8w": "for 8 weeks"}

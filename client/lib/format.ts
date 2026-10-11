@@ -28,4 +28,20 @@ export function fmtCell(value: Cell | undefined, col: Column): string {
   return String(value);
 }
 
+/* A column name as a study team would say it: open_safety_cases is "Open safety cases", n_active is
+   "Active (count)". The same rule the server uses for the filter form (`_label` in server/backend/filters.py),
+   so a field reads the same in the form and at the top of its column. */
+const SPOKEN: Record<string, string> = {
+  ae: "AE", sae: "SAE", edc: "EDC", usd: "USD", id: "ID", cra: "CRA", usubjid: "USUBJID",
+  no: "number", num: "number", seq: "sequence", pt: "term", doc: "document", rand: "randomization",
+  recon: "reconciliation", diff: "difference", followup: "follow-up", followups: "follow-ups", "8w": "for 8 weeks",
+};
+export function fmtHeader(name: string): string {
+  const words = name.replace(/^is_/, "").split("_").filter(Boolean);
+  if (!words.length) return name;
+  const counted = words[0] === "n" && words.length > 1;
+  const text = (counted ? words.slice(1) : words).map((w) => SPOKEN[w.toLowerCase()] ?? w).join(" ");
+  return text[0].toUpperCase() + text.slice(1) + (counted ? " (count)" : "");
+}
+
 export const tableHref = (fqn: string) => `/catalog?table=${encodeURIComponent(fqn)}`;

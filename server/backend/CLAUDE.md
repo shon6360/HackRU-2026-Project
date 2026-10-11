@@ -65,14 +65,25 @@ withheld blocks instead of hiding them.
 
 `site_list(role)` and `site_lineage(role, site_key)` are the search by site name on the Lineage
 page. Unlike the lineage graph, which is metadata, a site's name and its row counts are data, so
-both read the role's mart. `site_lineage` returns how each system's id was matched to the site
-(the same block as `trace`), and for every gold table with a `site_key` how many of its rows are
-this site's and which `_src_file` those rows name. A table the role may not see comes back with
-`denied` and no counts. A summary table (no `_src_row`) has `summary_of`, the per-site tables it
-is built from, instead of files. The graph holds only what this site's rows passed through: each
-table with rows, the files they name, and the nodes on the data path between the two. Its `rows`
-are this site's rows (a source row is counted once however many tables it reaches), and a node
-that cannot be counted per site has none.
+both read the role's mart. `site_lineage` returns every source file the site's data came from:
+
+- A file is listed when rows of a gold table that belong to the site name it in `_src_file`. It
+  carries `rows` (how many of the file's rows are this site's, a source row counted once however
+  many tables it reaches), `bronze` (the file as received, which is what the page links to),
+  `ids` (the site's id in that system, from the crosswalk) and `tables`: for each gold table
+  those rows reached, the count, `path` (`_chain()`: the longest run of lineage edges from the
+  file to the table on the data path, so every arrow shown is a real edge) and `also` (the
+  summary tables, those with no `_src_row`, that count the rows again).
+- A file that holds only the site's id in its system, such as the vendor list, is listed with
+  `rows: null` and the chain to `master.site_xwalk`. Which files those are is read from the
+  lineage: the files upstream of the crosswalk in a system the site has an id in.
+- A table the role may not see goes in `withheld` with the reason, and the files only it reads
+  are not listed, because whether the site has rows there is itself withheld.
+- The graph is all of the chains together. Its `rows` are this site's rows, and a node that
+  cannot be counted per site has none.
+
+The server never hands out the feed files themselves: a file's link is its bronze table in the
+catalog, which shows rows only as the role's mart allows.
 
 ## ask.py
 
@@ -244,7 +255,7 @@ hosting simple: `--host 0.0.0.0`, and another computer needs only a browser. `np
 | `GET /api/dataset/{fqn}` | one dataset: columns, preview, lineage, rules, SQL |
 | `GET /api/lineage` | the whole graph |
 | `GET /api/lineage/sites` | the sites the signed-in role can search by name (`engine.site_list()`), or why it may not |
-| `GET /api/lineage/site?site_key` | one site's lineage (`engine.site_lineage()`): its id in each system, its rows and their source files per gold table, and the graph those rows travelled |
+| `GET /api/lineage/site?site_key` | one site's lineage (`engine.site_lineage()`): every source file its data came from with the chain of tables each file's rows went through, its id in each system, the tables withheld from the role, and the graph of all of it |
 | `GET /api/crosswalk` | site crosswalk, subject match counts |
 | `GET /api/quality` | rules, failures, answer-key score |
 | `GET /api/access` | every tagged table and what each role gets |

@@ -137,7 +137,7 @@ function ResultTab({ a }: { a: Answer }) {
   const traceable = a.traceable ?? [];
   return (
     <>
-      <DataTable columns={a.columns ?? []} rows={a.rows} masked={a.masked_columns} traceable={traceable} />
+      <DataTable columns={a.columns ?? []} rows={a.rows} masked={a.masked_columns} traceable={traceable} readable={a.mode !== "sql"} />
       <p className="mx-0.5 mb-0 mt-2 text-[12.5px] text-ink-3">
         {traceable.length > 0 && "Click an underlined key to see its source rows. "}
         {a.truncated && "Showing the first 500 rows."}
