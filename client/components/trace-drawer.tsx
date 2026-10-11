@@ -6,7 +6,7 @@ import { fmtInt, plural } from "@/lib/format";
 import type { Trace } from "@/lib/types";
 import { useApp } from "./app-context";
 import { DataTable } from "./data-table";
-import { Card, ConfBadge, Lock, NodeRef, Notice, PlainTable, Spinner, SysBadge, Td, Th } from "./ui";
+import { Lock, MatchTable, NodeRef, Notice, Spinner, SysBadge } from "./ui";
 
 /* Where does this key come from? How each system's id was matched to it, then the raw source rows, exactly
    as exported. Shared by every page: any TraceLink opens it. Withheld blocks are shown as withheld. */
@@ -52,29 +52,7 @@ export function TraceDrawer() {
               {t.crosswalk && (
                 <>
                   <h3>How each system&apos;s id was matched to <code>{trace.value}</code></h3>
-                  {t.crosswalk.denied ? <Notice kind="policy" icon={<Lock />}>The crosswalk is {t.crosswalk.denied}.</Notice> : (
-                    <Card>
-                      <PlainTable>
-                        <thead><tr><Th>System</Th><Th>Its id</Th><Th>Match</Th><Th>Evidence</Th></tr></thead>
-                        <tbody>
-                          {(t.crosswalk.rows ?? []).map((x, i) => (
-                            <tr key={i}>
-                              <Td><SysBadge system={x.system} /></Td>
-                              <Td>
-                                <code>{x.native_id}</code>
-                                {x.native_label && x.native_label !== x.native_id && x.method !== "id_pattern" && <div className="text-[12.5px] text-ink-3">{x.native_label}</div>}
-                              </Td>
-                              <Td className="whitespace-nowrap">
-                                {x.method} <ConfBadge id={x} />
-                                {x.status === "review" && <div className="text-[12.5px] text-warn">queued for a steward</div>}
-                              </Td>
-                              <Td className="text-[12.5px] text-ink-2">{x.evidence}</Td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </PlainTable>
-                    </Card>
-                  )}
+                  {t.crosswalk.denied ? <Notice kind="policy" icon={<Lock />}>The crosswalk is {t.crosswalk.denied}.</Notice> : <MatchTable ids={t.crosswalk.rows ?? []} />}
                 </>
               )}
               <h3 className="mt-5">Source rows</h3>

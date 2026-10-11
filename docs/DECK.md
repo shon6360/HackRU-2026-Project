@@ -33,7 +33,7 @@ Tags on data, grants on roles, one role per account. An administrator edits role
 The language model gets only that role's schema; its SQL passes the same check as a person's.
 
 **9. We planted 25 problems. The rules caught 25.**
-Screenshot `quality.png`. Plus 23 partial dates in the real CDISC data nobody planted.
+Screenshot `quality.png`. Plus 23 partial dates in the real CDISC data nobody planted, shown as warnings.
 Each finding: the record, what is wrong, the file and row.
 
 **10. Real data, documented simulation**

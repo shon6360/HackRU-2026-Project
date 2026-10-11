@@ -116,9 +116,9 @@ page, which opens on **Filter** instead. Filter works as always, as does Write S
    again and without a rebuild. On **Accounts**, add people and give each a role. Every account has a profile
    page showing what its role is granted.
 5. **Quality.** The feeds were seeded with 25 documented problems. The rules catch 25 of 25, and 29 more
-   findings besides, mostly partial dates in the real CDISC data.
+   findings besides, mostly partial dates in the real CDISC data, which are shown as warnings.
 6. **Catalog and Lineage.** Search for `overdue`, open `gold.site_360`, and follow any number back to the
-   files it came from. On **Lineage**, search for `payment` to see which source file a gold table's rows come from.
+   files it came from. On **Lineage**, search for a site by name to see where its rows come from: its id in each system, the source files, and the path between.
 
 ## How it works
 

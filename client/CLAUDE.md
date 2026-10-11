@@ -58,7 +58,7 @@ app/
   globals.css         Tailwind import, colour tokens, theme, defaults for bare elements
   ask/                page.tsx, ask-view.tsx (the three ways to ask: Ask a question, Filter, Write SQL), filter-form.tsx (the Filter form), answer.tsx (the answer card and its four tabs)
   catalog/            page.tsx, catalog-view.tsx (the list and search), dataset-view.tsx (one table)
-  lineage/            page.tsx: the whole graph, and the search that names the source files behind a gold table
+  lineage/            page.tsx: the whole graph, and the search by site name that shows one site's lineage
   crosswalk/ quality/ access/    one page.tsx each
   profile/            page.tsx: your own account, what your role is granted, change your name and password, keep your Gemini API key
   accounts/           page.tsx: every account, and the form that adds, changes and removes one (administrators)
@@ -67,7 +67,7 @@ components/
   app-context.tsx     state that outlives a page: who is signed in, meta, the three ways to ask on the Ask page, catalog filter, trace
   shell.tsx           top bar (nav, feed dots, account menu), <main> or the sign-in form, the trace drawer
   sign-in.tsx         the sign-in form, shown in place of every page until someone is signed in
-  ui.tsx              Pill, TagPill, Notice, Card, Btn, Field, Grants, PlainTable/Th/Td, TraceLink, Lock, ...
+  ui.tsx              Pill, TagPill, Notice, Card, Btn, Field, Grants, PlainTable/Th/Td, MatchTable, TraceLink, Lock, ...
   data-table.tsx      every result grid, with masked and traceable cells
   lineage-graph.tsx   the lineage graph as inline SVG, and its legend
   trace-drawer.tsx    where a key comes from: crosswalk matches and source rows
@@ -82,11 +82,13 @@ Pages are client components. `ask/page.tsx` and `catalog/page.tsx` are thin serv
 that wrap the view in `<Suspense>`, which a page that calls `useSearchParams()` must have or the
 build fails.
 
-The search on the Lineage page filters `gold` from `/api/lineage` in the browser, by a table's name,
-description, columns and source files, and makes no request of its own. Which files a table's rows
-come from, and which are read only to match ids, is decided by the server. "Show in the graph"
-selects the table in the graph: the page owns the selection and hands it to `LineageGraph` as
-`selected`, where the other two graphs (an answer's, a dataset's) keep their own.
+The search on the Lineage page is by site name. The names come from `/api/lineage/sites`, which
+the server reads for the signed-in role, and are matched in the browser as the person types.
+Picking a site (a click, or Enter for the first match) shows `/api/lineage/site?site_key=...` in
+place of the whole graph: the site's id in each system, its rows and their source files per gold
+table, and a graph of only what those rows passed through, where a node's row count is the
+site's. A table the role may not see is listed as withheld. The site key is a `TraceLink`, so the
+raw source rows are one click further.
 
 `AppProvider` loads `/api/me` and `/api/meta` together. `Shell` renders a page only once both have
 arrived, so pages call `useApp()` and can rely on `user` and `meta` being there. Until then it

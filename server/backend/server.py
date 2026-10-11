@@ -344,12 +344,19 @@ def dataset(fqn: str, role: str = Depends(_role)):
 
 @api.get("/api/lineage")
 def lineage():
-    """The whole graph, and for the search on the Lineage page the source files behind each gold table."""
     cat = engine.catalog()
-    gold = [{"fqn": fqn, "name": ds["name"], "description": ds["description"],
-             "columns": [c for c in ds["columns"] if not c.startswith("_src_")], **engine.source_files(fqn)}
-            for fqn, ds in cat["datasets"].items() if ds["layer"] == "gold"]
-    return {**engine.upstream_graph([fqn for fqn in cat["datasets"]]), "gold": gold}
+    return engine.upstream_graph([fqn for fqn in cat["datasets"]])
+
+
+@api.get("/api/lineage/sites")
+def lineage_sites(role: str = Depends(_role)):
+    """The sites the Lineage page can be searched for by name. Site names are data, so they follow the role."""
+    return engine.site_list(role)
+
+
+@api.get("/api/lineage/site")
+def lineage_site(site_key: str, role: str = Depends(_role)):
+    return engine.site_lineage(role, site_key)
 
 
 # ----------------------------------------------------------------------------- crosswalk
@@ -411,7 +418,7 @@ def quality_view(role: str = Depends(_role)):
             hidden_rules.add(r["rule_id"])
         rules.append({**r, "hidden": engine.reason(a["denied_tags"], role) if a["denied"] else None,
                       "failures": [] if a["denied"] else found})
-    order = {"critical": 0, "high": 1, "medium": 2, "low": 3, "info": 4}
+    order = {"critical": 0, "high": 1, "medium": 2, "low": 3, "warning": 4, "info": 5}
     rules.sort(key=lambda r: (r["n_failed"] == 0, order[r["severity"]], -r["n_failed"]))
     dims: dict[str, dict] = {}
     for r in rules:

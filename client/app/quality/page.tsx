@@ -72,7 +72,7 @@ export default function QualityPage() {
       {extra.length > 0 && (
         <Notice kind="info" icon="i" className="mt-3.5">
           <b>{k.n_additional} findings beyond the answer key.</b>{" "}
-          Most are partial onset dates in the real CDISC pilot data; the rest are knock-on effects of a planted problem seen from a second system, and the two look-alike sites queued for a steward.
+          Most are partial onset dates in the real CDISC pilot data, which are warnings and not errors: each is dated to the first day of what was collected. The rest are knock-on effects of a planted problem seen from a second system, and the two look-alike sites queued for a steward.
           <NoticeList>{extra.map((e) => <li key={e.title}>{e.n} under “{e.title}”</li>)}</NoticeList>
         </Notice>
       )}
@@ -85,7 +85,7 @@ export default function QualityPage() {
               <span>{r.title}<div className="text-[12.5px] text-ink-3"><code>{r.dataset}</code></div></span>
               <span className="hidden text-[12.5px] text-ink-2 sm:block">{r.dimension}</span>
               <span className="hidden text-right text-[12.5px] tabular-nums text-ink-2 sm:block">{fmtInt(r.n_checked)} checked</span>
-              <span className="text-right">{r.n_failed ? <Pill tone="bad">{r.n_failed}</Pill> : <Pill tone="good">pass</Pill>}</span>
+              <span className="text-right">{r.n_failed ? <Pill tone={r.severity === "warning" ? "warn" : "bad"}>{r.n_failed}</Pill> : <Pill tone="good">pass</Pill>}</span>
             </summary>
             <div className="px-4 pb-3.5 pt-0.5">
               {r.hidden ? (

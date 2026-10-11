@@ -3,7 +3,7 @@
 import Link from "next/link";
 import type { ComponentProps, ReactNode } from "react";
 import { tableHref } from "@/lib/format";
-import type { Role } from "@/lib/types";
+import type { Role, XwalkId } from "@/lib/types";
 import { useApp } from "./app-context";
 
 /* The small pieces every page is built from. Tailwind only sees class names that are written out in full,
@@ -53,6 +53,7 @@ const SEV_TONE: Record<string, string> = {
   high: "text-warn",
   medium: "text-ink-2",
   low: "text-ink-3",
+  warning: "text-warn",
   info: "text-ink-3",
 };
 
@@ -172,6 +173,33 @@ export function Th({ num, className = "", ...rest }: ComponentProps<"th"> & { nu
 
 export function Td({ num, className = "", ...rest }: ComponentProps<"td"> & { num?: boolean }) {
   return <td className={`border-b border-line px-2.5 py-2 align-top ${num ? "text-right tabular-nums" : ""} ${className}`} {...rest} />;
+}
+
+/* How each system's id was matched to one master key: the method, the confidence and the evidence. */
+export function MatchTable({ ids }: { ids: XwalkId[] }) {
+  return (
+    <Card className="overflow-auto">
+      <PlainTable className="min-w-[560px]">
+        <thead><tr><Th>System</Th><Th>Its id</Th><Th>Match</Th><Th>Evidence</Th></tr></thead>
+        <tbody>
+          {ids.map((x, i) => (
+            <tr key={i}>
+              <Td><SysBadge system={x.system} /></Td>
+              <Td>
+                <code>{x.native_id}</code>
+                {x.native_label && x.native_label !== x.native_id && x.method !== "id_pattern" && <div className="text-[12.5px] text-ink-3">{x.native_label}</div>}
+              </Td>
+              <Td className="whitespace-nowrap">
+                {x.method} <ConfBadge id={x} />
+                {x.status === "review" && <div className="text-[12.5px] text-warn">queued for a steward</div>}
+              </Td>
+              <Td className="text-[12.5px] text-ink-2">{x.evidence}</Td>
+            </tr>
+          ))}
+        </tbody>
+      </PlainTable>
+    </Card>
+  );
 }
 
 /* Everything a role holds: each data tag, granted or not, and whether it may manage accounts and roles. */

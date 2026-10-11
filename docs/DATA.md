@@ -70,10 +70,11 @@ file. Only the Quality page and the tests do, to score the rules against it.
 | Cross-system conflicts | Three reportable events in EDC with no safety case; two cases whose onset date differs from EDC; one case whose patient sex differs from EDC |
 | Invalid or missing | A negative payment; a payment with no due date; a safety site name that matches nothing |
 
-The rules also report findings nobody planted. Most are adverse events in the real pilot data whose onset
-was collected as a partial date such as `1977` or `2013-06`. Those events are dated to the first day of the
-month or year collected, and `onset_date_precision` says which. The rest are the same planted problems seen
-from a second system, for example the courier also appearing as an unmatched vendor.
+The rules also report 29 findings nobody planted. Twenty-three are adverse events in the real pilot data
+whose onset was collected as a partial date such as `1977` or `2013-06`. That is how the site recorded them,
+so they are warnings and not errors: each is dated to the first day of the month or year collected, and
+`onset_date_precision` says which. The rest are the same planted problems seen from a second system, for
+example the courier also appearing as an unmatched vendor.
 
 ## Definitions used throughout
 

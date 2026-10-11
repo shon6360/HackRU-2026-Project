@@ -6,6 +6,11 @@ source file and row it came from, so a finding can be traced back and fixed at t
 Rules run against silver (before gold collapses duplicates) or against the reconciliation
 tables in gold. Two rules about the feeds themselves (freshness, row counts) are evaluated
 from the manifests.
+
+Severity is critical, high, medium or low for an error, in that order. `warning` is for something
+a reader should know that is not wrong at the source, such as a date collected only to the month:
+it is listed and said on an answer like any finding, and drawn as a warning. `info` is listed and
+never said on an answer.
 """
 from __future__ import annotations
 
@@ -116,10 +121,14 @@ RULES = [
          sql="""SELECT doc_no, 'amount ' || COALESCE(CAST(amount_usd AS VARCHAR), 'unparseable') || ' for ' || payee,
                        _src_system, _src_file, _src_row
                 FROM silver.finance_payments WHERE amount_usd IS NULL OR amount_usd <= 0"""),
+    # a partial onset ('2013-06', '1977') is how the site collected it, not a defect in the feed: the models date it to
+    # the first day it can mean. That is a warning, not an error: the reader should know the day is not exact
     dict(id="valid_ae_onset_complete", title="Adverse event onset is a complete date",
-         dimension="Validity", severity="info", dataset="silver.edc_adverse_events",
+         dimension="Validity", severity="warning", dataset="silver.edc_adverse_events",
          total="SELECT count(*) FROM silver.edc_adverse_events",
-         sql="""SELECT substr(usubjid, 4) || '#' || ae_seq, 'onset collected as "' || onset_date_raw || '" for ' || preferred_term,
+         sql="""SELECT substr(usubjid, 4) || '#' || ae_seq,
+                       'onset collected as "' || COALESCE(onset_date_raw, '') || '" for ' || preferred_term
+                           || COALESCE(', dated ' || onset_date, ': not a date'),
                        _src_system, _src_file, _src_row
                 FROM silver.edc_adverse_events WHERE onset_date_precision IS DISTINCT FROM 'day'"""),
     # ------------------------------------------------------------------ completeness

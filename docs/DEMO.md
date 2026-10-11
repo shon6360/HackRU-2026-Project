@@ -61,7 +61,8 @@ Go to **Quality**.
 
 > We planted 25 data problems across the five feeds and kept an answer key: duplicate payments, a kit
 > dispensed after it expired, serious adverse events that never reached the safety database. The rules catch
-> 25 of 25. They also found 23 partial dates in the real CDISC data that we didn't plant.
+> 25 of 25. They also found 23 partial dates in the real CDISC data that we didn't plant. Those are warnings,
+> not errors: each is dated to the start of what was collected and marked as partial.
 
 Expand *Every reportable event in EDC has a case in the safety database*.
 

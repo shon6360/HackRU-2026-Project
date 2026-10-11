@@ -16,7 +16,7 @@ python -m backend ask "Which sites are we late paying?" --role finance
 | Module | Role |
 |---|---|
 | `__main__.py` | CLI: `build`, `serve`, `ask`. `build` runs the harmonizer's pipeline, then npm in `../client/`. The other two run the pipeline first when there is no warehouse. `serve` prints where it is listening and, when that is beyond this computer, the address to open from another one |
-| `engine.py` | `catalog()`, `preflight()`, `execute()`, `upstream_graph()`, `data_path()`, `source_files()`, `answer_context()`, `trace()` |
+| `engine.py` | `catalog()`, `preflight()`, `execute()`, `upstream_graph()`, `data_path()`, `answer_context()`, `trace()`, `site_list()`, `site_lineage()` |
 | `ask.py` | The Gemini call, the `EXAMPLES` it is shown, `ask()` |
 | `filters.py` | The filter form: `CATEGORIES`, `options()` (what a role can pick from), `build()` (picks to SQL), `run()` |
 | `accounts.py` | Roles, accounts, passwords, sessions and each account's own Gemini key in `state/accounts.db` (SQLite). Says which role a request runs as and which grants that role holds |
@@ -54,12 +54,7 @@ rules on upstream datasets. Two details matter:
 - The data path (`data_path()`) does not follow `config.ID_MAPS` (the two crosswalks). They read
   every system to map ids, so following them would make every answer depend on every feed. The
   lineage graph still shows them.
-- Rules with severity `info` do not raise warnings.
-
-`source_files(fqn)` names the feed files behind one table, in the same two groups: `files`, on
-the data path, are the ones its rows are built from, and `id_files` are the ones reached only
-through the crosswalks. It is table-level, like the lineage it is read from: it does not say which
-file one column comes from.
+- Rules with severity `info` do not raise warnings. Every other severity does, `warning` included.
 
 `TRACEABLE` maps a result column name to how it is traced: `entity` keys (`site_key`,
 `subject_key`, `dispensed_subject_key`) show the crosswalk rows plus source rows from every gold
@@ -67,6 +62,17 @@ table that has the key and `_src_row`; `record` keys (`case_id`, `doc_no`, `kit_
 `ae_key`, `edc_ae_key`, `rand_no`) show the one gold table's source rows. A column is clickable
 in the UI only if its name is in this dict. `trace` runs in the role's mart and reports
 withheld blocks instead of hiding them.
+
+`site_list(role)` and `site_lineage(role, site_key)` are the search by site name on the Lineage
+page. Unlike the lineage graph, which is metadata, a site's name and its row counts are data, so
+both read the role's mart. `site_lineage` returns how each system's id was matched to the site
+(the same block as `trace`), and for every gold table with a `site_key` how many of its rows are
+this site's and which `_src_file` those rows name. A table the role may not see comes back with
+`denied` and no counts. A summary table (no `_src_row`) has `summary_of`, the per-site tables it
+is built from, instead of files. The graph holds only what this site's rows passed through: each
+table with rows, the files they name, and the nodes on the data path between the two. Its `rows`
+are this site's rows (a source row is counted once however many tables it reaches), and a node
+that cannot be counted per site has none.
 
 ## ask.py
 
@@ -236,7 +242,9 @@ hosting simple: `--host 0.0.0.0`, and another computer needs only a browser. `np
 | `GET /api/trace?column&value` | `engine.trace()` |
 | `GET /api/catalog` | dataset summaries with access and FAIR score |
 | `GET /api/dataset/{fqn}` | one dataset: columns, preview, lineage, rules, SQL |
-| `GET /api/lineage` | the whole graph, and `gold`: each gold table with its description, its column names and its `source_files()`, which the search on the Lineage page reads |
+| `GET /api/lineage` | the whole graph |
+| `GET /api/lineage/sites` | the sites the signed-in role can search by name (`engine.site_list()`), or why it may not |
+| `GET /api/lineage/site?site_key` | one site's lineage (`engine.site_lineage()`): its id in each system, its rows and their source files per gold table, and the graph those rows travelled |
 | `GET /api/crosswalk` | site crosswalk, subject match counts |
 | `GET /api/quality` | rules, failures, answer-key score |
 | `GET /api/access` | every tagged table and what each role gets |

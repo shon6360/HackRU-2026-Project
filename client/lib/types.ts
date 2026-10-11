@@ -42,11 +42,6 @@ export type Meta = {
 export type GraphNode = { id: string; layer: string; label: string; rows?: number; tags?: string[]; system?: string; stale?: boolean };
 export type Graph = { nodes: GraphNode[]; edges: [string, string][]; targets?: string[] };
 
-/* What /api/lineage adds to the graph for the search on the Lineage page. `files` are the source files a gold
-   table's rows are built from; `id_files` are read only to work out which ids mean the same site or subject. */
-export type GoldSource = { fqn: string; name: string; description: string; columns: string[]; files: string[]; id_files: string[] };
-export type Lineage = Graph & { gold: GoldSource[] };
-
 export type Decision = { action: "deny" | "mask"; object: string; column?: string; tags: string[]; reason: string };
 export type FailingRule = { rule_id: string; title: string; n_failed: number; severity: string };
 export type TrustWarning = { kind: "stale" | "quality"; text: string; rules?: FailingRule[] };
@@ -122,6 +117,29 @@ export type XwalkId = {
   runner_up_site_key: string | null;
   runner_up_confidence: number | null;
   evidence: string | null;
+};
+
+/* The sites the Lineage page can be searched for by name (/api/lineage/sites), as the signed-in role sees them. */
+export type SiteRef = { site_key: string; site_name: string; city: string | null; state: string | null };
+export type SiteList = { sites: SiteRef[]; denied: string | null };
+
+/* One site's lineage (/api/lineage/site). A table the role may not see has `denied` and no counts. `files` are
+   the source files this site's rows in a table were read from; a summary table has `summary_of` instead. Row
+   counts in `graph` are this site's rows, not the tables'. */
+export type SiteTable = {
+  dataset: string;
+  description: string;
+  denied?: string;
+  rows?: number;
+  files?: { file: string; system: string; rows: number }[];
+  summary_of?: string[];
+};
+export type SiteLineage = {
+  error?: string;
+  site?: SiteRef;
+  crosswalk?: { denied?: string; rows?: XwalkId[] };
+  tables?: SiteTable[];
+  graph?: Graph;
 };
 
 export type TraceSource = {

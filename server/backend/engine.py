@@ -269,8 +269,14 @@ def upstream_graph(targets: list[str]) -> dict:
             continue
         seen.add(node)
         order.extend(cat["upstream"].get(node, ()))
+    return _graph(seen, targets)
+
+
+def _graph(ids: set[str], targets: list[str]) -> dict:
+    """Describe a set of catalog tables and source files as graph nodes, with the lineage edges among them."""
+    cat = catalog()
     nodes = []
-    for n in sorted(seen):
+    for n in sorted(ids):
         ds = cat["datasets"].get(n)
         if ds:
             nodes.append({"id": n, "layer": ds["layer"], "label": ds["name"], "rows": ds["row_count"], "tags": ds["tags"]})
@@ -278,7 +284,7 @@ def upstream_graph(targets: list[str]) -> dict:
             system = n.split("/")[1]
             nodes.append({"id": n, "layer": "source", "label": n.split("/", 1)[1], "system": system,
                           "stale": cat["feeds"][system]["is_stale"]})
-    return {"nodes": nodes, "edges": [[s, d] for s, d in cat["edges"] if s in seen and d in seen], "targets": targets}
+    return {"nodes": nodes, "edges": [[s, d] for s, d in cat["edges"] if s in ids and d in ids], "targets": targets}
 
 
 def data_path(tables: list[str]) -> set[str]:
@@ -295,18 +301,6 @@ def data_path(tables: list[str]) -> set[str]:
             seen.add(node)
             todo.extend(p for p in cat["upstream"].get(node, ()) if p not in config.ID_MAPS)
     return seen
-
-
-def source_files(fqn: str) -> dict:
-    """Name the feed files behind one table.
-
-    `files` are the ones its rows are built from. `id_files` are the ones that are read only to
-    work out which ids mean the same site or subject, which the lineage graph also shows.
-    """
-    cat = catalog()
-    files = sorted(n for n in data_path([fqn]) if n not in cat["datasets"])
-    every = [n["id"] for n in upstream_graph([fqn])["nodes"] if n["layer"] == "source"]
-    return {"files": files, "id_files": [f for f in every if f not in files]}
 
 
 def _days(hours: float) -> str:
@@ -390,6 +384,17 @@ def _source_rows(con, cat: dict, role: str, gold: str, key_col: str, value: str,
     return block
 
 
+def _crosswalk(con, cat: dict, role: str, key_col: str, value: str) -> dict:
+    """How each system's id was matched to one master key, or why this role may not see that."""
+    xwalk = XWALK[key_col]
+    xa = access(cat["datasets"][xwalk], role)
+    if xa["denied"]:
+        return {"denied": reason(xa["denied_tags"], role)}
+    cur = con.execute(f"SELECT * FROM {xwalk} WHERE {key_col} = ? ORDER BY system, native_id", [value])
+    cols = [c[0] for c in cur.description]
+    return {"dataset": xwalk, "rows": [dict(zip(cols, [jsonable(v) for v in r])) for r in cur.fetchall()]}
+
+
 def trace(role: str, column: str, value: str) -> dict:
     """Return everything behind one key in an answer: how its ids were matched, and the source rows.
 
@@ -409,14 +414,7 @@ def trace(role: str, column: str, value: str) -> dict:
             return {"kind": "record", "column": column, "value": value, "crosswalk": None,
                     "sources": [_source_rows(con, cat, role, gold, key_col, value)]}
         key_col = spec[1]
-        xwalk = XWALK[key_col]
-        xa = access(cat["datasets"][xwalk], role)
-        if xa["denied"]:
-            crosswalk = {"denied": reason(xa["denied_tags"], role)}
-        else:
-            cur = con.execute(f"SELECT * FROM {xwalk} WHERE {key_col} = ? ORDER BY system, native_id", [value])
-            cols = [c[0] for c in cur.description]
-            crosswalk = {"dataset": xwalk, "rows": [dict(zip(cols, [jsonable(v) for v in r])) for r in cur.fetchall()]}
+        crosswalk = _crosswalk(con, cat, role, key_col, value)
         sources = []
         for fqn, ds in cat["datasets"].items():
             if ds["layer"] != "gold" or "_src_row" not in ds["columns"]:
@@ -430,3 +428,82 @@ def trace(role: str, column: str, value: str) -> dict:
         return {"kind": "entity", "column": key_col, "value": value, "crosswalk": crosswalk, "sources": sources}
     finally:
         con.close()
+
+
+# ----------------------------------------------------------------------------- one site's lineage
+SITES = "gold.dim_site"
+
+
+def site_list(role: str) -> dict:
+    """The sites this role can look up by name, read from its own database.
+
+    Returns the reason instead of the list when the role may not see site names.
+    """
+    a = access(catalog()["datasets"][SITES], role)
+    hidden = a["denied_tags"] or a["masked"].get("site_key") or a["masked"].get("site_name")
+    if hidden:
+        return {"sites": [], "denied": reason(hidden, role)}
+    con = role_connection(role)
+    try:
+        cur = con.execute(f"SELECT site_key, site_name, city, state FROM {SITES} ORDER BY site_name, site_key")
+        cols = [c[0] for c in cur.description]
+        return {"sites": [dict(zip(cols, r)) for r in cur.fetchall()], "denied": None}
+    finally:
+        con.close()
+
+
+def site_lineage(role: str, site_key: str) -> dict:
+    """Where one site's data comes from, for the search by site name on the Lineage page.
+
+    Returns how each system's id was matched to the site and, for every gold table kept per site,
+    how many of its rows are this site's and which source files those rows were read from. The
+    graph is the path those rows travelled: each table that holds some, the files its rows name,
+    and what lies between the two. Row counts in it are this site's rows, not the table's.
+    Runs in the role's database: a withheld table is reported as withheld and left out of the graph.
+    """
+    cat = catalog()
+    listed = site_list(role)
+    if listed["denied"]:
+        return {"error": f"Site names are {listed['denied']}."}
+    site = next((s for s in listed["sites"] if s["site_key"] == site_key), None)
+    if site is None:
+        return {"error": "There is no site with that key."}
+    con = role_connection(role)
+    try:
+        tables, on_path, site_rows, file_rows = [], set(), {}, {}
+        for fqn, ds in cat["datasets"].items():
+            if ds["layer"] != "gold" or "site_key" not in ds["columns"]:
+                continue
+            a = access(ds, role)
+            block = {"dataset": fqn, "description": ds["description"]}
+            hidden = a["denied_tags"] or a["masked"].get("site_key")
+            if hidden:
+                tables.append({**block, "denied": reason(hidden, role)})
+                continue
+            if "_src_row" not in ds["columns"]:  # a summary: it has rows for the site, but they point at no source row
+                n = con.execute(f"SELECT count(*) FROM {fqn} WHERE site_key = ?", [site_key]).fetchone()[0]
+                summary_of = sorted(p for p in cat["upstream"].get(fqn, ()) if "site_key" in cat["datasets"].get(p, {}).get("columns", ()))
+                tables.append({**block, "rows": n, "files": [], "summary_of": summary_of})
+            else:
+                refs = con.execute(f"SELECT _src_file, _src_row FROM {fqn} WHERE site_key = ?", [site_key]).fetchall()
+                n, upstream = len(refs), data_path([fqn])
+                files = sorted({f for f, _ in refs})
+                tables.append({**block, "rows": n, "files": [{"file": f, "system": f.split("/")[1], "rows": sum(1 for g, _ in refs if g == f)} for f in files]})
+                for f, row in refs:
+                    file_rows.setdefault(f, set()).add(row)
+                for f in files:
+                    on_path |= {node for node in upstream if f in data_path([node])}
+            if n:
+                on_path.add(fqn)
+                site_rows[fqn] = n
+        crosswalk = _crosswalk(con, cat, role, "site_key", site_key)
+    finally:
+        con.close()
+    for f, rows in file_rows.items():  # one source row can reach more than one gold table: count it once
+        site_rows[f] = site_rows[cat["by_file"][f]] = len(rows)
+    graph = _graph(on_path, sorted(t["dataset"] for t in tables if t.get("rows")))
+    for node in graph["nodes"]:
+        node.pop("rows", None)  # the whole table's count would be read as this site's
+        if node["id"] in site_rows:
+            node["rows"] = site_rows[node["id"]]
+    return {"site": site, "crosswalk": crosswalk, "tables": tables, "graph": graph}

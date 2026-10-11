@@ -400,38 +400,66 @@ def test_lineage_reaches_a_source_file_for_every_table():
         assert any(n["layer"] == "source" for n in nodes), fqn
 
 
-def test_every_gold_table_names_the_source_files_its_rows_come_from():
+def test_a_site_found_by_name_shows_where_its_rows_come_from_and_respects_policy():
     cat = engine.catalog()
-    listed = {g["fqn"]: g for g in server.lineage()["gold"]}
-    assert set(listed) == {fqn for fqn, ds in cat["datasets"].items() if ds["layer"] == "gold"}
-    for fqn, g in listed.items():
-        assert g["files"] or fqn == "gold.snapshot", fqn
-        assert not set(g["files"]) & set(g["id_files"]), fqn
-        assert all(f.startswith("feeds/") for f in g["files"] + g["id_files"]), fqn
-        assert not any(c.startswith("_src_") for c in g["columns"]), fqn
-    # payments come from one finance file; the site list is read only to match its site ids
-    payment = listed["gold.fact_payment"]
-    assert payment["files"] == ["feeds/finance/site_payments.csv"]
-    assert "feeds/ctms/sites.csv" in payment["id_files"]
-    # a table with provenance columns names every file its rows point back to
+    key = "S" + KEY["story_sites"]["all_three_problems"][0]
     con = engine.warehouse()
-    for fqn, g in listed.items():
+    name, = con.execute("SELECT site_name FROM gold.dim_site WHERE site_key = ?", [key]).fetchone()
+    every_site = con.execute("SELECT count(*) FROM gold.dim_site").fetchone()[0]
+
+    listed = server.lineage_sites("clinops")
+    assert listed["denied"] is None and len(listed["sites"]) == every_site
+    assert [s["site_key"] for s in listed["sites"] if s["site_name"] == name] == [key], "the name leads to the one site"
+
+    seen = server.lineage_site(key, "clinops")
+    assert seen["site"]["site_name"] == name
+    assert {x["system"] for x in seen["crosswalk"]["rows"]} == {"ctms", "edc", "irt", "safety", "finance"}
+    per_site = {fqn for fqn, ds in cat["datasets"].items() if ds["layer"] == "gold" and "site_key" in ds["columns"]}
+    assert {t["dataset"] for t in seen["tables"]} == per_site
+    nodes = {n["id"]: n for n in seen["graph"]["nodes"]}
+    for t in seen["tables"]:
+        fqn = t["dataset"]
+        assert "denied" not in t, f"{fqn}: clinops holds every grant these tables need"
+        assert t["rows"] == con.execute(f"SELECT count(*) FROM {fqn} WHERE site_key = ?", [key]).fetchone()[0], fqn
         if "_src_file" in cat["datasets"][fqn]["columns"]:
-            assert {f for f, in con.execute(f"SELECT DISTINCT _src_file FROM {fqn}").fetchall()} <= set(g["files"]), fqn
+            assert sum(f["rows"] for f in t["files"]) == t["rows"], fqn
+            assert {f["file"] for f in t["files"]} == {f for f, in con.execute(f"SELECT DISTINCT _src_file FROM {fqn} WHERE site_key = ?", [key]).fetchall()}, fqn
+        if t["rows"]:
+            assert nodes[fqn]["rows"] == t["rows"], f"{fqn}: the graph counts this site's rows, not the table's"
+            assert all(f["file"] in nodes for f in t["files"]), fqn
     con.close()
+    assert seen["graph"]["targets"] == sorted(t["dataset"] for t in seen["tables"] if t["rows"])
+    # payments reach the site through one finance file and the tables between; a table kept per study is not on any site's path
+    assert {"feeds/finance/site_payments.csv", "bronze.finance_site_payments", "silver.finance_payments", "gold.fact_payment"} <= set(nodes)
+    assert "gold.dim_study" not in nodes and "feeds/finance/vendors.csv" not in nodes
+    assert all(a in nodes and b in nodes for a, b in seen["graph"]["edges"])
+
+    finance = server.lineage_site(key, "finance")
+    withheld = {t["dataset"] for t in finance["tables"] if t.get("denied")}
+    assert "gold.dim_subject" in withheld and "gold.fact_payment" not in withheld
+    assert all("rows" not in t and "files" not in t for t in finance["tables"] if t.get("denied")), "a withheld table says nothing about the site"
+    assert not withheld & {n["id"] for n in finance["graph"]["nodes"]}
+
+    assert server.lineage_site("S000", "clinops") == {"error": "There is no site with that key."}
+    assert server.lineage_site("' OR 1=1 --", "clinops") == {"error": "There is no site with that key."}
 
 
 def test_a_partial_onset_date_is_dated_to_the_start_of_what_was_collected():
     con = engine.warehouse()
     rows = con.execute("SELECT onset_date_raw, onset_date, onset_date_precision FROM gold.fact_adverse_event").fetchall()
-    partial = con.execute("SELECT count(*) FROM dq.failures WHERE rule_id = 'valid_ae_onset_complete'").fetchone()[0]
+    warned = con.execute("SELECT count(*) FROM dq.failures WHERE rule_id = 'valid_ae_onset_complete'").fetchone()[0]
+    severity = con.execute("SELECT severity FROM dq.rules WHERE rule_id = 'valid_ae_onset_complete'").fetchone()[0]
     con.close()
     start = {"day": lambda raw: raw[:10], "month": lambda raw: raw + "-01", "year": lambda raw: raw + "-01-01"}
     for raw, onset, precision in rows:
         assert precision in start and str(onset) == start[precision](raw), (raw, onset, precision)
     assert {p for _, _, p in rows} == {"day", "month", "year"}, "the pilot data holds all three"
-    # a partial date is still reported as a finding, and the filter form can pick those events out
-    assert partial == sum(p != "day" for _, _, p in rows) > 0
+    # a partial date is a warning, not an error: it is reported, it is said on an answer that reads adverse events,
+    # and the filter form picks those events out by their precision
+    partial = sum(p != "day" for _, _, p in rows)
+    assert partial > 0 and warned == partial and severity == "warning"
+    said = [r for w in engine.execute("SELECT ae_key, onset_date FROM gold.fact_adverse_event", "admin")["context"]["warnings"] for r in w.get("rules", [])]
+    assert {"rule_id": "valid_ae_onset_complete", "title": "Adverse event onset is a complete date", "n_failed": partial, "severity": "warning"} in said
     assert filters.run({"category": "adverse-events", "conditions": [{"field": "onset_date_precision", "any_of": ["month", "year"]}]}, "admin")["row_count"] == partial
 
 
