@@ -281,6 +281,34 @@ def upstream_graph(targets: list[str]) -> dict:
     return {"nodes": nodes, "edges": [[s, d] for s, d in cat["edges"] if s in seen and d in seen], "targets": targets}
 
 
+def data_path(tables: list[str]) -> set[str]:
+    """Everything the rows of these tables are built from: like the graph, but not through the id crosswalks.
+
+    The crosswalks read every system to map ids, so following them would make every table
+    appear to come from every feed.
+    """
+    cat = catalog()
+    seen, todo = set(), list(tables)
+    while todo:
+        node = todo.pop()
+        if node not in seen:
+            seen.add(node)
+            todo.extend(p for p in cat["upstream"].get(node, ()) if p not in config.ID_MAPS)
+    return seen
+
+
+def source_files(fqn: str) -> dict:
+    """Name the feed files behind one table.
+
+    `files` are the ones its rows are built from. `id_files` are the ones that are read only to
+    work out which ids mean the same site or subject, which the lineage graph also shows.
+    """
+    cat = catalog()
+    files = sorted(n for n in data_path([fqn]) if n not in cat["datasets"])
+    every = [n["id"] for n in upstream_graph([fqn])["nodes"] if n["layer"] == "source"]
+    return {"files": files, "id_files": [f for f in every if f not in files]}
+
+
 def _days(hours: float) -> str:
     """Format a duration in hours as a whole number of days for a warning sentence."""
     n = round(hours / 24)
@@ -297,12 +325,7 @@ def answer_context(tables: list[str]) -> dict:
     """
     cat = catalog()
     graph = upstream_graph(tables)
-    upstream_ids, todo = set(), list(tables)
-    while todo:  # the data path: like the graph, but not through the id crosswalks
-        node = todo.pop()
-        if node not in upstream_ids:
-            upstream_ids.add(node)
-            todo.extend(p for p in cat["upstream"].get(node, ()) if p not in config.ID_MAPS)
+    upstream_ids = data_path(tables)
     systems = sorted({s for t in tables for s in cat["datasets"][t]["upstream_systems"]})
     feeds = [{k: cat["feeds"][s][k] for k in ("system", "system_name", "extracted_at", "age_hours", "is_stale", "freshness_sla_hours")}
              for s in systems]

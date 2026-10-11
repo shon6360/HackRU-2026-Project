@@ -35,7 +35,7 @@ python -m backend build                    # everything: build/*.duckdb from fee
 python -m harmonizer build                 # the warehouse half only (about 1-2 s)
 python -m backend serve [--host H --port P] # default 127.0.0.1:8040, this computer only. --host 0.0.0.0 lets other computers open it
 python -m backend ask "Which sites are we late paying?" --role finance   # prints the result JSON. Needs a Gemini key
-python tests/test_concord.py               # all 17 tests, no test runner needed
+python tests/test_concord.py               # all 18 tests, no test runner needed
 ```
 
 - A virtual environment does not survive its folder being moved or renamed: `activate` keeps

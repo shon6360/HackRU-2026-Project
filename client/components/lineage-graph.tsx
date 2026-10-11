@@ -3,11 +3,12 @@
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { fmtInt, LAYERS, tableHref } from "@/lib/format";
-import { layoutGraph, reach, type PlacedNode } from "@/lib/graph";
+import { layoutGraph, reach } from "@/lib/graph";
 import type { Graph } from "@/lib/types";
 
 /* The lineage graph, drawn by hand as inline SVG. Click a node to light up everything upstream and
-   downstream of it; click it again to open the table in the catalog. */
+   downstream of it; click it again to open the table in the catalog. A page that also selects nodes from
+   outside the graph, such as from a search, passes `selected` and keeps it up to date from `onSelect`. */
 
 export function Legend() {
   return (
@@ -26,23 +27,25 @@ export function Legend() {
 type Props = {
   graph: Graph;
   markTargets?: boolean;
-  onSelect?: (node: PlacedNode | null, nUpstream: number, nDownstream: number) => void;
+  selected?: string | null;
+  onSelect?: (id: string | null) => void;
 };
 
-export function LineageGraph({ graph, markTargets, onSelect }: Props) {
+export function LineageGraph({ graph, markTargets, selected: given, onSelect }: Props) {
   const router = useRouter();
   const L = useMemo(() => layoutGraph(graph), [graph]);
-  const [picked, setPicked] = useState<string | null>(null);
+  const [own, setOwn] = useState<string | null>(null);
+  const picked = given === undefined ? own : given;
   const selected = picked && L.byId.has(picked) ? picked : null;  // a selection does not carry over to a different graph
   const keep = useMemo(() => selected ? new Set([...reach(L.byId, selected, "parents"), ...reach(L.byId, selected, "children")]) : null, [L, selected]);
   const targets = new Set(markTargets ? graph.targets : []);
 
   const select = (id: string) => {
     if (selected === id) { if (!id.startsWith("feeds/")) router.push(tableHref(id)); return; }
-    setPicked(id);
-    onSelect?.(L.byId.get(id)!, reach(L.byId, id, "parents").size - 1, reach(L.byId, id, "children").size - 1);
+    setOwn(id);
+    onSelect?.(id);
   };
-  const clear = () => { setPicked(null); onSelect?.(null, 0, 0); };
+  const clear = () => { setOwn(null); onSelect?.(null); };
 
   return (
     // shrink to fit the page when it is close; scroll sideways when it is not

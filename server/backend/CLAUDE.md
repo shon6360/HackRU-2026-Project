@@ -16,7 +16,7 @@ python -m backend ask "Which sites are we late paying?" --role finance
 | Module | Role |
 |---|---|
 | `__main__.py` | CLI: `build`, `serve`, `ask`. `build` runs the harmonizer's pipeline, then npm in `../client/`. The other two run the pipeline first when there is no warehouse. `serve` prints where it is listening and, when that is beyond this computer, the address to open from another one |
-| `engine.py` | `catalog()`, `preflight()`, `execute()`, `upstream_graph()`, `answer_context()`, `trace()` |
+| `engine.py` | `catalog()`, `preflight()`, `execute()`, `upstream_graph()`, `data_path()`, `source_files()`, `answer_context()`, `trace()` |
 | `ask.py` | The Gemini call, the `EXAMPLES` it is shown, `ask()` |
 | `filters.py` | The filter form: `CATEGORIES`, `options()` (what a role can pick from), `build()` (picks to SQL), `run()` |
 | `accounts.py` | Roles, accounts, passwords, sessions and each account's own Gemini key in `state/accounts.db` (SQLite). Says which role a request runs as and which grants that role holds |
@@ -51,10 +51,15 @@ If anything is denied, nothing is executed. Otherwise the query runs as
 depends on, a `stale` warning per feed past its SLA, and a `quality` warning listing failing
 rules on upstream datasets. Two details matter:
 
-- The data path does not follow `config.ID_MAPS` (the two crosswalks). They read every system
-  to map ids, so following them would make every answer depend on every feed. The lineage graph
-  still shows them.
+- The data path (`data_path()`) does not follow `config.ID_MAPS` (the two crosswalks). They read
+  every system to map ids, so following them would make every answer depend on every feed. The
+  lineage graph still shows them.
 - Rules with severity `info` do not raise warnings.
+
+`source_files(fqn)` names the feed files behind one table, in the same two groups: `files`, on
+the data path, are the ones its rows are built from, and `id_files` are the ones reached only
+through the crosswalks. It is table-level, like the lineage it is read from: it does not say which
+file one column comes from.
 
 `TRACEABLE` maps a result column name to how it is traced: `entity` keys (`site_key`,
 `subject_key`, `dispensed_subject_key`) show the crosswalk rows plus source rows from every gold
@@ -231,7 +236,7 @@ hosting simple: `--host 0.0.0.0`, and another computer needs only a browser. `np
 | `GET /api/trace?column&value` | `engine.trace()` |
 | `GET /api/catalog` | dataset summaries with access and FAIR score |
 | `GET /api/dataset/{fqn}` | one dataset: columns, preview, lineage, rules, SQL |
-| `GET /api/lineage` | the whole graph |
+| `GET /api/lineage` | the whole graph, and `gold`: each gold table with its description, its column names and its `source_files()`, which the search on the Lineage page reads |
 | `GET /api/crosswalk` | site crosswalk, subject match counts |
 | `GET /api/quality` | rules, failures, answer-key score |
 | `GET /api/access` | every tagged table and what each role gets |

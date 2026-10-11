@@ -20,7 +20,7 @@ summary with what is written:
 |---|---|
 | 25 planted problems, 25 caught | README, DATA, DEMO, DECK |
 | 29 further findings, 23 of them partial dates in the real CDISC data | README (29), DEMO and DECK (23) |
-| 27 quality rules, 28 SQL models, 17 tests | README, DECK |
+| 27 quality rules, 28 SQL models, 18 tests | README, DECK |
 | Crosswalk: 78 automatic, 2 queued, 3 unmatched | DECK |
 | Finance feed 24 days stale against a 7-day SLA | README, DATA, DEMO |
 | Two sites with all three problems; `S718` used in the walkthrough | README, DEMO |

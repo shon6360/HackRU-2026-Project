@@ -400,6 +400,27 @@ def test_lineage_reaches_a_source_file_for_every_table():
         assert any(n["layer"] == "source" for n in nodes), fqn
 
 
+def test_every_gold_table_names_the_source_files_its_rows_come_from():
+    cat = engine.catalog()
+    listed = {g["fqn"]: g for g in server.lineage()["gold"]}
+    assert set(listed) == {fqn for fqn, ds in cat["datasets"].items() if ds["layer"] == "gold"}
+    for fqn, g in listed.items():
+        assert g["files"] or fqn == "gold.snapshot", fqn
+        assert not set(g["files"]) & set(g["id_files"]), fqn
+        assert all(f.startswith("feeds/") for f in g["files"] + g["id_files"]), fqn
+        assert not any(c.startswith("_src_") for c in g["columns"]), fqn
+    # payments come from one finance file; the site list is read only to match its site ids
+    payment = listed["gold.fact_payment"]
+    assert payment["files"] == ["feeds/finance/site_payments.csv"]
+    assert "feeds/ctms/sites.csv" in payment["id_files"]
+    # a table with provenance columns names every file its rows point back to
+    con = engine.warehouse()
+    for fqn, g in listed.items():
+        if "_src_file" in cat["datasets"][fqn]["columns"]:
+            assert {f for f, in con.execute(f"SELECT DISTINCT _src_file FROM {fqn}").fetchall()} <= set(g["files"]), fqn
+    con.close()
+
+
 if __name__ == "__main__":
     tests = [(name, fn) for name, fn in sorted(globals().items()) if name.startswith("test_") and callable(fn)]
     for name, fn in tests:

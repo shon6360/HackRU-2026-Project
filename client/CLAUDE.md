@@ -58,7 +58,8 @@ app/
   globals.css         Tailwind import, colour tokens, theme, defaults for bare elements
   ask/                page.tsx, ask-view.tsx (the three ways to ask: Ask a question, Filter, Write SQL), filter-form.tsx (the Filter form), answer.tsx (the answer card and its four tabs)
   catalog/            page.tsx, catalog-view.tsx (the list and search), dataset-view.tsx (one table)
-  lineage/ crosswalk/ quality/ access/    one page.tsx each
+  lineage/            page.tsx: the whole graph, and the search that names the source files behind a gold table
+  crosswalk/ quality/ access/    one page.tsx each
   profile/            page.tsx: your own account, what your role is granted, change your name and password, keep your Gemini API key
   accounts/           page.tsx: every account, and the form that adds, changes and removes one (administrators)
   roles/              page.tsx: every role, and the form that adds, changes and removes one (administrators)
@@ -80,6 +81,12 @@ lib/
 Pages are client components. `ask/page.tsx` and `catalog/page.tsx` are thin server components
 that wrap the view in `<Suspense>`, which a page that calls `useSearchParams()` must have or the
 build fails.
+
+The search on the Lineage page filters `gold` from `/api/lineage` in the browser, by a table's name,
+description, columns and source files, and makes no request of its own. Which files a table's rows
+come from, and which are read only to match ids, is decided by the server. "Show in the graph"
+selects the table in the graph: the page owns the selection and hands it to `LineageGraph` as
+`selected`, where the other two graphs (an answer's, a dataset's) keep their own.
 
 `AppProvider` loads `/api/me` and `/api/meta` together. `Shell` renders a page only once both have
 arrived, so pages call `useApp()` and can rely on `user` and `meta` being there. Until then it

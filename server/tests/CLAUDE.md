@@ -1,6 +1,6 @@
 # tests
 
-One file, seventeen end-to-end checks. They assert what a judge or an auditor would want to be true,
+One file, eighteen end-to-end checks. They assert what a judge or an auditor would want to be true,
 not implementation details.
 
 ```bash
@@ -56,6 +56,7 @@ server only. The client has none: `npm run build` in `client/` type-checks it.
 | `test_each_account_keeps_its_own_gemini_key_and_it_never_comes_back` | With no key anywhere no model is called; a saved key is used for its owner's questions and nobody else's; no route sends it back, to its owner or to an administrator; SQL written under a person's own key still meets their role's policy; removing the key turns free-form asking off again |
 | `test_trace_reaches_source_rows_and_respects_policy` | A site traces to all five systems with raw rows, and withheld blocks are reported as withheld |
 | `test_lineage_reaches_a_source_file_for_every_table` | Every table except `gold.snapshot` has a source file upstream |
+| `test_every_gold_table_names_the_source_files_its_rows_come_from` | `/api/lineage` lists every gold table with the files its rows are built from, apart from the files read only to match ids; payments come from the one finance file; every `_src_file` a gold table's rows carry is among the files named for it |
 
 ## Writing a test
 

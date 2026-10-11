@@ -344,8 +344,12 @@ def dataset(fqn: str, role: str = Depends(_role)):
 
 @api.get("/api/lineage")
 def lineage():
+    """The whole graph, and for the search on the Lineage page the source files behind each gold table."""
     cat = engine.catalog()
-    return engine.upstream_graph([fqn for fqn in cat["datasets"]])
+    gold = [{"fqn": fqn, "name": ds["name"], "description": ds["description"],
+             "columns": [c for c in ds["columns"] if not c.startswith("_src_")], **engine.source_files(fqn)}
+            for fqn, ds in cat["datasets"].items() if ds["layer"] == "gold"]
+    return {**engine.upstream_graph([fqn for fqn in cat["datasets"]]), "gold": gold}
 
 
 # ----------------------------------------------------------------------------- crosswalk

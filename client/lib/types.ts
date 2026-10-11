@@ -42,6 +42,11 @@ export type Meta = {
 export type GraphNode = { id: string; layer: string; label: string; rows?: number; tags?: string[]; system?: string; stale?: boolean };
 export type Graph = { nodes: GraphNode[]; edges: [string, string][]; targets?: string[] };
 
+/* What /api/lineage adds to the graph for the search on the Lineage page. `files` are the source files a gold
+   table's rows are built from; `id_files` are read only to work out which ids mean the same site or subject. */
+export type GoldSource = { fqn: string; name: string; description: string; columns: string[]; files: string[]; id_files: string[] };
+export type Lineage = Graph & { gold: GoldSource[] };
+
 export type Decision = { action: "deny" | "mask"; object: string; column?: string; tags: string[]; reason: string };
 export type FailingRule = { rule_id: string; title: string; n_failed: number; severity: string };
 export type TrustWarning = { kind: "stale" | "quality"; text: string; rules?: FailingRule[] };

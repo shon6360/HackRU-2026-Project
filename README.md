@@ -68,7 +68,7 @@ More commands, all run in `server/`:
 ```bash
 python -m backend build          # rebuild everything: the warehouse and the web app
 python -m harmonizer build       # the warehouse half only: catalog, quality results and the access databases
-python tests/test_concord.py     # 17 end-to-end checks (also runs under pytest)
+python tests/test_concord.py     # 18 end-to-end checks (also runs under pytest)
 python -m backend ask "Which sites are we late paying?" --role finance   # a typed question: needs a Gemini API key, see below
 ```
 
@@ -118,7 +118,7 @@ page, which opens on **Filter** instead. Filter works as always, as does Write S
 5. **Quality.** The feeds were seeded with 25 documented problems. The rules catch 25 of 25, and 29 more
    findings besides, mostly partial dates in the real CDISC data.
 6. **Catalog and Lineage.** Search for `overdue`, open `gold.site_360`, and follow any number back to the
-   files it came from.
+   files it came from. On **Lineage**, search for `payment` to see which source file a gold table's rows come from.
 
 ## How it works
 

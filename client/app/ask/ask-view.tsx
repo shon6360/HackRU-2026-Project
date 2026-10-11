@@ -36,8 +36,6 @@ export function AskView() {
       <Card className="px-[22px] pb-[18px] pt-[22px]">
         <h1 className="text-[24px]">Ask one question across every trial system</h1>
         <p className="text-ink-2">
-          EDC, CTMS, IRT, the safety database and the finance ledger each use their own ids for the same sites and subjects.
-          Concord has already matched them, so a question that used to mean five extracts and a week of spreadsheets is one query.
           You are asking as <b>{person}</b>, {roleName}.
         </p>
         <div role="tablist" aria-label="How to ask" className="mt-3.5 inline-flex gap-0.5 rounded-[9px] bg-surface-2 p-[3px]">
