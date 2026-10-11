@@ -360,6 +360,34 @@ def lineage_site(site_key: str, role: str = Depends(_role)):
 
 
 # ----------------------------------------------------------------------------- crosswalk
+# the column each system's silver tables carry a site's id in, as master.site_xwalk reads them
+SITE_ID_COLUMN = {"ctms": "site_number_src", "edc": "site_id_src", "irt": "site_code_src", "safety": "site_name_src", "finance": "vendor_id"}
+
+
+def _id_sources(con, cat: dict, role: str, system: str, native_id: str) -> list[dict]:
+    """The source files one site id is written in and the rows it is on, so a problem can be found where it was made.
+
+    Read from the role's own database. A file whose table or id column is withheld is still named,
+    with the reason and no rows: whether the id is in it is itself withheld.
+    """
+    col = SITE_ID_COLUMN[system]
+    read_for_matching = cat["upstream"]["master.site_xwalk"]  # those files first: they are where the id is defined
+    found = []
+    for fqn, ds in sorted(cat["datasets"].items(), key=lambda kv: (kv[0] not in read_for_matching, kv[0])):
+        if ds["layer"] != "silver" or ds["source_system"] != system or col not in ds["columns"]:
+            continue
+        file = next(cat["datasets"][b]["source_file"] for b in sorted(cat["upstream"][fqn]) if cat["datasets"][b]["source_file"])
+        a = engine.access(ds, role)
+        hidden = a["denied_tags"] or a["masked"].get(col)
+        if hidden:
+            found.append({"file": file, "rows": None, "row_numbers": [], "denied": engine.reason(hidden, role)})
+            continue
+        rows = [r[0] for r in con.execute(f'SELECT _src_row FROM {fqn} WHERE "{col}" = ? ORDER BY _src_row', [native_id]).fetchall()]
+        if rows:
+            found.append({"file": file, "rows": len(rows), "row_numbers": rows[:5], "denied": None})
+    return found
+
+
 @api.get("/api/crosswalk")
 def crosswalk(role: str = Depends(_role)):
     con = engine.warehouse()
@@ -373,6 +401,12 @@ def crosswalk(role: str = Depends(_role)):
     con.close()
     cat = engine.catalog()
     subject_access = engine.access(cat["datasets"]["master.subject_xwalk"], role)
+    mart = engine.role_connection(role)
+    try:
+        for r in rows:  # only the ids a person has to look at say where they were found
+            r["sources"] = _id_sources(mart, cat, role, r["system"], r["native_id"]) if r["status"] != "auto" else None
+    finally:
+        mart.close()
     sites: dict[str, dict] = {}
     unresolved = []
     for r in rows:
@@ -382,7 +416,7 @@ def crosswalk(role: str = Depends(_role)):
         site = sites.setdefault(r["site_key"], {"site_key": r["site_key"], "site_name": r["site_name"], "city": r["city"],
                                                 "state": r["state"], "pi": r["principal_investigator"], "ids": []})
         site["ids"].append({k: r[k] for k in ("system", "native_id", "native_label", "method", "confidence", "status",
-                                              "runner_up_site_key", "runner_up_confidence", "evidence")})
+                                              "runner_up_site_key", "runner_up_confidence", "evidence", "sources")})
     return {
         "sites": list(sites.values()), "unresolved": unresolved,
         "counts": {s: sum(1 for r in rows if r["status"] == s) for s in ("auto", "review", "unresolved")},

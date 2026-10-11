@@ -7,7 +7,7 @@
 -- @col native_label: Human-readable name the source attaches to it, if any
 -- @col method: id_pattern, fuzzy_name+investigator or fuzzy_name+city
 -- @col confidence: 1.0 for identifier matches; 0.75 x name similarity + 0.25 x corroboration for fuzzy matches
--- @col status: auto (accepted), review (accepted but queued for a data steward) or unresolved
+-- @col status: auto (accepted), review (accepted but flagged) or unresolved
 -- @col runner_up_site_key: Second-best candidate for fuzzy matches
 -- @col evidence: Plain-language explanation of why this match was made
 WITH id_based AS (

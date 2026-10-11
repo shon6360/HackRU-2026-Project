@@ -13,7 +13,7 @@
 -- @col status: PAID / OPEN
 -- @col is_overdue: True when the document is open and past its due date as of the snapshot
 -- @col days_overdue: Days past due as of the snapshot, for overdue documents
--- @col site_match_status: Whether the vendor-to-site match was automatic or is queued for steward review
+-- @col site_match_status: Whether the vendor-to-site match was automatic or is flagged
 SELECT
     p.doc_no,
     x.site_key,

@@ -104,8 +104,8 @@ page, which opens on **Filter** instead. Filter works as always, as does Write S
    [This link](http://127.0.0.1:8040/ask/?filter=%7B%22category%22%3A%22sites%22%2C%22conditions%22%3A%5B%7B%22field%22%3A%22open_safety_cases%22%2C%22min%22%3A1%7D%2C%7B%22field%22%3A%22is_low_supply%22%2C%22equals%22%3Atrue%7D%2C%7B%22field%22%3A%22n_overdue_invoices%22%2C%22min%22%3A1%7D%5D%7D) fills the form in and runs it.
    With a Gemini key, typing the question under **Ask a question** does the same.
 2. **Trace.** Click `S718` in the result. The drawer shows how each of the five systems' ids was matched to
-   that site, with the evidence, and the raw rows from each source file. The finance match is flagged for a
-   data steward, because two sites in the same city have nearly the same name.
+   that site, with the evidence, and the raw rows from each source file. The finance match is flagged,
+   because two sites in the same city have nearly the same name.
 3. **Who is asking.** Signed in as `maya` (blinded study team), pick the category *Subjects* under
    **Filter** and show the results. Every subject comes back, but the arm is withheld, and the form does not
    offer *Arm* to filter on. Open **Compare roles** to see what the policy decides for each role: the
@@ -156,7 +156,7 @@ EDC, CTMS and IRT each carry the site number in a different spelling, so they ma
 safety database and finance carry only a name. Those are normalized (abbreviations expanded, legal suffixes
 dropped), scored with Jaro-Winkler similarity, and corroborated by a second fact: the investigator's surname
 for safety, the city for finance. A match is accepted automatically only when it scores at least 0.85 and
-beats the runner-up by 0.05. Otherwise it is used but queued for a steward, and anything below 0.70 is left
+beats the runner-up by 0.05. Otherwise it is used but flagged, and anything below 0.70 is left
 unmatched rather than guessed. Subjects work the same way: the safety database holds a bare subject number,
 corroborated by site, sex and age.
 
@@ -211,7 +211,7 @@ payment problems are not attached to any real institution.
   `server/state/accounts.db`, readable by whoever can read that file. A real deployment would keep it in a secrets store.
 - The server speaks plain HTTP. On a network you do not trust, a password or a session could be read on
   its way to it. A real deployment would put HTTPS in front of the server.
-- The crosswalk queues uncertain matches for a steward but has no screen yet for approving them.
+- The crosswalk flags uncertain matches but has no screen yet for reviewing them.
 - Lineage is table-level through the SQL and row-level back to the source file. Column-level lineage is not derived.
 
 ## Layout

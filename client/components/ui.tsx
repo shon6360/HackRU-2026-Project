@@ -191,7 +191,7 @@ export function MatchTable({ ids }: { ids: XwalkId[] }) {
               </Td>
               <Td className="whitespace-nowrap">
                 {x.method} <ConfBadge id={x} />
-                {x.status === "review" && <div className="text-[12.5px] text-warn">queued for a steward</div>}
+                {x.status === "review" && <div className="text-[12.5px] text-warn">flagged</div>}
               </Td>
               <Td className="text-[12.5px] text-ink-2">{x.evidence}</Td>
             </tr>

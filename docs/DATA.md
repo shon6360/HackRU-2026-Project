@@ -48,7 +48,7 @@ and columns.
 | Finance | `PRJ-CDP01` | vendor id and legal name | none | `02.01.2014`, amounts as `12,450.00` |
 
 Two sites share a city and differ by one word in their names. That pair is the hard case for name matching
-and is deliberately left for a data steward to confirm.
+and is deliberately flagged instead of being matched automatically.
 
 ### The story in the data
 

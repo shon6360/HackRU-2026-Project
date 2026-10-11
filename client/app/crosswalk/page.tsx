@@ -1,12 +1,13 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { Card, Conf, ConfBadge, LoadError, Lock, Notice, PageHead, PlainTable, Spinner, Stat, SysBadge, Td, Th, TraceLink } from "@/components/ui";
 import { useApi } from "@/lib/api";
-import { fmtInt, SYSTEMS } from "@/lib/format";
-import type { Crosswalk, XwalkSite } from "@/lib/types";
+import { fmtInt, plural, SYSTEMS } from "@/lib/format";
+import type { Crosswalk, XwalkId, XwalkSite } from "@/lib/types";
 
 /* The map that lets one question reach all five systems: every site's id in each of them, with how it was
-   matched. Uncertain matches are queued for a steward and unmatched ids are listed, never guessed. */
+   matched. Uncertain matches are flagged and unmatched ids are listed, never guessed. */
 export default function CrosswalkPage() {
   const { data: x, error } = useApi<Crosswalk>("/api/crosswalk");
   if (error) return <LoadError message={error} />;
@@ -22,8 +23,8 @@ export default function CrosswalkPage() {
       <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 md:grid-cols-4">
         <Stat value={x.sites.length} label="sites" />
         <Stat value={x.counts.auto} label="matched automatically" />
-        <Stat value={x.counts.review} label="queued for a steward" color="text-warn" />
-        <Stat value={x.counts.unresolved} label="could not be matched" color="text-bad" />
+        <Stat value={x.counts.review} label={<>flagged<PerSystem ids={review} /></>} color="text-warn" />
+        <Stat value={x.counts.unresolved} label={<>could not be matched<PerSystem ids={x.unresolved} /></>} color="text-bad" />
       </div>
 
       <Card pad className="mt-3.5">
@@ -61,26 +62,34 @@ export default function CrosswalkPage() {
 
       <div className="mt-3.5 grid grid-cols-1 gap-3.5 sm:grid-cols-2">
         <Card pad>
-          <h3>Queued for a data steward</h3>
-          {review.length === 0 ? <p className="text-ink-2">Nothing waiting.</p> : review.map((r) => (
-            <div key={`${r.system}:${r.native_id}`} className="mb-2.5">
-              <SysBadge system={r.system} /> <code>{r.native_id}</code> {r.native_label}
-              <div className="text-[12.5px]">
-                matched to <b>{r.site.site_key}</b> at {Number(r.confidence).toFixed(2)}, runner-up {r.runner_up_site_key} at {Number(r.runner_up_confidence).toFixed(2)}
-              </div>
-              <div className="text-[12.5px] text-ink-2">{r.evidence}</div>
-            </div>
-          ))}
+          <h3>Flagged</h3>
+          {review.length === 0 ? <p className="text-ink-2">Nothing flagged.</p> : (
+            <BySystem ids={review} feeds={x.feeds} word="flagged">
+              {(r) => (
+                <>
+                  <code>{r.native_id}</code> {r.native_label}
+                  <div className="text-[12.5px]">
+                    matched to <b>{r.site.site_key}</b> at {Number(r.confidence).toFixed(2)}, runner-up {r.runner_up_site_key} at {Number(r.runner_up_confidence).toFixed(2)}
+                  </div>
+                  <div className="text-[12.5px] text-ink-2">{r.evidence}</div>
+                </>
+              )}
+            </BySystem>
+          )}
           <p className="text-[12.5px] text-ink-3">Used, and flagged, until a person confirms the match.</p>
         </Card>
         <Card pad>
           <h3>Could not be matched</h3>
-          {x.unresolved.length === 0 ? <p className="text-ink-2">Everything resolved.</p> : x.unresolved.map((r) => (
-            <div key={`${r.system}:${r.native_id}`} className="mb-2.5">
-              <SysBadge system={r.system} /> <code>{r.native_id}</code> {r.native_label && r.native_label !== r.native_id ? r.native_label : ""}
-              <div className="text-[12.5px] text-ink-2">{r.evidence}</div>
-            </div>
-          ))}
+          {x.unresolved.length === 0 ? <p className="text-ink-2">Everything resolved.</p> : (
+            <BySystem ids={x.unresolved} feeds={x.feeds} word="unmatched">
+              {(r) => (
+                <>
+                  <code>{r.native_id}</code> {r.native_label && r.native_label !== r.native_id ? r.native_label : ""}
+                  <div className="text-[12.5px] text-ink-2">{r.evidence}</div>
+                </>
+              )}
+            </BySystem>
+          )}
           <p className="text-[12.5px] text-ink-3">Never guessed: their rows stay out of site totals.</p>
         </Card>
       </div>
@@ -104,6 +113,60 @@ export default function CrosswalkPage() {
         </PlainTable>
       </Card>
     </>
+  );
+}
+
+/* How many of the ids are in each source system, under a count at the top of the page. */
+function PerSystem({ ids }: { ids: XwalkId[] }) {
+  const systems = SYSTEMS.filter((s) => ids.some((i) => i.system === s));
+  if (!systems.length) return null;
+  return (
+    <div className="mt-1 flex flex-wrap gap-x-2.5 gap-y-1">
+      {systems.map((s) => <span key={s}>{ids.filter((i) => i.system === s).length} in <SysBadge system={s} /></span>)}
+    </div>
+  );
+}
+
+/* Ids that need a person, under the source system each is in, with the files and rows to look at. */
+function BySystem<T extends XwalkId>({ ids, feeds, word, children }: { ids: T[]; feeds: Crosswalk["feeds"]; word: string; children: (id: T) => ReactNode }) {
+  return (
+    <>
+      {SYSTEMS.filter((s) => ids.some((i) => i.system === s)).map((s) => {
+        const mine = ids.filter((i) => i.system === s);
+        return (
+          <div key={s} className="mb-3 border-l-2 border-line pl-3">
+            <div className="mb-1.5">
+              <SysBadge system={s} /> <b>{feeds.find((f) => f.system === s)?.system_name ?? s}</b>
+              <span className="text-[12.5px] text-ink-3"> · {mine.length} {word}</span>
+            </div>
+            {mine.map((i) => (
+              <div key={i.native_id} className="mb-2.5">
+                {children(i)}
+                <FoundIn id={i} />
+              </div>
+            ))}
+          </div>
+        );
+      })}
+    </>
+  );
+}
+
+/* The files an id is written in and the rows it is on. A file the role may not read is named, with the reason. */
+function FoundIn({ id }: { id: XwalkId }) {
+  if (!id.sources?.length) return null;
+  return (
+    <div className="text-[12.5px] text-ink-2">
+      Found in{" "}
+      {id.sources.map((s, n) => (
+        <span key={s.file}>
+          {n > 0 && "; "}<code>{s.file}</code>
+          {s.rows === null ? <span className="text-ink-3"> (<Lock /> rows {s.denied})</span>
+            : s.rows > s.row_numbers.length ? `, ${fmtInt(s.rows)} rows`
+            : `, ${plural(s.rows, "row")} ${s.row_numbers.join(", ")}`}
+        </span>
+      ))}
+    </div>
   );
 }
 

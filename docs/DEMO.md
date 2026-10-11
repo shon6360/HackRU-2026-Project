@@ -37,7 +37,7 @@ Click `S718` in the result.
 > confirmed by the investigator's surname.
 >
 > Finance is flagged. There are two sites in this city with almost the same name, so the match is used but
-> queued for a data steward. And below are the raw rows, exactly as each system exported them, down to the
+> marked as uncertain. And below are the raw rows, exactly as each system exported them, down to the
 > file and row number.
 
 ## 1:40 Who is asking matters (45 seconds)

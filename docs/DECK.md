@@ -22,8 +22,8 @@ Screenshot `trace.png`. Crosswalk with method, confidence and evidence; raw rows
 
 **6. Matching without guessing**
 Site numbers match on digits. Names are normalized, scored, and corroborated by investigator or city.
-Accept at 0.85 with a 0.05 margin; queue for a steward below that; never guess below 0.70.
-Result: 78 automatic, 2 queued, 3 unmatched.
+Accept at 0.85 with a 0.05 margin; flag below that; never guess below 0.70.
+Result: 78 automatic, 2 flagged, 3 unmatched.
 
 **7. Who is asking changes the answer**
 Screenshot `roles.png`. Each person signs in to their own account. Maya (blinded) sees no treatment arm, Arjun sees everything clinical, Dana sees money and site counts only.

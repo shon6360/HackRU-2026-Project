@@ -186,6 +186,11 @@ def test_pages_that_read_the_full_warehouse_withhold_what_the_role_may_not_see()
     assert not any(r["hidden"] for r in server.quality_view("clinops")["rules"])
     assert all(g["example"] is None for g in server.crosswalk("finance")["subjects"]["groups"])
     assert any(g["example"] for g in server.crosswalk("clinops")["subjects"]["groups"])
+    where = lambda role: {(i["native_id"], f["file"]): f for i in server.crosswalk(role)["unresolved"] for f in i["sources"]}
+    assert where("clinops")[("SITE-0799", "feeds/ctms/monitoring_visits.csv")]["rows"] == 1, "an unmatched id says which file and row it is in"
+    for role, at in (("finance", ("St. Elsewhere Clinic", "feeds/safety/cases.json")), ("biostat", ("V-31990", "feeds/finance/site_payments.csv"))):
+        f = where(role)[at]
+        assert f["denied"] and f["rows"] is None and not f["row_numbers"], "a file the role may not read is named, without the rows the id is on"
 
 
 def test_sandbox_rejects_everything_but_select_on_cataloged_tables():

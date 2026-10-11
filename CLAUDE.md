@@ -171,7 +171,7 @@ record keeps `_src_system`, `_src_file`, `_src_row`. The crosswalks and the aggr
 (`site_360`, `fact_sae_reconciliation`) do not. Tracing an answer back to source rows depends
 on these columns.
 
-**Uncertain matches are never guessed.** The crosswalk accepts, queues for a steward, or leaves
+**Uncertain matches are never guessed.** The crosswalk accepts, flags, or leaves
 unresolved by fixed thresholds. Unresolved ids keep a NULL master key and surface as quality
 findings. Do not loosen a threshold to make a number look better.
 
@@ -224,6 +224,6 @@ sign-on, no second factor, no password reset by email and no audit trail of who 
 Gemini key an account saves is kept unencrypted in `server/state/accounts.db`. The server speaks
 plain HTTP, so on a network that is not trusted a password or a session token can be read on its
 way; hosting it for real needs HTTPS in front. The
-crosswalk queues uncertain matches but
-has no approval screen. Lineage is table-level through the SQL and row-level to the source file;
+crosswalk flags uncertain matches but
+has no screen for reviewing them. Lineage is table-level through the SQL and row-level to the source file;
 column-level lineage is not derived. These are listed in `README.md`; keep that list truthful.

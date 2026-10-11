@@ -117,7 +117,12 @@ export type XwalkId = {
   runner_up_site_key: string | null;
   runner_up_confidence: number | null;
   evidence: string | null;
+  /* Only on /api/crosswalk, and only for an id that is flagged or unmatched: the files it is written in. */
+  sources?: IdSource[] | null;
 };
+
+/* One source file an id appears in. `rows` is null, with the reason in `denied`, when the role may not see that file's rows. */
+export type IdSource = { file: string; rows: number | null; row_numbers: number[]; denied: string | null };
 
 /* The sites the Lineage page can be searched for by name (/api/lineage/sites), as the signed-in role sees them. */
 export type SiteRef = { site_key: string; site_name: string; city: string | null; state: string | null };

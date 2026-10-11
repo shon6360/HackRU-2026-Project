@@ -90,7 +90,7 @@ RULES = [
     dict(id="xwalk_site_needs_review", title="Fuzzy site matches are unambiguous",
          dimension="Integrity", severity="low", dataset="master.site_xwalk",
          total="SELECT count(*) FROM master.site_xwalk WHERE method <> 'id_pattern'",
-         sql=f"""SELECT native_id, 'matched to ' || site_key || ' at ' || confidence || ' but needs a steward: ' || evidence, system, {NO_SRC.split(',', 1)[1]}
+         sql=f"""SELECT native_id, 'matched to ' || site_key || ' at ' || confidence || ' but is flagged: ' || evidence, system, {NO_SRC.split(',', 1)[1]}
                  FROM master.site_xwalk WHERE status = 'review'"""),
     # ------------------------------------------------------------------ validity
     dict(id="valid_monitoring_date_not_future", title="Monitoring visits are not dated in the future",

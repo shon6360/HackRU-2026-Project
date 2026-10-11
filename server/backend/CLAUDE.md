@@ -256,7 +256,7 @@ hosting simple: `--host 0.0.0.0`, and another computer needs only a browser. `np
 | `GET /api/lineage` | the whole graph |
 | `GET /api/lineage/sites` | the sites the signed-in role can search by name (`engine.site_list()`), or why it may not |
 | `GET /api/lineage/site?site_key` | one site's lineage (`engine.site_lineage()`): every source file its data came from with the chain of tables each file's rows went through, its id in each system, the tables withheld from the role, and the graph of all of it |
-| `GET /api/crosswalk` | site crosswalk, subject match counts |
+| `GET /api/crosswalk` | site crosswalk, subject match counts. An id that is flagged or unmatched carries `sources`: the files it is written in and the rows it is on, read from the role's mart (`_id_sources()`); a file the role may not read is named with the reason and no rows |
 | `GET /api/quality` | rules, failures, answer-key score |
 | `GET /api/access` | every tagged table and what each role gets |
 | `GET /api/docs`, `GET /api/openapi.json` | the interactive API docs and the schema they load. Public |
