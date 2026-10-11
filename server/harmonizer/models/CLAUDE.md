@@ -3,7 +3,8 @@
 One `.sql` file per table. The folder is the schema, the file stem is the table name. There is
 no registry and no config: adding a file adds a table, a catalog entry and lineage edges.
 
-`macros.sql` is not a model. It is executed once before the models and defines `norm_name()`.
+`macros.sql` is not a model. It is executed once before the models and defines `norm_name()`, and
+`iso_date_start()` and `iso_date_precision()` for dates that may be partial.
 
 ## File format
 
@@ -56,6 +57,12 @@ see them. Deduplicate in gold (`QUALIFY row_number() ...`), as `fact_payment` an
 - **Parse defensively**: `TRY_CAST`, `TRY_STRPTIME`, `NULLIF(x, '')`. A value that will not parse
   becomes NULL and a quality rule reports it; the build never fails on bad data. Where the raw
   value matters, keep it alongside (`onset_date_raw` next to `onset_date`).
+- **A partial date is a date, not a failure.** SDTM dates stop early when the day or the month was
+  not collected (`2013-06`, `1977`). Parse them with the two macros in `macros.sql`:
+  `iso_date_start()` gives the first day the value can mean and `iso_date_precision()` says how
+  much was collected (`day`, `month`, `year`). Keep the precision beside the date
+  (`onset_date_precision`), and compare a partial date at its own precision, as
+  `fact_sae_reconciliation` does, never as if it were an exact day.
 - **Snapshot date**: `CROSS JOIN gold.snapshot snap` and compare with `snap.as_of`. Never
   `current_date`.
 - **Names**: booleans are usually `is_*`, counts usually `n_*`, money always ends in `_usd`

@@ -57,6 +57,7 @@ server only. The client has none: `npm run build` in `client/` type-checks it.
 | `test_trace_reaches_source_rows_and_respects_policy` | A site traces to all five systems with raw rows, and withheld blocks are reported as withheld |
 | `test_lineage_reaches_a_source_file_for_every_table` | Every table except `gold.snapshot` has a source file upstream |
 | `test_every_gold_table_names_the_source_files_its_rows_come_from` | `/api/lineage` lists every gold table with the files its rows are built from, apart from the files read only to match ids; payments come from the one finance file; every `_src_file` a gold table's rows carry is among the files named for it |
+| `test_a_partial_onset_date_is_dated_to_the_start_of_what_was_collected` | Every adverse event has an `onset_date`: the day collected, or the first day of the month or year when only that was collected, with `onset_date_precision` saying which. The partial ones are still the findings of `valid_ae_onset_complete`, and the filter form can pick them out |
 
 ## Writing a test
 

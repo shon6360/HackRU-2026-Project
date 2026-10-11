@@ -42,5 +42,5 @@ What is simulated is derived from the real data with a fixed seed and written do
 
 **11. Run it yourself**
 In `server/`: `pip install -r requirements.txt`, `python -m backend build`, then `python -m backend serve`. Hosted on one computer, opened in a browser from any other. No database server, no API key needed.
-DuckDB, 28 SQL models, 27 quality rules, 18 end-to-end tests, MIT license.
+DuckDB, 28 SQL models, 27 quality rules, 19 end-to-end tests, MIT license.
 What we would build next: a steward's approval screen, column-level lineage, single sign-on in place of our own passwords.

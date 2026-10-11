@@ -66,7 +66,8 @@ and 2099, site `SITE-0799`, subjects `7019999` and `9999`, a courier among the s
 `St. Elsewhere Clinic`, a negative amount, and two Merritt Island sites whose names differ by
 one word. These are the test data for the crosswalk and the quality rules. Do not clean them up.
 
-Partial dates such as `1977` or `2013-06` in `edc/ae.csv` are in the real CDISC data.
+Partial dates such as `1977` or `2013-06` in `edc/ae.csv` are in the real CDISC data. The models
+date them to the first day they can mean and say so in `onset_date_precision`.
 
 ## ANSWER_KEY.json
 

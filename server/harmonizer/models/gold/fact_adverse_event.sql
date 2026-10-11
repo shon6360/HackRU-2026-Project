@@ -10,7 +10,8 @@
 -- @col severity: MILD / MODERATE / SEVERE
 -- @col is_serious: Serious adverse event flag
 -- @col is_reportable: True for serious or severe events with onset on or after screening. These must have a case in the safety database
--- @col onset_date: Onset date; null when EDC collected only a partial date
+-- @col onset_date: Onset date. When EDC collected only a month or a year, the first day of it
+-- @col onset_date_precision: How much of the onset date EDC collected: day, month or year. Only day is an exact date
 -- @col onset_date_raw: Onset exactly as collected, possibly partial
 -- @col is_ongoing: True when no end date has been recorded
 SELECT
@@ -27,6 +28,7 @@ SELECT
     a.relatedness,
     a.outcome,
     a.onset_date,
+    a.onset_date_precision,
     a.onset_date_raw,
     a.end_date,
     a.end_date IS NULL AS is_ongoing,

@@ -121,7 +121,7 @@ RULES = [
          total="SELECT count(*) FROM silver.edc_adverse_events",
          sql="""SELECT substr(usubjid, 4) || '#' || ae_seq, 'onset collected as "' || onset_date_raw || '" for ' || preferred_term,
                        _src_system, _src_file, _src_row
-                FROM silver.edc_adverse_events WHERE onset_date IS NULL"""),
+                FROM silver.edc_adverse_events WHERE onset_date_precision IS DISTINCT FROM 'day'"""),
     # ------------------------------------------------------------------ completeness
     dict(id="complete_payment_due_date", title="Every payment document has a due date",
          dimension="Completeness", severity="medium", dataset="silver.finance_payments",

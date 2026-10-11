@@ -1,4 +1,4 @@
--- @description Reconciliation of reportable adverse events in EDC against cases in the safety database. Events are paired on subject and preferred term: identical onset dates first, then whatever is left in date order. This is the check safety and data management teams do by hand in spreadsheets.
+-- @description Reconciliation of reportable adverse events in EDC against cases in the safety database. Events are paired on subject and preferred term: identical onset dates first, then whatever is left in date order. An EDC onset collected as only a month or a year agrees with any case onset inside it. This is the check safety and data management teams do by hand in spreadsheets.
 -- @owner Global Patient Safety
 -- @tags patient_level
 -- @grain one row per reportable EDC event or safety case
@@ -7,13 +7,13 @@
 -- @col site_key: Master site key
 -- @col preferred_term: MedDRA preferred term
 -- @col edc_ae_key: Key of the EDC adverse event; null when the case has no EDC counterpart
--- @col edc_onset_date: Onset date in EDC
+-- @col edc_onset_date: Onset date in EDC; the first day of the month or year when only that was collected
 -- @col case_id: Safety case id; null when the EDC event has no case
 -- @col case_onset_date: Onset date in the safety case
 -- @col recon_status: matched, onset_mismatch, missing_in_safety or missing_in_edc
--- @col onset_day_diff: Safety onset minus EDC onset, in days
+-- @col onset_day_diff: Safety onset minus EDC onset, in days; null when EDC collected only a month or a year
 WITH edc AS (
-    SELECT ae_key, ae_seq, subject_key, site_key, upper(preferred_term) AS term, onset_date, onset_date_raw
+    SELECT ae_key, ae_seq, subject_key, site_key, upper(preferred_term) AS term, onset_date, onset_date_precision, onset_date_raw
     FROM gold.fact_adverse_event
     WHERE is_reportable
 ),
@@ -57,9 +57,9 @@ SELECT
     s.onset_date                               AS case_onset_date,
     CASE WHEN p.case_id IS NULL THEN 'missing_in_safety'
          WHEN p.ae_key IS NULL THEN 'missing_in_edc'
-         WHEN e.onset_date IS NOT NULL AND s.onset_date <> e.onset_date THEN 'onset_mismatch'
+         WHEN CAST(date_trunc(e.onset_date_precision, s.onset_date) AS DATE) <> e.onset_date THEN 'onset_mismatch'
          ELSE 'matched' END                    AS recon_status,
-    date_diff('day', e.onset_date, s.onset_date) AS onset_day_diff
+    CASE WHEN e.onset_date_precision = 'day' THEN date_diff('day', e.onset_date, s.onset_date) END AS onset_day_diff
 FROM paired p
 LEFT JOIN edc e ON e.ae_key = p.ae_key
 LEFT JOIN saf s ON s.case_id = p.case_id

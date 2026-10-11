@@ -421,6 +421,20 @@ def test_every_gold_table_names_the_source_files_its_rows_come_from():
     con.close()
 
 
+def test_a_partial_onset_date_is_dated_to_the_start_of_what_was_collected():
+    con = engine.warehouse()
+    rows = con.execute("SELECT onset_date_raw, onset_date, onset_date_precision FROM gold.fact_adverse_event").fetchall()
+    partial = con.execute("SELECT count(*) FROM dq.failures WHERE rule_id = 'valid_ae_onset_complete'").fetchone()[0]
+    con.close()
+    start = {"day": lambda raw: raw[:10], "month": lambda raw: raw + "-01", "year": lambda raw: raw + "-01-01"}
+    for raw, onset, precision in rows:
+        assert precision in start and str(onset) == start[precision](raw), (raw, onset, precision)
+    assert {p for _, _, p in rows} == {"day", "month", "year"}, "the pilot data holds all three"
+    # a partial date is still reported as a finding, and the filter form can pick those events out
+    assert partial == sum(p != "day" for _, _, p in rows) > 0
+    assert filters.run({"category": "adverse-events", "conditions": [{"field": "onset_date_precision", "any_of": ["month", "year"]}]}, "admin")["row_count"] == partial
+
+
 if __name__ == "__main__":
     tests = [(name, fn) for name, fn in sorted(globals().items()) if name.startswith("test_") and callable(fn)]
     for name, fn in tests:

@@ -68,7 +68,7 @@ More commands, all run in `server/`:
 ```bash
 python -m backend build          # rebuild everything: the warehouse and the web app
 python -m harmonizer build       # the warehouse half only: catalog, quality results and the access databases
-python tests/test_concord.py     # 18 end-to-end checks (also runs under pytest)
+python tests/test_concord.py     # 19 end-to-end checks (also runs under pytest)
 python -m backend ask "Which sites are we late paying?" --role finance   # a typed question: needs a Gemini API key, see below
 ```
 
