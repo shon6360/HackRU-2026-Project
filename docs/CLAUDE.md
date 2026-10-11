@@ -20,7 +20,7 @@ summary with what is written:
 |---|---|
 | 25 planted problems, 25 caught | README, DATA, DEMO, DECK |
 | 29 further findings, 23 of them partial dates in the real CDISC data | README (29), DEMO and DECK (23) |
-| 27 quality rules, 28 SQL models, 14 tests | README, DECK |
+| 27 quality rules, 28 SQL models, 17 tests | README, DECK |
 | Crosswalk: 78 automatic, 2 queued, 3 unmatched | DECK |
 | Finance feed 24 days stale against a 7-day SLA | README, DATA, DEMO |
 | Two sites with all three problems; `S718` used in the walkthrough | README, DEMO |
@@ -31,11 +31,14 @@ summary with what is written:
 
 The screenshots were taken before sign-in existed: they show a role switcher at the top right
 where the account menu now is, `roles.png` shows the old Compare roles tab with row counts and
-"View as" buttons, and `access.png` shows three roles. `ask.png` is also from before the Ask page was
-split into Ask a question and Write SQL. Retake them before they are shown again.
+"View as" buttons, and `access.png` shows three roles. `ask.png` is also from before the Ask page had
+its three ways to ask (Ask a question, Filter, Write SQL): it shows the reviewed-question chips, which are
+gone. Retake them before they are shown again.
 
-`DEMO.md` links assume the server is at `http://127.0.0.1:8040` and depend on the link format
-`/ask/?q=...&tab=...` (the older `#/ask?q=...` form still redirects to it). The run commands in the README, `DEMO.md` and slide 11 of
+`DEMO.md` and the README's "What to try" link to `http://127.0.0.1:8040` and depend on the link format
+`/ask/?filter=<the picks as JSON>&tab=...`, which needs no Gemini key. The field names in those links
+(`open_safety_cases`, `is_low_supply`, `n_overdue_invoices`, `is_randomized`) are gold column names: renaming
+one breaks the link. `/ask/?q=...` still works with a key, and the older `#/ask?q=...` form still redirects to it. The run commands in the README, `DEMO.md` and slide 11 of
 `DECK.md` are written out by hand too, and are run in `server/`. The slide-2 example in `DECK.md` quotes real strings from the feeds,
 including a misspelling marked (sic); if the feeds are regenerated the strings change.
 

@@ -15,7 +15,7 @@ from harmonizer import config, policy, quality
 
 from . import accounts
 from . import ask as asker
-from . import engine
+from . import engine, filters
 
 WEB = config.ROOT.parent / "client" / "out"  # the static site that `npm run build` writes in client/
 COOKIE = "concord_session"
@@ -108,6 +108,23 @@ class AskBody(BaseModel):
 
 class SqlBody(BaseModel):
     sql: str
+
+
+class Condition(BaseModel):
+    """One limit on one field. Which of these it carries depends on the kind of field: see `filters.py`."""
+    field: str
+    any_of: list[str] | None = None
+    contains: str | None = None
+    min: float | str | None = None
+    max: float | str | None = None
+    equals: bool | None = None
+
+
+class FilterBody(BaseModel):
+    category: str
+    site_key: str | None = None
+    subject_key: str | None = None
+    conditions: list[Condition] = []
 
 
 # ----------------------------------------------------------------------------- sign-in and your own account
@@ -208,7 +225,6 @@ def meta():
         "feeds": list(cat["feeds"].values()),
         "layers": layers,
         "model": {"available": asker.model_available(), "id": asker.MODEL},
-        "questions": [{"id": v["id"], "question": v["question"], "systems": v["systems"]} for v in asker.VETTED],
     }
 
 
@@ -217,6 +233,16 @@ def meta():
 def ask(body: AskBody, role: str = Depends(_role), account: dict = Depends(_account)):
     # the account's own key, when it has one, pays for the model call. The role still decides what the answer may hold
     return asker.ask(body.question, role, accounts.gemini_key(account["id"]))
+
+
+@api.get("/api/filters")
+def filter_options(role: str = Depends(_role)):
+    return filters.options(role)
+
+
+@api.post("/api/filter")
+def filter_run(body: FilterBody, role: str = Depends(_role)):
+    return filters.run(body.model_dump(), role)
 
 
 @api.post("/api/sql")

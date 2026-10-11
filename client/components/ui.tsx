@@ -150,10 +150,6 @@ export function Btn({ primary, danger, size = "md", className = "", ...rest }: C
   return <button type="button" className={`rounded-lg border font-semibold disabled:cursor-default disabled:opacity-55 ${BTN_SIZE[size]} ${tone} ${className}`} {...rest} />;
 }
 
-export const Chip = (props: ComponentProps<"button">) => (
-  <button type="button" className="rounded-full border border-line bg-surface px-3 py-[5px] text-left text-[13px] text-ink hover:border-accent hover:text-accent-ink" {...props} />
-);
-
 /* A labelled form control. */
 export function Field({ label, hint, children }: { label: string; hint?: ReactNode; children: ReactNode }) {
   return (

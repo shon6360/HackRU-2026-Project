@@ -151,7 +151,7 @@ function GeminiKeyForm() {
       <p className="text-[12.5px]">
         {modelKey === "account" ? <><Pill tone="good">Your key is saved</Pill> Questions you type on the Ask page are written into SQL by {meta.model.id}, using your key.</>
           : modelKey === "server" ? <><Pill>Using this server&apos;s key</Pill> Free-form asking already works for you. Save a key of your own and your questions use it instead.</>
-          : <><Pill tone="warn">Free-form asking is not enabled</Pill> Neither your account nor this server has a key, so the Ask page can only match what you type to a reviewed question.</>}
+          : <><Pill tone="warn">Free-form asking is not enabled</Pill> Neither your account nor this server has a key, so the Ask page cannot answer a question you type. Its Filter and Write SQL need no key.</>}
       </p>
       <Field label={user.has_gemini_key ? "Replace your key" : "Your key"}
         hint={<>Create one at <a href="https://aistudio.google.com/apikey" target="_blank" rel="noreferrer">Google AI Studio</a>. It is used only for questions you ask yourself.

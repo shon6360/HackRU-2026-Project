@@ -1,22 +1,18 @@
 """Turn a question in plain English into SQL, then hand it to the engine.
 
-Two ways to get SQL, and the result always says which one was used:
-
-  vetted   a library of cross-system questions with SQL a person has reviewed. Works with no
-           API key, instantly and deterministically; this is also what the model is shown as examples.
-  model    Gemini writes the SQL from the catalog. It is given only the schema the current role
-           may see, and its SQL goes through exactly the same policy check and sandbox as
-           anybody else's. The model is a convenience, never the access control.
+Gemini writes the SQL from the catalog. It is given only the schema the current role may see, and its
+SQL goes through exactly the same policy check and sandbox as anybody else's. The model is a
+convenience, never the access control.
 
 The model needs a Gemini API key. It is the asking account's own key when they have saved one on
 their profile page, and otherwise the server's, GEMINI_API_KEY in `.env` (or the environment).
-With neither, free-form asking is not enabled and a question is matched to the closest reviewed
-one. CONCORD_MODEL overrides the model id.
+With neither, free-form asking is not enabled and nothing is answered here: the two ways to ask
+that need no model are the filter form (`filters.py`) and the SQL editor. CONCORD_MODEL overrides
+the model id.
 """
 from __future__ import annotations
 
 import os
-import re
 
 from pydantic import BaseModel, Field
 
@@ -26,13 +22,10 @@ from . import accounts, engine
 
 MODEL = os.environ.get("CONCORD_MODEL", "gemini-3.8-flash")
 
-VETTED = [
+# Questions with SQL a person has checked. They are what the model is shown of how to query this warehouse, and nothing else.
+EXAMPLES = [
     {
-        "id": "triple-trouble",
         "question": "Which sites have open safety cases, low drug supply and overdue payments?",
-        "systems": ["safety", "irt", "finance", "edc", "ctms"],
-        "explanation": "Reads the site summary, which already lines up the safety database, IRT and the ERP on the master site key, "
-                       "and keeps the sites that are in trouble on all three at once.",
         "sql": """SELECT site_key, site_name, open_safety_cases, n_active, kits_usable, kits_needed_8w,
        n_overdue_invoices, overdue_usd, max_days_overdue
 FROM gold.site_360
@@ -40,11 +33,7 @@ WHERE open_safety_cases > 0 AND is_low_supply AND n_overdue_invoices > 0
 ORDER BY overdue_usd DESC""",
     },
     {
-        "id": "sae-recon",
         "question": "Where do EDC and the safety database disagree about serious or severe adverse events?",
-        "systems": ["edc", "safety"],
-        "explanation": "Pairs every reportable event in EDC with its case in the safety database on subject and preferred term, "
-                       "and lists the ones that are missing on one side or carry different onset dates.",
         "sql": """SELECT r.recon_status, r.subject_key, d.site_name, r.preferred_term,
        r.edc_ae_key, r.edc_onset_date, r.case_id, r.case_onset_date, r.onset_day_diff
 FROM gold.fact_sae_reconciliation r
@@ -53,11 +42,7 @@ WHERE r.recon_status <> 'matched'
 ORDER BY r.recon_status, r.subject_key""",
     },
     {
-        "id": "by-arm",
         "question": "How many subjects and reportable adverse events are there in each treatment arm?",
-        "systems": ["edc"],
-        "explanation": "Counts randomized subjects and their serious or severe events by treatment arm. "
-                       "The arm is unblinding information, so the answer depends on who is asking.",
         "sql": """SELECT s.arm,
        count(DISTINCT s.subject_key) AS subjects,
        count(a.ae_key) FILTER (WHERE a.is_reportable) AS reportable_events,
@@ -69,10 +54,7 @@ GROUP BY s.arm
 ORDER BY subjects DESC""",
     },
     {
-        "id": "expired-kits",
         "question": "Which kits were dispensed after they expired, and to whom?",
-        "systems": ["irt", "ctms"],
-        "explanation": "Finds kits whose dispensing date in IRT is later than their expiry date, with the site and the subject who received them.",
         "sql": """SELECT k.kit_id, d.site_name, k.kit_type, k.expiry_date, k.dispensed_date,
        date_diff('day', k.expiry_date, k.dispensed_date) AS days_past_expiry,
        k.dispensed_subject_key
@@ -82,30 +64,21 @@ WHERE k.dispensed_date > k.expiry_date
 ORDER BY days_past_expiry DESC""",
     },
     {
-        "id": "owed",
         "question": "Which sites are we late paying, how much, and how long have they waited?",
-        "systems": ["finance", "edc", "ctms"],
-        "explanation": "Lists sites with payment documents past their due date in the ERP, next to how many subjects they still have on study.",
         "sql": """SELECT site_key, site_name, n_active, n_overdue_invoices, overdue_usd, max_days_overdue, paid_usd
 FROM gold.site_360
 WHERE n_overdue_invoices > 0
 ORDER BY overdue_usd DESC""",
     },
     {
-        "id": "cost-per-visit",
         "question": "What does each site cost us per completed subject visit?",
-        "systems": ["finance", "edc"],
-        "explanation": "Divides what the ERP shows as paid to each site by the number of subject visits EDC shows it completed.",
         "sql": """SELECT site_key, site_name, n_visits, paid_usd,
        round(paid_usd / NULLIF(n_visits, 0), 0) AS usd_per_visit
 FROM gold.site_360
 ORDER BY usd_per_visit DESC NULLS LAST""",
     },
     {
-        "id": "unmonitored",
         "question": "Which sites with active subjects have not had a monitoring visit in 90 days?",
-        "systems": ["ctms", "edc", "safety"],
-        "explanation": "Compares the last monitoring visit in CTMS with the snapshot date, for sites that still have subjects on study.",
         "sql": """SELECT site_key, site_name, n_active, last_monitoring_date, days_since_monitoring,
        open_action_items, open_safety_cases
 FROM gold.site_360
@@ -113,10 +86,7 @@ WHERE n_active > 0 AND days_since_monitoring > 90
 ORDER BY days_since_monitoring DESC""",
     },
     {
-        "id": "irt-vs-edc",
         "question": "Do IRT and EDC agree on how many subjects each site has randomized?",
-        "systems": ["irt", "edc"],
-        "explanation": "Counts randomizations per site in IRT and compares them with the subjects EDC shows as randomized and dosed.",
         "sql": """WITH irt AS (
     SELECT site_key, count(*) AS irt_randomized FROM gold.fact_randomization GROUP BY 1
 )
@@ -127,10 +97,7 @@ LEFT JOIN irt i USING (site_key)
 ORDER BY abs(COALESCE(i.irt_randomized, 0) - s.n_randomized) DESC, s.site_key""",
     },
     {
-        "id": "overdue-followup",
         "question": "Which open safety cases are overdue for follow-up?",
-        "systems": ["safety", "ctms"],
-        "explanation": "Lists open cases in the safety database whose follow-up due date has passed as of the snapshot.",
         "sql": """SELECT c.case_id, d.site_name, c.subject_key, c.reaction_pt, c.is_serious, c.received_date,
        c.followup_due_date,
        date_diff('day', c.followup_due_date, (SELECT as_of FROM gold.snapshot)) AS days_overdue
@@ -141,56 +108,14 @@ ORDER BY days_overdue DESC""",
     },
 ]
 
-_STOP = set("a an and are as at be by do does each for from has have how in is it many much of on or our than that the "
-            "their there to us was we were what which who whom with".split())
-
-
-def _tokens(text: str) -> set[str]:
-    """Split a question into a set of content words for Jaccard matching.
-
-    Lowercases, drops stop words, and strips a trailing s so close phrasings still overlap.
-    """
-    words = re.findall(r"[a-z0-9]+", text.lower())
-    return {w[:-1] if w.endswith("s") and len(w) > 3 else w for w in words if w not in _STOP}
-
-
-# Other ways people phrase the reviewed questions; only used for matching when no model is configured.
-ALSO = {
-    "triple-trouble": ["sites in trouble on safety, supply and payments", "which sites need attention"],
-    "sae-recon": ["SAE reconciliation", "serious adverse events missing from the safety database"],
-    "by-arm": ["adverse events by arm", "safety by treatment group"],
-    "expired-kits": ["expired kits dispensed"],
-    "owed": ["who is late getting paid", "overdue site payments", "how much do we owe each site"],
-    "cost-per-visit": ["cost per visit by site"],
-    "unmonitored": ["sites overdue for monitoring", "last monitoring visit"],
-    "irt-vs-edc": ["randomization counts IRT versus EDC"],
-    "overdue-followup": ["safety follow-up overdue"],
-}
-
-
-def match_vetted(question: str) -> tuple[dict | None, float]:
-    """Find the closest reviewed question by Jaccard overlap of content words.
-
-    Compares the user's question against each VETTED question and its ALSO phrasings.
-    Returns the best match (or None) and the score in 0..1.
-    """
-    q = _tokens(question)
-    best, score = None, 0.0
-    for v in VETTED:
-        for phrasing in [v["question"], *ALSO.get(v["id"], [])]:
-            t = _tokens(phrasing)
-            s = len(q & t) / len(q | t) if q | t else 0.0
-            if s > score:
-                best, score = v, s
-    return best, score
-
 
 def model_available() -> bool:
     """True when the server has a Gemini API key of its own, so anyone's free-form question can be written into SQL."""
     return bool(os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY"))
 
 
-NO_KEY = "Free-form asking is not enabled: add a Gemini API key on your profile page, or set GEMINI_API_KEY in .env."
+NO_KEY = ("Free-form asking is not enabled: add a Gemini API key on your profile page, or set GEMINI_API_KEY in .env. "
+          "Filter and Write SQL need no key.")
 
 
 # ----------------------------------------------------------------------------- the model
@@ -205,7 +130,7 @@ def _schema_prompt(role: str) -> str:
 
     Includes only gold and master tables the role may query, marks masked columns, lists
     withheld tables by name and description without their columns, omits sample values for
-    masked columns, and appends every VETTED question as an example.
+    masked columns, and appends every question in EXAMPLES with its SQL.
     """
     cat = engine.catalog()
     visible, withheld = [], []
@@ -224,7 +149,7 @@ def _schema_prompt(role: str) -> str:
             samples = "" if mark or not col["samples"] else f"  e.g. {', '.join(col['samples'][:3])}"
             lines.append(f"- {name} {col['type']}: {col['description']}{mark}{samples}")
         visible.append("\n".join(lines))
-    examples = "\n\n".join(f"Q: {v['question']}\n{v['sql']}" for v in VETTED)
+    examples = "\n\n".join(f"Q: {v['question']}\n{v['sql']}" for v in EXAMPLES)
     r = accounts.roles()[role]
     return f"""You write SQL for Concord, a clinical trial data platform that joins five source systems (EDC, CTMS, IRT, the safety database and the finance ERP) on shared master keys. A study team member asks a question in plain English; you return one DuckDB query that answers it.
 
@@ -279,46 +204,28 @@ def _call_model(question: str, role: str, retry_note: str | None = None, api_key
 def ask(question: str, role: str, api_key: str | None = None) -> dict:
     """Turn a plain-English question into an engine result for this role.
 
-    Tries a close VETTED match first (score >= 0.85). Otherwise Gemini writes the SQL if a
-    key is set, with one retry on a SQL error. If the model is unavailable or raises, a
-    weaker VETTED match (score >= 0.34) is used with a note. Otherwise returns suggestions.
-    The result always includes `mode`: vetted, model, or none.
+    Gemini writes the SQL, with one retry on a SQL error. With no key, or when the model cannot be
+    reached, nothing is run and the result says why. The result always includes `mode`: `model`
+    when the model answered or declined, `none` when it was never reached.
 
     `api_key` is the asking account's own Gemini key, used in place of the server's. It only
     decides who pays for the model call: what the answer may contain is still the role's.
     """
     question = question.strip()
     api_key = api_key or None
-    enabled = bool(api_key) or model_available()
-    vetted, score = match_vetted(question)
-    suggestions = [v["question"] for v in VETTED]
-
-    if vetted and score >= 0.85:
-        result = engine.execute(vetted["sql"], role)
-        return {**result, "question": question, "mode": "vetted", "explanation": vetted["explanation"],
-                "matched_question": vetted["question"], "model": None}
-
-    if enabled:
-        try:
-            answer = _call_model(question, role, api_key=api_key)
-            if answer.can_answer and answer.sql.strip():
-                result = engine.execute(answer.sql, role)
-                if result["error"] and not result["denied"]:
-                    answer = _call_model(question, role, f"Your previous query failed with this error, fix it:\n{result['error']}\n\nPrevious query:\n{answer.sql}", api_key)
-                    result = engine.execute(answer.sql, role) if answer.can_answer and answer.sql.strip() else None
-                if result is not None:
-                    return {**result, "question": question, "mode": "model", "explanation": answer.explanation, "model": MODEL}
-            return {"question": question, "role": role, "mode": "model", "model": MODEL, "declined": True,
-                    "explanation": answer.explanation, "suggestions": suggestions}
-        except Exception as e:  # network, auth, rate limit: fall through to the vetted library
-            model_error = f"{type(e).__name__}: {str(e)[:200]}"
-    else:
-        model_error = None
-
-    if vetted and score >= 0.34:
-        result = engine.execute(vetted["sql"], role)
-        return {**result, "question": question, "mode": "vetted", "explanation": vetted["explanation"],
-                "matched_question": vetted["question"], "model": None, "model_error": model_error,
-                "note": "Answered with the closest reviewed question." + ("" if enabled else f" {NO_KEY}")}
-    return {"question": question, "role": role, "mode": "none", "model": None, "model_error": model_error, "suggestions": suggestions,
-            "explanation": "No reviewed question is close to this one." + ("" if enabled else f" {NO_KEY}")}
+    unanswered = {"question": question, "role": role, "mode": "none", "model": None, "model_error": None}
+    if not (api_key or model_available()):
+        return {**unanswered, "explanation": NO_KEY}
+    try:
+        answer = _call_model(question, role, api_key=api_key)
+        if answer.can_answer and answer.sql.strip():
+            result = engine.execute(answer.sql, role)
+            if result["error"] and not result["denied"]:
+                answer = _call_model(question, role, f"Your previous query failed with this error, fix it:\n{result['error']}\n\nPrevious query:\n{answer.sql}", api_key)
+                result = engine.execute(answer.sql, role) if answer.can_answer and answer.sql.strip() else None
+            if result is not None:
+                return {**result, "question": question, "mode": "model", "explanation": answer.explanation, "model": MODEL}
+        return {"question": question, "role": role, "mode": "model", "model": MODEL, "declined": True, "explanation": answer.explanation}
+    except Exception as e:  # network, auth, rate limit
+        return {**unanswered, "model_error": f"{type(e).__name__}: {str(e)[:200]}",
+                "explanation": "The language model could not be reached, so this question was not answered. Filter and Write SQL need no model."}

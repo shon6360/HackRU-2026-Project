@@ -37,7 +37,6 @@ export type Meta = {
   feeds: Feed[];
   layers: Record<string, number>;
   model: { available: boolean; id: string };
-  questions: { id: string; question: string; systems: string[] }[];
 };
 
 export type GraphNode = { id: string; layer: string; label: string; rows?: number; tags?: string[]; system?: string; stale?: boolean };
@@ -47,8 +46,9 @@ export type Decision = { action: "deny" | "mask"; object: string; column?: strin
 export type FailingRule = { rule_id: string; title: string; n_failed: number; severity: string };
 export type TrustWarning = { kind: "stale" | "quality"; text: string; rules?: FailingRule[] };
 
-/* One answer: the result of /api/ask or /api/sql. execute() always returns the same dict, with problems in
-   `error` and policy outcomes in `decisions` and `denied`; the fields below it come from ask(). */
+/* One answer: the result of /api/ask, /api/filter or /api/sql. execute() always returns the same dict, with
+   problems in `error` and policy outcomes in `decisions` and `denied`; the fields below it say how the SQL came
+   about. `question` is what was typed, or what was picked in the filter form said back as a sentence. */
 export type Answer = {
   role?: string;
   sql?: string;
@@ -66,14 +66,43 @@ export type Answer = {
   context?: { graph: Graph; feeds: Feed[]; warnings: TrustWarning[] };
 
   question?: string | null;
-  mode?: "vetted" | "model" | "sql" | "none";
+  mode?: "model" | "filter" | "sql" | "none";
   explanation?: string | null;
-  matched_question?: string;
-  note?: string;
   model?: string | null;
   model_error?: string | null;
-  suggestions?: string[];
 };
+
+/* The filter form as the server draws it for the signed-in role (/api/filters). A category the role may not
+   see has `denied` and no fields; a masked field has `masked` and nothing to pick from. */
+export type FilterField = {
+  name: string;
+  label: string;
+  description: string;
+  kind: "choice" | "text" | "number" | "date" | "flag";
+  values?: string[];   // choice: every value the role's own database holds
+  min?: Cell;          // number and date: the two ends of what is recorded
+  max?: Cell;
+  masked: string | null;
+};
+export type FilterCategory = {
+  id: string;
+  label: string;
+  table: string;
+  description: string;
+  systems: string[];
+  by_subject: boolean;
+  denied: string | null;
+  fields: FilterField[];
+};
+export type FilterOptions = {
+  sites: { site_key: string; site_name: string }[];
+  subjects: { denied: string | null; options: { subject_key: string; site_key: string }[] };
+  categories: FilterCategory[];
+};
+
+/* What was picked, which is the body of /api/filter. A condition carries the keys its kind of field uses. */
+export type FilterCondition = { field: string; any_of?: string[]; contains?: string; min?: string; max?: string; equals?: boolean };
+export type FilterSpec = { category: string; site_key: string | null; subject_key: string | null; conditions: FilterCondition[] };
 
 /* What the policy decides about one query for each role (/api/compare). Nothing is run. */
 export type Comparison = { error: string | null; roles: { role: string; denied: boolean; decisions: Decision[] }[] };

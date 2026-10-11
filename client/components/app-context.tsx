@@ -2,18 +2,28 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { api, ApiError, SIGNED_OUT } from "@/lib/api";
-import type { Account, Answer, Meta } from "@/lib/types";
+import type { Account, Answer, FilterSpec, Meta } from "@/lib/types";
 
-/* Everything that outlives a single page: who is signed in, the metadata from /api/meta, the two halves of
-   the Ask page (a question and its answer, the SQL editor and its result), the catalog filter and the trace
-   drawer. It lives in the root layout, so it survives navigation. All of it is dropped when the session ends,
-   so one account never sees another's answer. */
+/* Everything that outlives a single page: who is signed in, the metadata from /api/meta, the three ways to ask
+   on the Ask page (a question, the filter form, the SQL editor, each with its own answer), the catalog filter
+   and the trace drawer. It lives in the root layout, so it survives navigation. All of it is dropped when the
+   session ends, so one account never sees another's answer. */
 
-export type AskMode = "ask" | "sql";
+export type AskMode = "ask" | "filter" | "sql";
 export type AnswerTab = "result" | "sql" | "lineage" | "roles";
 export type AskLink = { tab?: string | null; trace?: string | null };
 const TABS: AnswerTab[] = ["result", "sql", "lineage", "roles"];
 const NO_FILTER = { q: "", layer: "all" };
+const NOTHING_PICKED: FilterSpec = { category: "", site_key: null, subject_key: null, conditions: [] };
+
+/* A filter from a link, which anyone may have written by hand: null unless it has the shape of one. */
+function readFilter(raw: string): FilterSpec | null {
+  try {
+    const f = JSON.parse(raw);
+    if (typeof f?.category !== "string") return null;
+    return { category: f.category, site_key: f.site_key || null, subject_key: f.subject_key || null, conditions: Array.isArray(f.conditions) ? f.conditions : [] };
+  } catch { return null; }
+}
 
 export type App = {
   meta: Meta;
@@ -27,7 +37,7 @@ export type App = {
   signOut: () => void;
   modelKey: "account" | "server" | null;  // whose Gemini key a free-form question uses. null: free-form asking is not enabled
 
-  mode: AskMode;     // which half of the Ask page is open
+  mode: AskMode;     // which way of asking is open on the Ask page
   setMode: (mode: AskMode) => void;
   tab: AnswerTab;
   setTab: (tab: AnswerTab) => void;
@@ -36,6 +46,13 @@ export type App = {
   asking: boolean;
   ask: (question: string, link?: AskLink) => void;
   askFromLink: (question: string, link: AskLink) => void;
+
+  picked: FilterSpec;     // what is in the filter form
+  setPicked: (picked: FilterSpec) => void;
+  filterAnswer: Answer | null;  // to the last run of the filter form
+  filtering: boolean;
+  runFilter: (picked: FilterSpec, link?: AskLink) => void;
+  filterFromLink: (raw: string, link: AskLink) => void;
 
   sqlDraft: string;       // what is in the SQL editor
   setSqlDraft: (sql: string) => void;
@@ -71,18 +88,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<Account | null>(null);
   const [signedOut, setSignedOut] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [mode, setMode] = useState<AskMode>("ask");
+  const [chosenMode, setMode] = useState<AskMode | null>(null);
   const [tab, setTab] = useState<AnswerTab>("result");
   const [answer, setAnswer] = useState<Answer | null>(null);
   const [asking, setAsking] = useState(false);
+  const [picked, setPicked] = useState(NOTHING_PICKED);
+  const [filterAnswer, setFilterAnswer] = useState<Answer | null>(null);
+  const [filtering, setFiltering] = useState(false);
   const [sqlDraft, setSqlDraft] = useState("");
   const [sqlAnswer, setSqlAnswer] = useState<Answer | null>(null);
   const [running, setRunning] = useState(false);
   const [catalogFilter, setCatalogFilter] = useState(NO_FILTER);
   const [trace, setTrace] = useState<{ column: string; value: string } | null>(null);
 
-  const lastAsked = useRef<string | null>(null);
-  const askSeq = useRef(0), sqlSeq = useRef(0);  // only the most recent request of each kind may write its answer
+  const lastAsked = useRef<string | null>(null), lastFiltered = useRef<string | null>(null);
+  const askSeq = useRef(0), filterSeq = useRef(0), sqlSeq = useRef(0);  // only the most recent request of each kind may write its answer
 
   /* Who is signed in, then the metadata. With no session both are refused, which fires SIGNED_OUT (lib/api.ts). */
   const load = useCallback(async () => {
@@ -100,14 +120,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
   /* The session is over: signed out, expired, or the account was deactivated. Drop everything it loaded. */
   const forget = useCallback(() => {
     askSeq.current++;  // an answer still on its way belongs to the account that asked for it
+    filterSeq.current++;
     sqlSeq.current++;
     lastAsked.current = null;
+    lastFiltered.current = null;
     setUser(null);
     setSignedOut(true);
-    setMode("ask");
+    setMode(null);
     setTab("result");
     setAnswer(null);
     setAsking(false);
+    setPicked(NOTHING_PICKED);
+    setFilterAnswer(null);
+    setFiltering(false);
     setSqlDraft("");
     setSqlAnswer(null);
     setRunning(false);
@@ -181,15 +206,46 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const askFromLink = useCallback((question: string, link: AskLink) => { if (lastAsked.current !== question) void ask(question, link); }, [ask]);
 
-  const app = useMemo<App | null>(() => meta && user && {
-    meta, user, role: user.role, person: user.name, roleName: meta.roles[user.role].name,
-    canManageAccounts: !!meta.roles[user.role].manages_accounts, setUser, refresh: load, signOut,
-    modelKey: user.has_gemini_key ? "account" : meta.model.available ? "server" : null,
-    mode, setMode, tab, setTab,
-    answer, asking, ask: (q, link) => { void ask(q, link); }, askFromLink,
-    sqlDraft, setSqlDraft, sqlAnswer, running, runSql: (sql) => { void runSql(sql); }, editSql,
-    catalogFilter, setCatalogFilter, trace, openTrace, closeTrace,
-  }, [meta, user, load, signOut, mode, tab, answer, asking, ask, askFromLink, sqlDraft, sqlAnswer, running, runSql, editSql, catalogFilter, trace, openTrace, closeTrace]);
+  /* The filter form, run. Like a question, it leaves a link in the address bar that reproduces the answer. */
+  const runFilter = useCallback(async (spec: FilterSpec, link?: AskLink) => {
+    const raw = JSON.stringify(spec);
+    lastFiltered.current = raw;
+    if (!link) window.history.replaceState(null, "", `${window.location.pathname}?filter=${encodeURIComponent(raw)}`);
+    const id = ++filterSeq.current;
+    setMode("filter");
+    setFiltering(true);
+    let res: Answer;
+    try { res = await api<Answer>("/api/filter", spec); } catch (e) { res = { error: (e as Error).message, mode: "filter" }; }
+    if (id !== filterSeq.current) return;
+    setFilterAnswer(res);
+    setTab(TABS.includes(link?.tab as AnswerTab) ? (link!.tab as AnswerTab) : "result");
+    setFiltering(false);
+    if (link?.trace) { const [col, ...val] = link.trace.split(":"); openTrace(col, val.join(":")); }
+  }, [openTrace]);
+
+  const filterFromLink = useCallback((raw: string, link: AskLink) => {
+    if (lastFiltered.current === raw) return;
+    const spec = readFilter(raw);
+    if (spec) { setPicked(spec); void runFilter(spec, link); }
+    lastFiltered.current = raw;  // as the link wrote it, so that coming back to the same link does not run it again
+  }, [runFilter]);
+
+  const app = useMemo<App | null>(() => {
+    if (!meta || !user) return null;
+    const modelKey = user.has_gemini_key ? "account" : meta.model.available ? "server" : null;
+    return {
+      meta, user, role: user.role, person: user.name, roleName: meta.roles[user.role].name,
+      canManageAccounts: !!meta.roles[user.role].manages_accounts, setUser, refresh: load, signOut, modelKey,
+      // a typed question needs a Gemini key. With one the page opens on it; without one that way of asking is
+      // off, whatever was chosen or linked to, and the page opens on Filter
+      mode: modelKey ? chosenMode ?? "ask" : !chosenMode || chosenMode === "ask" ? "filter" : chosenMode, setMode, tab, setTab,
+      answer, asking, ask: (q, link) => { void ask(q, link); }, askFromLink,
+      picked, setPicked, filterAnswer, filtering, runFilter: (spec, link) => { void runFilter(spec, link); }, filterFromLink,
+      sqlDraft, setSqlDraft, sqlAnswer, running, runSql: (sql) => { void runSql(sql); }, editSql,
+      catalogFilter, setCatalogFilter, trace, openTrace, closeTrace,
+    };
+  }, [meta, user, load, signOut, chosenMode, tab, answer, asking, ask, askFromLink, picked, filterAnswer, filtering, runFilter, filterFromLink,
+      sqlDraft, sqlAnswer, running, runSql, editSql, catalogFilter, trace, openTrace, closeTrace]);
 
   return <Ctx.Provider value={useMemo(() => ({ app, error, signedOut, signIn }), [app, error, signedOut, signIn])}>{children}</Ctx.Provider>;
 }

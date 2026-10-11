@@ -17,13 +17,14 @@ python -m backend ask "Which sites are we late paying?" --role finance
 |---|---|
 | `__main__.py` | CLI: `build`, `serve`, `ask`. `build` runs the harmonizer's pipeline, then npm in `../client/`. The other two run the pipeline first when there is no warehouse. `serve` prints where it is listening and, when that is beyond this computer, the address to open from another one |
 | `engine.py` | `catalog()`, `preflight()`, `execute()`, `upstream_graph()`, `answer_context()`, `trace()` |
-| `ask.py` | `VETTED` questions, matching, the Gemini call, `ask()` |
+| `ask.py` | The Gemini call, the `EXAMPLES` it is shown, `ask()` |
+| `filters.py` | The filter form: `CATEGORIES`, `options()` (what a role can pick from), `build()` (picks to SQL), `run()` |
 | `accounts.py` | Roles, accounts, passwords, sessions and each account's own Gemini key in `state/accounts.db` (SQLite). Says which role a request runs as and which grants that role holds |
 | `server.py` | FastAPI app: sign-in, a thin JSON API over the engine, plus the built web app as static files |
 
 Imports point one way. `accounts` uses `config` and `policy` from the harmonizer and nothing
 else here; `engine` uses those and `accounts` (for a role's grants); `ask` uses `engine` and
-`accounts`; `server` uses all three, and the harmonizer's `policy` and `quality`. The back
+`accounts`; `filters` uses `engine`; `server` uses all four, and the harmonizer's `policy` and `quality`. The back
 end imports `harmonizer.config`, `harmonizer.policy` and `harmonizer.quality` and nothing else
 from there, and it never writes to `build/`: the two sides meet only through those files. The
 one exception is `__main__.py`, which calls `harmonizer.pipeline.build()` for `build` and on first
@@ -72,31 +73,64 @@ reads with `accounts.gemini_key()` and passes in as `api_key`. An account's key 
 server's and is never used for anyone else's question. It decides who the model call is charged
 to and nothing else: the role still decides what the answer may contain.
 
-`ask(question, role, api_key=None)` resolves in this order and always reports `mode`. "A key is
-set" means `api_key` or the server's:
+`ask(question, role, api_key=None)` always reports `mode`. "A key is set" means `api_key` or the
+server's:
 
-1. Closest `VETTED` question by token overlap (Jaccard, over the question and its `ALSO`
-   phrasings). Score >= 0.85: run its reviewed SQL. `mode: "vetted"`.
-2. Else, if a key is set: Gemini writes the SQL. `mode: "model"`. One retry if the SQL errors.
-   The model may decline (`can_answer: false`), which returns `declined: true`.
-3. Else, or if the model call raised: score >= 0.34 runs the closest reviewed question, with a
-   `note`, and `model_error` when the call was tried and failed (a key Google refuses lands here).
-   `mode: "vetted"`.
-4. Else `mode: "none"` with `suggestions`.
+1. No key is set: nothing is run. `mode: "none"`, and `explanation` says free-form asking is not
+   enabled and that Filter and Write SQL need no key.
+2. Gemini writes the SQL. `mode: "model"`. One retry if the SQL errors. The model may decline
+   (`can_answer: false`), which returns `declined: true` and no SQL.
+3. The model call raised (network, rate limit, a key Google refuses): nothing is run.
+   `mode: "none"` with `model_error`.
+
+There is no fallback that answers without the model. A question that must work with no key is
+asked with the filter form or in SQL.
 
 The system prompt (`_schema_prompt`) is built from the catalog as the role sees it: only gold
 and master tables, masked columns marked, withheld tables listed by name and description
-without their columns, sample values omitted for masked columns, and every `VETTED` pair as an
+without their columns, sample values omitted for masked columns, and every `EXAMPLES` pair as an
 example. It is sent as the `system_instruction` of one `client.interactions.create` call (the
 `google-genai` SDK, `genai.Client(api_key=...)`, where None means the server's key from the
 environment), with the `SqlAnswer` JSON schema as the response format, low thinking and
 `store=False`. The reply is validated into the `SqlAnswer` pydantic model.
 Whatever the model returns goes through `engine.execute` like anyone else's SQL.
 
-`VETTED` is used in three places: answering, the model's examples, and the chips on the Ask
-page (`/api/meta`). A new entry needs `id`, `question`, `systems`, `explanation`, `sql`. Write
-the SQL against gold tables with schema-qualified names, include a traceable key, and use the
-snapshot date, never `current_date`.
+`EXAMPLES` is used in one place: the model's prompt. Nothing answers from it and the web app never
+sees it. An entry is a `question` and the `sql` a person has checked for it. Write the SQL against
+gold tables with schema-qualified names, include a traceable key, and use the snapshot date, never
+`current_date`.
+
+## filters.py
+
+The filter form: a site, a subject, a category of data and limits on its fields. No language
+model. `build()` writes one `SELECT` by rule, so the same picks always give the same SQL, and
+`run()` hands it to `engine.execute()` like anyone else's. Nothing here is the access control.
+
+- **`CATEGORIES`** is the one hand-written list: an `id`, a `label`, a gold `table` and the
+  `order` its rows come back in. Everything else is read from the catalog. A field is every column
+  of the table but `_src_*`, `site_key` and the table's subject column (`subject_key`, or
+  `dispensed_subject_key` for kits), which are the two pickers at the top of the form. Its label is
+  the column name made readable (`_label`), its hint is the column's description from the model
+  header, and its kind follows from its type: `flag` (BOOLEAN), `date`, `number`, and for text
+  `choice` up to `MAX_CHOICES` distinct values, else `text` (a search).
+- **`options(role)`** is `GET /api/filters`. The sites, the subjects, the values of each choice
+  field and the two ends of each range are read from the mart for the role's grants (`_picks`,
+  kept per build and per set of grants), never from the warehouse, so a withheld table offers no
+  fields and a masked column no values. A withheld category, a masked field and a withheld
+  subject list are still listed, each with the reason: withheld things are named, not left out.
+- **`build(spec)`** depends on the catalog and not on the role. It refuses (`FilterError`, with a
+  message for the person) a category or field that does not exist, a subject on a table kept per
+  site, and a limit that says nothing or is not a number or a date. Field names are only ever
+  taken from the catalog and values only ever become quoted literals, numbers or `DATE '...'`.
+  It selects every column but `_src_*`, so the result keeps its traceable keys, and it returns
+  the SQL with a sentence that says the picks back (`question` on the answer).
+- **`run(spec, role)`** is `POST /api/filter`. Like `execute()` it never raises for bad input: a
+  `FilterError` comes back as `error` with no `sql`. Otherwise it is the `execute()` result with
+  `mode: "filter"`.
+
+A condition carries the keys its kind uses: `any_of` (choice), `contains` (text), `min` and/or
+`max` (number, date), `equals` (flag). Several conditions are joined with AND; several values of
+one choice with OR.
 
 Every function in the engine still takes a role id (`"clinops"`). `engine.grants(role)` turns it
 into the grants the role holds at that moment, `engine.access` and `engine.reason` use it, and
@@ -188,8 +222,10 @@ hosting simple: `--host 0.0.0.0`, and another computer needs only a browser. `np
 | `POST /api/roles` `{name, blurb?, grants?, manages_accounts?}` | the new role, with its id. Administrators only, like the next two. Everyone reads the roles from `/api/meta` |
 | `PATCH /api/roles/{id}` `{name?, blurb?, grants?, manages_accounts?}` | the changed role. Fields left out stay as they are |
 | `DELETE /api/roles/{id}` | removes a role no account holds |
-| `GET /api/meta` | snapshot date, roles, tags, feeds, layer counts, the model id and whether the server has a key of its own, reviewed questions |
+| `GET /api/meta` | snapshot date, roles, tags, feeds, layer counts, the model id and whether the server has a key of its own |
 | `POST /api/ask` `{question}` | `ask.ask()` result, asked with the account's own key when it has one |
+| `GET /api/filters` | the filter form for the signed-in role: sites, subjects, and each category with its fields and what there is to pick (`filters.options()`) |
+| `POST /api/filter` `{category, site_key?, subject_key?, conditions?}` | `filters.run()` result, `mode: "filter"` |
 | `POST /api/sql` `{sql}` | `engine.execute()` result, `mode: "sql"` |
 | `POST /api/compare` `{sql}` | what the policy decides about the query for each role (`preflight` only). Nothing is run, so no row counts and no data |
 | `GET /api/trace?column&value` | `engine.trace()` |

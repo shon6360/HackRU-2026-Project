@@ -5,29 +5,40 @@ import { useEffect, useState } from "react";
 import { useApp, type AnswerTab } from "@/components/app-context";
 import { DataTable } from "@/components/data-table";
 import { Legend, LineageGraph } from "@/components/lineage-graph";
-import { Btn, Card, Chip, Empty, Joined, Lock, NodeRef, Notice, NoticeList, Pill, Sev, Spinner, SqlBlock, SysBadge } from "@/components/ui";
+import { Btn, Card, Empty, Joined, Lock, NodeRef, Notice, NoticeList, Pill, Sev, Spinner, SqlBlock, SysBadge } from "@/components/ui";
 import { api } from "@/lib/api";
 import { fmtStamp, plural } from "@/lib/format";
 import type { Answer, Comparison, Role } from "@/lib/types";
 
 /* An answer and everything attached to it: how the SQL came about, what was withheld from this role, what
    might make the numbers wrong, and four tabs (result, SQL, lineage, what the policy decides for every role).
-   Both halves of the Ask page show theirs with it: the answer to a question, and the result of a query from
-   the SQL editor. `busy` says which of the two is on its way. */
-export function AnswerPanel({ a, busy, onPick }: { a: Answer | null; busy: "ask" | "sql" | null; onPick: (question: string) => void }) {
-  const { tab, setTab, meta, role, person } = useApp();
+   Every way of asking on the Ask page shows its answer with it: a typed question, the filter form, a query from
+   the SQL editor. `busy` says what is on its way: a question for the model to write, or a query that is running. */
+export function AnswerPanel({ a, busy }: { a: Answer | null; busy: "ask" | "run" | null }) {
+  const { tab, setTab, setMode, meta, role, person } = useApp();
   if (busy === "ask") return <Card pad><Spinner /> &nbsp;Working out which systems hold the answer…</Card>;
   if (!a) return busy ? <Card pad><Spinner /> &nbsp;Running as {person}…</Card> : null;
 
-  if (!a.sql && !a.error) {  // nothing matched, or the model declined
+  if (!a.sql && !a.error) {  // no key, the model could not be reached, or it declined: nothing was run
     return (
       <Card pad>
         <div className="text-[16px] font-[650]">{a.question}</div>
         <p className="mt-1.5 text-ink-2">{a.explanation || "No answer."}</p>
         {a.model_error && <p className="text-[12.5px] text-ink-3">Model error: {a.model_error}</p>}
-        <h3 className="mt-3.5">Reviewed questions you can ask</h3>
-        <div className="flex flex-wrap gap-2">{(a.suggestions ?? []).map((s) => <Chip key={s} onClick={() => onPick(s)}>{s}</Chip>)}</div>
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <Btn size="sm" onClick={() => setMode("filter")}>Use Filter</Btn>
+          <Btn size="sm" onClick={() => setMode("sql")}>Write SQL</Btn>
+          <span className="text-[12.5px] text-ink-3">Neither involves a language model.</span>
+        </div>
       </Card>
+    );
+  }
+  if (!a.sql) {  // there is no query to show: the request failed, or what was picked could not be made into one
+    return (
+      <>
+        {busy && <div className="mb-2 text-[12.5px] text-ink-2"><Spinner /> Running as {person}…</div>}
+        <Card pad><Notice kind="bad" icon="×"><b>Nothing was run.</b> {a.error}</Notice></Card>
+      </>
     );
   }
 
@@ -39,23 +50,19 @@ export function AnswerPanel({ a, busy, onPick }: { a: Answer | null; busy: "ask"
 
   return (
     <>
-      {busy === "sql" && <div className="mb-2 text-[12.5px] text-ink-2"><Spinner /> Running as {person}…</div>}
+      {busy && <div className="mb-2 text-[12.5px] text-ink-2"><Spinner /> Running as {person}…</div>}
       <Card>
         <div className="border-b border-line px-[18px] pb-3 pt-4">
           <div className="mb-1.5 text-[17px] font-[650] tracking-[-.01em]">{a.question || "SQL query"}</div>
           <div className="flex flex-wrap items-center gap-2 text-[12.5px]">
-            {a.mode === "vetted" ? <Pill tone="good">Reviewed query</Pill> : a.mode === "model" ? <Pill tone="accent">SQL written by {a.model}</Pill> : <Pill>Your SQL</Pill>}
+            {a.mode === "filter" ? <Pill tone="good">Built from your filters</Pill> : a.mode === "model" ? <Pill tone="accent">SQL written by {a.model}</Pill> : <Pill>Your SQL</Pill>}
             <span className="text-ink-2">as <b>{person}</b>, {ran.name}</span>
             {systems.length > 0 && <span className="text-ink-2">· reads <Joined sep=" " items={systems.map((s) => <SysBadge key={s} system={s} />)} /></span>}
             {a.elapsed_ms !== undefined && <span className="text-ink-3">· {a.elapsed_ms} ms</span>}
           </div>
-          {a.matched_question && a.matched_question !== a.question && (
-            <p className="mb-0 mt-2 text-[12.5px] text-ink-2">Closest reviewed question: “{a.matched_question}”. {a.note}</p>
-          )}
           {a.explanation && a.mode !== "sql" && <p className="mb-0 mt-2">{a.explanation}</p>}
         </div>
         <div className="space-y-3.5 px-[18px] py-3.5">
-          {a.model_error && <Notice kind="warn" icon="!"><b>The language model could not be used</b>, so this is the closest reviewed question. {a.model_error}</Notice>}
           <PolicyNotices a={a} ran={ran} person={person} />
           {a.error && <Notice kind="bad" icon="×"><b>The query did not run.</b> {a.error}</Notice>}
           {!a.denied && !a.error && <TrustNotices a={a} />}

@@ -116,7 +116,9 @@
   b, strong { font-weight: 700; }
   code { font-family: var(--font-mono); font-size: 12.5px; }
   button { cursor: pointer; }
-  input[type="text"], input[type="password"], select, textarea { width: 100%; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 9px; padding: 9px 12px; }
-  input[type="text"]:focus, input[type="password"]:focus, select:focus, textarea:focus { outline: 2px solid var(--accent); outline-offset: -1px; border-color: transparent; }
+  input[type="text"], input[type="password"], input[type="number"], input[type="date"], select, textarea { width: 100%; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 9px; padding: 9px 12px; }
+  input[type="text"]:focus, input[type="password"]:focus, input[type="number"]:focus, input[type="date"]:focus, select:focus, textarea:focus { outline: 2px solid var(--accent); outline-offset: -1px; border-color: transparent; }
+  input[type="date"] { color-scheme: light dark; }
+  input:disabled, select:disabled { opacity: .6; cursor: default; }
   summary { cursor: pointer; }
 }

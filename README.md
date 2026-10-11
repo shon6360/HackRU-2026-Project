@@ -11,7 +11,7 @@ safety database and a vendor's legal name in finance. So a simple question like
 turns into five extract requests and a week of spreadsheet matching, and nobody fully trusts the answer.
 
 Concord ingests the five feeds, works out which ids mean the same site and the same subject, and lets a
-study team ask that question in plain English. Every answer shows the SQL that ran, the source rows behind
+study team ask that question: in plain English, by filling in a filter form, or in SQL. Every answer shows the SQL that ran, the source rows behind
 each number, how fresh each source is, what data-quality problems touch it, and what the person asking was
 not allowed to see. Each person signs in to their own account, and the role that account holds decides
 what they can see. An administrator creates the accounts and the roles.
@@ -68,12 +68,19 @@ More commands, all run in `server/`:
 ```bash
 python -m backend build          # rebuild everything: the warehouse and the web app
 python -m harmonizer build       # the warehouse half only: catalog, quality results and the access databases
-python tests/test_concord.py     # 15 end-to-end checks (also runs under pytest)
-python -m backend ask "Which sites are we late paying?" --role finance
+python tests/test_concord.py     # 17 end-to-end checks (also runs under pytest)
+python -m backend ask "Which sites are we late paying?" --role finance   # a typed question: needs a Gemini API key, see below
 ```
 
-The **Ask** page has two halves. **Ask a question** takes plain English, and **Write SQL** takes the query
-itself. To ask free-form questions, Concord needs a Gemini API key. Create one at
+The **Ask** page has three ways to ask, and only the first involves a language model:
+
+- **Ask a question** takes plain English, which Gemini writes into SQL. It needs a Gemini API key.
+- **Filter** is a form. Pick a site, a subject and a category of data (adverse events, kits, payments and so
+  on), then add limits on its fields: a range of dates or numbers, one or more values, yes or no. Concord
+  writes the query from what was picked, so the same picks always give the same answer.
+- **Write SQL** takes the query itself.
+
+To ask in plain English, create a key at
 [Google AI Studio](https://aistudio.google.com/apikey). Each person can paste their own on their **profile**
 page, which needs no restart and is used only for their own questions. Or give the server one that everyone
 without their own key uses:
@@ -85,20 +92,25 @@ python -m backend serve          # restart the server whenever .env changes
 ```
 
 `.env` is gitignored, so the key stays on the computer that runs Concord. A `GEMINI_API_KEY` exported in the shell works too
-and takes precedence over the file. Without either key, the Ask page says that free-form asking is not
-enabled: Concord answers from nine reviewed questions (closest match), and Write SQL works as always.
+and takes precedence over the file. Without either key, **Ask a question** is grayed out on the Ask
+page, which opens on **Filter** instead. Filter works as always, as does Write SQL.
 
 ## What to try
 
-1. **Ask.** Click *Which sites have open safety cases, low drug supply and overdue payments?* Two sites come
-   back. The answer warns that the finance feed is 24 days stale, so payments made since then are not in it.
+1. **Ask.** Which sites have open safety cases, low drug supply and overdue payments? On **Ask**, under
+   **Filter**, keep the category *Site summary* and add three filters: *Open safety cases* at least 1,
+   *Low supply* yes, *Overdue invoices (count)* at least 1. Two sites come back. The answer warns that the
+   finance feed is 24 days stale, so payments made since then are not in it.
+   [This link](http://127.0.0.1:8040/ask/?filter=%7B%22category%22%3A%22sites%22%2C%22conditions%22%3A%5B%7B%22field%22%3A%22open_safety_cases%22%2C%22min%22%3A1%7D%2C%7B%22field%22%3A%22is_low_supply%22%2C%22equals%22%3Atrue%7D%2C%7B%22field%22%3A%22n_overdue_invoices%22%2C%22min%22%3A1%7D%5D%7D) fills the form in and runs it.
+   With a Gemini key, typing the question under **Ask a question** does the same.
 2. **Trace.** Click `S718` in the result. The drawer shows how each of the five systems' ids was matched to
    that site, with the evidence, and the raw rows from each source file. The finance match is flagged for a
    data steward, because two sites in the same city have nearly the same name.
-3. **Who is asking.** Signed in as `maya` (blinded study team), ask *How many subjects and reportable
-   adverse events are there in each treatment arm?* The arm is withheld. Open **Compare roles** to see what
-   the policy decides for each role: the unblinded statistician gets the full answer, and finance is refused,
-   because the question needs patient-level rows. Sign out and in again as `arjun` or `dana` to see it happen.
+3. **Who is asking.** Signed in as `maya` (blinded study team), pick the category *Subjects* under
+   **Filter** and show the results. Every subject comes back, but the arm is withheld, and the form does not
+   offer *Arm* to filter on. Open **Compare roles** to see what the policy decides for each role: the
+   unblinded statistician gets the full answer, and finance is refused, because these are patient-level
+   rows. Sign out and in again as `arjun` or `dana` to see it happen.
 4. **Accounts and roles.** Sign in as `admin`. On **Roles**, create a role and tick what it is granted, or
    change an existing one: everyone holding it gets the new access on their next question, without signing in
    again and without a rebuild. On **Accounts**, add people and give each a role. Every account has a profile
@@ -135,7 +147,7 @@ plain files that the server serves from the same address as the API, so one prog
 | Policy | `server/harmonizer/policy.py` | Three tags. Enforced by building a separate database for every combination of them |
 | Accounts | `server/backend/accounts.py` | Sign-in, sessions, the roles and which one each account holds. Says who is asking and what they are granted; the policy decides what that lets them see |
 | Engine | `server/backend/engine.py` | Parses a query, checks it against the policy, runs it sandboxed, and attaches lineage, freshness and quality warnings |
-| Ask | `server/backend/ask.py` | Reviewed questions, plus Gemini writing SQL from the role's own view of the catalog |
+| Ask | `server/backend/ask.py`, `server/backend/filters.py` | Gemini writing SQL from the role's own view of the catalog, and the filter form, which writes it by rule from what was picked |
 | App | `server/backend/server.py`, `client/` | FastAPI, and a Next.js and Tailwind CSS web app built to static files that FastAPI serves |
 
 ### Matching ids

@@ -56,14 +56,14 @@ app/
   layout.tsx          the frame: AppProvider and Shell around every page
   page.tsx            / : redirects to /ask, and turns old #/... links into the new ones
   globals.css         Tailwind import, colour tokens, theme, defaults for bare elements
-  ask/                page.tsx, ask-view.tsx (the two halves: Ask a question, Write SQL), answer.tsx (the answer card and its four tabs)
+  ask/                page.tsx, ask-view.tsx (the three ways to ask: Ask a question, Filter, Write SQL), filter-form.tsx (the Filter form), answer.tsx (the answer card and its four tabs)
   catalog/            page.tsx, catalog-view.tsx (the list and search), dataset-view.tsx (one table)
   lineage/ crosswalk/ quality/ access/    one page.tsx each
   profile/            page.tsx: your own account, what your role is granted, change your name and password, keep your Gemini API key
   accounts/           page.tsx: every account, and the form that adds, changes and removes one (administrators)
   roles/              page.tsx: every role, and the form that adds, changes and removes one (administrators)
 components/
-  app-context.tsx     state that outlives a page: who is signed in, meta, both halves of the Ask page, catalog filter, trace
+  app-context.tsx     state that outlives a page: who is signed in, meta, the three ways to ask on the Ask page, catalog filter, trace
   shell.tsx           top bar (nav, feed dots, account menu), <main> or the sign-in form, the trace drawer
   sign-in.tsx         the sign-in form, shown in place of every page until someone is signed in
   ui.tsx              Pill, TagPill, Notice, Card, Btn, Field, Grants, PlainTable/Th/Td, TraceLink, Lock, ...
@@ -87,22 +87,33 @@ shows the sign-in form in the page's place, at the same address, so a deep link 
 names as soon as the person is in. The Ask page and the catalog filter live in the
 provider, which is why they are still there when you come back to the page.
 
-The Ask page has two halves, chosen by `mode` in the provider, and each keeps its own answer:
+The Ask page has three ways to ask, chosen by `mode` in the provider, and each keeps its own answer.
+Until the person chooses one, `mode` is `"ask"` when there is a Gemini key to ask with and
+`"filter"` when there is not, so the page always opens on something that works. Without a key
+`mode` is never `"ask"`, whatever was chosen or linked to: it falls back to `"filter"`.
 
-- **Ask a question** (`mode: "ask"`): the question box and the reviewed questions. It calls
-  `/api/ask` and shows `answer`. `modelKey` says whose Gemini key a typed question would use:
-  `"account"` (`user.has_gemini_key`), `"server"` (`meta.model.available`) or null. With null the
-  form shows that free-form asking is not enabled, and where to add a key. The box still works
-  then, because the server matches what is typed to the closest reviewed question.
+- **Ask a question** (`mode: "ask"`): the question box. It calls `/api/ask` and shows `answer`.
+  `modelKey` says whose Gemini key a typed question would use: `"account"`
+  (`user.has_gemini_key`), `"server"` (`meta.model.available`) or null. With null the tab
+  is grayed out and cannot be opened, and a line under the tabs says that it needs a key, where to
+  add one, and that Filter and Write SQL need none. There are no reviewed questions to click.
+- **Filter** (`mode: "filter"`, `filter-form.tsx`): a site, a subject, a category of data, and
+  any number of filters on that category's fields. The form is drawn from `/api/filters`, which the
+  server builds for the signed-in role, so a control's kind (`choice`, `text`, `number`, `date`,
+  `flag`) and everything there is to pick come from the server. What is picked is `picked` in
+  the provider (a `FilterSpec`); "Show results" posts it to `/api/filter` and shows
+  `filterAnswer`. A filter row that says nothing yet is left out of what is sent. Picking a
+  subject while a per-site category is open moves to the first category kept per subject, and
+  per-site categories are then disabled in the list. No language model is involved.
 - **Write SQL** (`mode: "sql"`): the editor (`sqlDraft`). It calls `/api/sql` and shows
   `sqlAnswer`. No language model is involved.
 
-Both show their answer with `AnswerPanel`. Its SQL tab is read-only: "Open in Write SQL" calls
+All three show their answer with `AnswerPanel`. Its SQL tab is read-only: "Open in Write SQL" calls
 `editSql()`, which carries the SQL to the editor. SQL is edited in one place only.
 
 `api()` fires the `SIGNED_OUT` event on `window` whenever the server answers 401 (the session
 expired, or the account was deactivated or removed), and the provider's `forget()` then drops
-everything the session loaded: the account, both answers, the SQL in the editor, the trace, the catalog filter. Signing
+everything the session loaded: the account, all three answers, what was picked in the filter form, the SQL in the editor, the trace, the catalog filter. Signing
 out goes the same way. One account's answer is never left on screen for the next.
 
 ## Rules
@@ -110,7 +121,9 @@ out goes the same way. One account's answer is never left on screen for the next
 - **The UI does not enforce anything.** It only displays the `decisions`, `denied`, `masked` and
   `hidden` fields the server returns. The databases the server queries are the access control.
 - **Show what is withheld, never hide it silently.** A refused query, a masked column, a withheld
-  table and a hidden finding each get the `Lock` icon and the reason from the API. This is a
+  table and a hidden finding each get the `Lock` icon and the reason from the API. In the filter form a
+  withheld category stays in the list and can still be run (the answer is the refusal), a masked field
+  stays in the list but cannot be picked, and a withheld subject list is a disabled picker with the reason. This is a
   judging criterion, not decoration.
 - **The role is never sent.** The server takes it from the session cookie, which the browser
   attaches by itself and scripts cannot read. `app.role` is the account's role as last loaded
@@ -134,9 +147,10 @@ out goes the same way. One account's answer is never left on screen for the next
   on every request.
 - **No `dangerouslySetInnerHTML`.** The data includes free text from source files and SQL written
   by a model. Rendered as JSX children it is escaped by React; keep it that way.
-- **Deep links reproduce an answer:** `/ask?q=<question>&tab=<result|sql|lineage|roles>&trace=<column>:<value>`
-  (served as `/ask/?...`). `docs/DEMO.md` relies on them. A link opens the Ask a question half; a query
-  run under Write SQL has no link of its own. Links in the old form, `#/ask?q=...`
+- **Deep links reproduce an answer:** `/ask?filter=<the picks as JSON>&tab=<result|sql|lineage|roles>&trace=<column>:<value>`
+  fills the filter form in and runs it, and `/ask?q=<question>&...` asks a typed question (both served as
+  `/ask/?...`). Running either writes its link into the address bar. `docs/DEMO.md` and the README rely on
+  the `filter` form, because it needs no Gemini key. A query run under Write SQL has no link of its own. Links in the old form, `#/ask?q=...`
   and `#/catalog/<table>`, are redirected by `app/page.tsx`; do not remove that.
 - `LAYERS` and `SYSTEMS` in `lib/format.ts` repeat what the server knows. A new layer or source
   system must be added there too.

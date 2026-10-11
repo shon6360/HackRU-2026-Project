@@ -18,7 +18,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from fastapi.testclient import TestClient  # noqa: E402
 
-from backend import accounts, ask, engine, server  # noqa: E402
+from backend import accounts, ask, engine, filters, server  # noqa: E402
 from harmonizer import config, policy, quality  # noqa: E402
 from harmonizer.pipeline import build  # noqa: E402
 
@@ -45,22 +45,83 @@ def test_every_planted_problem_is_caught():
     assert score["n_planted"] >= 20
 
 
+HEADLINE = {"category": "sites", "conditions": [{"field": "open_safety_cases", "min": 1}, {"field": "is_low_supply", "equals": True},
+                                                {"field": "n_overdue_invoices", "min": 1}]}
+
+
 def test_headline_question_matches_the_documented_story():
-    result = ask.ask("Which sites have open safety cases, low drug supply and overdue payments?", "clinops")
-    assert result["mode"] == "vetted" and not result["error"]
+    # which sites have open safety cases, low drug supply and overdue payments: asked with the filter form, so no model is needed
+    result = filters.run(HEADLINE, "clinops")
+    assert result["mode"] == "filter" and not result["error"]
     sites = sorted(row[0] for row in result["rows"])
     assert sites == sorted("S" + s for s in KEY["story_sites"]["all_three_problems"])
     assert any(w["kind"] == "stale" for w in result["context"]["warnings"]), "the stale finance feed must be flagged"
 
 
-def test_every_reviewed_question_runs_or_is_refused_for_every_role():
-    for v in ask.VETTED:
+def test_every_example_shown_to_the_model_runs_or_is_refused_for_every_role():
+    for v in ask.EXAMPLES:
         outcomes = set()
         for role in accounts.roles():
             r = engine.execute(v["sql"], role)
-            assert r["denied"] or not r["error"], (v["id"], role, r["error"])
+            assert r["denied"] or not r["error"], (v["question"], role, r["error"])
             outcomes.add("refused" if r["denied"] else "ran")
-        assert "ran" in outcomes, v["id"]
+        assert "ran" in outcomes, v["question"]
+
+
+def test_the_filter_form_offers_and_returns_only_what_the_role_may_see():
+    cat = engine.catalog()
+    for role, r in accounts.roles().items():
+        form = filters.options(role)
+        con = engine.role_connection(role)
+        assert bool(form["subjects"]["denied"]) == ("patient_level" not in r["grants"]) and bool(form["subjects"]["options"]) != bool(form["subjects"]["denied"]), role
+        for c in form["categories"]:
+            ds, result = cat["datasets"][c["table"]], filters.run({"category": c["id"]}, role)
+            if policy.table_denied(ds, r["grants"]):
+                assert c["denied"] and not c["fields"] and result["denied"] and not result["rows"], (role, c["id"])
+                continue
+            assert not c["denied"] and not result["error"] and result["rows"], (role, c["id"], result["error"])
+            assert not any(col["name"].startswith("_src_") for col in result["columns"]), "the lineage columns are for the trace, not the answer"
+            masked = policy.masked_columns(ds, r["grants"])
+            for f in c["fields"]:
+                assert bool(f["masked"]) == (f["name"] in masked), (role, c["id"], f["name"])
+                if f["masked"]:
+                    assert not f.get("values") and f.get("min") is None and f.get("max") is None, f"{role} is offered values of {c['table']}.{f['name']}"
+                elif f["kind"] == "choice":  # every value offered is one this role's own database holds
+                    held = {v for (v,) in con.execute(f'SELECT DISTINCT "{f["name"]}" FROM {c["table"]}').fetchall()}
+                    assert f["values"] and set(f["values"]) <= held, (role, c["id"], f["name"])
+        con.close()
+    arm = {"category": "subjects", "conditions": [{"field": "arm", "any_of": ["Placebo"]}]}
+    blinded = filters.run(arm, "clinops")
+    assert not blinded["rows"] and any(d["action"] == "mask" for d in blinded["decisions"]), "a blinded role cannot find out who is on placebo by filtering on the arm"
+    assert filters.run(arm, "biostat")["rows"]
+
+
+def test_a_filter_returns_the_rows_it_describes_and_is_checked_before_it_becomes_sql():
+    subject = filters.options("clinops")["subjects"]["options"][0]
+    picked = {"category": "visits", "site_key": subject["site_key"], "subject_key": subject["subject_key"],
+              "conditions": [{"field": "visit_date", "min": "2012-01-01", "max": "2013-12-31"}]}
+    r = filters.run(picked, "clinops")
+    at = {c["name"]: i for i, c in enumerate(r["columns"])}
+    assert r["rows"] and subject["subject_key"] in r["question"] and "subject_key" in r["traceable"]
+    assert all(row[at["subject_key"]] == subject["subject_key"] and "2012-01-01" <= row[at["visit_date"]] <= "2013-12-31" for row in r["rows"])
+    assert r["sql"] == filters.run(picked, "clinops")["sql"], "the same picks always give the same query"
+    severe = filters.run({"category": "adverse-events", "conditions": [{"field": "severity", "any_of": ["SEVERE"]}, {"field": "is_serious", "equals": True}]}, "clinops")
+    at = {c["name"]: i for i, c in enumerate(severe["columns"])}
+    assert severe["rows"] and all(row[at["severity"]] == "SEVERE" and row[at["is_serious"]] for row in severe["rows"])
+
+    # a value is only ever a value: it cannot end the condition it sits in
+    quoted = filters.run({"category": "site-details", "conditions": [{"field": "city", "any_of": ["x' OR '1'='1"]}]}, "clinops")
+    assert not quoted["error"] and not quoted["rows"]
+    for spec in [{}, {"category": "no-such-category"},
+                 {"category": "sites", "subject_key": subject["subject_key"]},
+                 {"category": "sites", "conditions": [{"field": "_src_row", "min": 1}]},
+                 {"category": "sites", "conditions": [{"field": "n_active) OR (1=1", "min": 1}]},
+                 {"category": "sites", "conditions": [{"field": "n_active", "min": "1 OR 1=1"}]},
+                 {"category": "sites", "conditions": [{"field": "n_active", "min": 5, "max": 2}]},
+                 {"category": "sites", "conditions": [{"field": "n_active"}]},
+                 {"category": "subjects", "conditions": [{"field": "screening_date", "min": "13/01/2013"}]}]:
+        r = filters.run(spec, "clinops")
+        assert r["error"] and not r.get("rows") and not r.get("sql"), spec
 
 
 def test_every_grant_database_holds_nothing_the_policy_withholds():
@@ -174,8 +235,9 @@ def test_the_role_comes_from_the_account_and_never_from_the_request():
     dana = signed_in("dana")
     r = dana.post("/api/sql", json={"sql": "SELECT * FROM gold.dim_subject", "role": "admin"}).json()
     assert r["role"] == "finance" and r["denied"] and not r["rows"], "a role named in the body must be ignored"
-    r = dana.post("/api/ask", json={"question": "How many subjects and reportable adverse events are there in each treatment arm?", "role": "biostat"}).json()
-    assert r["role"] == "finance" and r["denied"]
+    r = dana.post("/api/filter", json={"category": "subjects", "role": "biostat"}).json()
+    assert r["role"] == "finance" and r["denied"] and not r["rows"]
+    assert dana.get("/api/filters", params={"role": "admin"}).json()["subjects"]["denied"], "the filter form is drawn for the account's role too"
     assert any(d["access"]["denied"] for d in dana.get("/api/catalog", params={"role": "admin"}).json()["datasets"])
     assert dana.get("/api/dataset/gold.dim_subject", params={"role": "admin"}).json()["preview"] is None
     t = dana.get("/api/trace", params={"role": "admin", "column": "subject_key", "value": "x"}).json()
@@ -276,7 +338,6 @@ def test_an_administrator_creates_and_edits_roles_and_the_grants_apply_at_once()
 def test_each_account_keeps_its_own_gemini_key_and_it_never_comes_back():
     maya, dana, admin = signed_in("maya"), signed_in("dana"), signed_in("admin")
     key, question = "test-key-" + "k" * 30, "Which five sites have the most subjects still on study?"
-    assert ask.match_vetted(question)[1] < 0.85, "the question must not be a reviewed one, or the model is never reached"
     # the model call is replaced, so nothing leaves the machine, and the server's own key is put aside for the test
     server_keys = {name: os.environ.pop(name, None) for name in ("GEMINI_API_KEY", "GOOGLE_API_KEY")}
     real, used, written = ask._call_model, [], ["SELECT site_key, site_name, n_active FROM gold.site_360 ORDER BY n_active DESC LIMIT 5"]

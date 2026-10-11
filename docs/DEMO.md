@@ -17,11 +17,13 @@ On the **Crosswalk** page, pointing at the "What each system calls things" table
 
 ## 0:20 One question, five systems (40 seconds)
 
-Go to **Ask**. Click the first question.
-`http://127.0.0.1:8040/ask/?q=Which%20sites%20have%20open%20safety%20cases%2C%20low%20drug%20supply%20and%20overdue%20payments%3F`
+Go to **Ask**, **Filter**. Category *Site summary*, then three filters: *Open safety cases* at least 1,
+*Low supply* yes, *Overdue invoices (count)* at least 1. Show results. The link fills the form in and runs it.
+`http://127.0.0.1:8040/ask/?filter=%7B%22category%22%3A%22sites%22%2C%22conditions%22%3A%5B%7B%22field%22%3A%22open_safety_cases%22%2C%22min%22%3A1%7D%2C%7B%22field%22%3A%22is_low_supply%22%2C%22equals%22%3Atrue%7D%2C%7B%22field%22%3A%22n_overdue_invoices%22%2C%22min%22%3A1%7D%5D%7D`
 
 > This is the question from the challenge sheet: which sites have open safety cases, low drug supply and
-> overdue payments. Milliseconds. Two sites. It read all five systems.
+> overdue payments. Three filters, no SQL and no language model. Milliseconds. Two sites. It read all five
+> systems.
 >
 > And it tells me what to be careful about. The finance feed is 24 days stale, so a payment made last week
 > isn't in here. That warning is attached to the answer, not buried in a dashboard.
@@ -40,17 +42,18 @@ Click `S718` in the result.
 
 ## 1:40 Who is asking matters (45 seconds)
 
-Close the drawer. Click *How many subjects and reportable adverse events are there in each treatment arm?*
-then the **Compare roles** tab.
-`http://127.0.0.1:8040/ask/?q=How%20many%20subjects%20and%20reportable%20adverse%20events%20are%20there%20in%20each%20treatment%20arm%3F&tab=roles`
+Close the drawer. Change the category to *Subjects*, add the filter *Randomized* yes, show results, then
+open the **Compare roles** tab.
+`http://127.0.0.1:8040/ask/?filter=%7B%22category%22%3A%22subjects%22%2C%22conditions%22%3A%5B%7B%22field%22%3A%22is_randomized%22%2C%22equals%22%3Atrue%7D%5D%7D&tab=roles`
 
 > I'm signed in as Maya. She runs the study, so she has to stay blind to who got which treatment. She gets
-> the count but the arm is withheld. This tab shows what the same SQL gets under each role: the unblinded
-> statistician gets the full answer, and finance is refused, because this needs patient-level data.
+> the subjects but the arm is withheld, and the form won't let her filter on it either. This tab shows what
+> the same SQL gets under each role: the unblinded statistician gets the full answer, and finance is refused,
+> because this needs patient-level data.
 >
-> This isn't a filter in the app. The server takes the role from the account that signed in, and the role
-> reads a database that physically doesn't contain what it isn't granted. So it holds whether a person wrote
-> the SQL or the language model did.
+> This isn't the app hiding things. The server takes the role from the account that signed in, and the role
+> reads a database that physically doesn't contain what it isn't granted. So it holds whether the SQL came
+> from this form, from a person or from the language model.
 
 ## 2:25 Can you trust the data (25 seconds)
 
@@ -80,8 +83,11 @@ Flash the **Lineage** page, click `site_360`.
   granted. Signing in as `arjun` or `dana` shows the other two answers from step 1:40 for real.
 - **Free-form questions**: with a Gemini API key saved on the **profile** page (or `GEMINI_API_KEY` set in
   `server/.env`), type any question. The model is shown only the schema the current role can see, and the SQL it
-  writes is shown under the **SQL** tab. **Open in Write SQL** carries it to the other half of the Ask page,
-  where it can be changed and run again. Without a key, the page says free-form asking is not enabled.
+  writes is shown under the **SQL** tab. **Open in Write SQL** carries it to the SQL editor on the Ask page,
+  where it can be changed and run again. Without a key, **Ask a question** is grayed out and the page
+  opens on **Filter**.
+- **One subject**: under **Filter**, pick a subject, then *Adverse events*, *Subject visits* or *Safety cases*.
+  Add a date range or a severity. Every key in the result still traces to its source rows.
 - **Catalog**: search `overdue` or `onset`; open `gold.site_360` to show descriptions, owners, freshness,
   the FAIR checklist and the SQL that builds it.
 - **Tests**: `python tests/test_concord.py`, run in `server/`, checks that no access database contains a single value its

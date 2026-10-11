@@ -34,8 +34,8 @@ python3 -m venv .venv && source .venv/bin/activate && pip install -r requirement
 python -m backend build                    # everything: build/*.duckdb from feeds/, then ../client/out with npm
 python -m harmonizer build                 # the warehouse half only (about 1-2 s)
 python -m backend serve [--host H --port P] # default 127.0.0.1:8040, this computer only. --host 0.0.0.0 lets other computers open it
-python -m backend ask "Which sites are we late paying?" --role finance   # prints the result JSON
-python tests/test_concord.py               # all 15 tests, no test runner needed
+python -m backend ask "Which sites are we late paying?" --role finance   # prints the result JSON. Needs a Gemini key
+python tests/test_concord.py               # all 17 tests, no test runner needed
 ```
 
 - A virtual environment does not survive its folder being moved or renamed: `activate` keeps
@@ -77,16 +77,19 @@ python tests/test_concord.py               # all 15 tests, no test runner needed
 - Free-form questions need a Gemini API key. They are written into SQL by Gemini through the
   `google-genai` SDK; `CONCORD_MODEL` overrides the model id (default `gemini-3.8-flash`). The key
   is the asking account's own, saved on its profile page, and otherwise the server's
-  `GEMINI_API_KEY` (or `GOOGLE_API_KEY`). With neither, the Ask page says free-form asking is not
-  enabled and a typed question is matched to the closest reviewed one.
-- The Ask page has two halves: **Ask a question** (reviewed questions and free-form) and **Write
-  SQL** (the query itself, no language model). Each keeps its own answer.
+  `GEMINI_API_KEY` (or `GOOGLE_API_KEY`). With neither, **Ask a question** is grayed out
+  on the Ask page with a line saying why, a typed question is not answered, and the page opens on Filter.
+- The Ask page has three ways to ask, and each keeps its own answer: **Ask a question** (plain
+  English, written into SQL by Gemini), **Filter** (a form: a site, a subject, a category of data and
+  limits on its fields, from which `backend/filters.py` writes the query by rule) and **Write SQL**
+  (the query itself). Only the first involves a language model. There is no library of reviewed
+  questions that answers by itself: `EXAMPLES` in `backend/ask.py` is only what the model is shown.
 - These settings, and `CONCORD_STARTER_PASSWORD`, live in `server/.env` (copy
   `server/.env.example`). `harmonizer/config.py` loads it on import; a variable already set in the
   shell wins. `.env` is gitignored: never commit it, print it or paste its contents anywhere.
   `.env.example` is committed and must only ever hold placeholders. A running server reads `.env`
-  once, so restart it after a change. Without a key everything still works from the reviewed
-  questions and from Write SQL.
+  once, so restart it after a change. Without a key everything still works from Filter and from
+  Write SQL.
 - API docs are served at `/api/docs`.
 
 ## Layout
@@ -95,7 +98,7 @@ python tests/test_concord.py               # all 15 tests, no test runner needed
 server/               everything that holds or builds data. Its commands run here
   harmonizer/         feeds -> warehouse: config, policy, pipeline, models, quality (see server/harmonizer/CLAUDE.md)
     models/           one .sql file per table: silver/, master/, gold/ (see server/harmonizer/models/CLAUDE.md)
-  backend/            warehouse -> answers: engine, ask, accounts, server (see server/backend/CLAUDE.md)
+  backend/            warehouse -> answers: engine, ask, filters, accounts, server (see server/backend/CLAUDE.md)
   feeds/              the five mock source systems. Generated and committed (see server/feeds/CLAUDE.md)
   data/public/        snapshot of the real public data the feeds are derived from (see server/data/CLAUDE.md)
   scripts/            fetch_public_data.py, simulate_feeds.py: regenerate the two folders above (see server/scripts/CLAUDE.md)
@@ -125,7 +128,7 @@ server/feeds/ --harmonizer: pipeline.build()--> server/build/warehouse.duckdb
     meta     the catalog: feeds, datasets, columns (with profiles), lineage
     dq       rules and failures
 server/build/warehouse.duckdb --policy--> server/build/mart_<grants>.duckdb   (one read-only database per combination of grants: 8)
-server/build/ --backend: engine, ask, server--> /api/... --> the web app, in a browser on any computer
+server/build/ --backend: engine, ask, filters, server--> /api/... --> the web app, in a browser on any computer
 server/state/accounts.db --backend: accounts--> which role a request runs as, and which grants that role holds
 client/ --npm run build--> client/out --backend: server--> the pages, from the same address as /api
 ```
@@ -146,9 +149,9 @@ real hours, so it reads `time.time()`. Nothing about the study may depend on tho
 **The database is the access control, not the app.** The build makes one database (a mart) for
 every combination of grants, `server/build/mart_<grants>.duckdb`, in which the tables those grants do
 not cover are physically absent and the masked columns physically NULL. A role reads the mart
-for the grants it holds at that moment. User SQL and model-written SQL must only ever run
-through `engine.execute()`, which uses that database. Editing a role only changes which mart its
-holders read, so it needs no build; it never changes what a mart contains.
+for the grants it holds at that moment. User SQL, model-written SQL and the SQL the filter form
+writes must only ever run through `engine.execute()`, which uses that database. Editing a role
+only changes which mart its holders read, so it needs no build; it never changes what a mart contains.
 `engine.warehouse()` opens the full, unfiltered warehouse: anything read through it and returned
 to a client must apply `engine.access()` / `policy` by hand, as `/api/crosswalk` and
 `/api/quality` do. The language model is a convenience and is never trusted with enforcement.
@@ -187,7 +190,8 @@ simulated says so. No real patient, site or payment is described; site names are
 |---|---|---|
 | Add or change a table | a `.sql` file under `server/harmonizer/models/<layer>/` | `build`, run the tests |
 | Add a quality rule | `RULES` in `server/harmonizer/quality.py` | `build`; if it is meant to catch a planted problem, plant it in `simulate_feeds.py` |
-| Add a reviewed question | `VETTED` (and optionally `ALSO`) in `server/backend/ask.py` | run the tests: it must run or be refused cleanly for every role |
+| Add an example for the model | `EXAMPLES` in `server/backend/ask.py` | run the tests: its SQL must run or be refused cleanly for every role |
+| Add a category to the filter form | `CATEGORIES` in `server/backend/filters.py`: a gold table, a label and an order. Its fields come from the catalog | run the tests: it must run or be refused cleanly for every role |
 | Add a tag | `TAGS` in `server/harmonizer/policy.py`, plus the tag in manifests and model headers | `build` (the number of marts doubles with each tag); add the tag's colours to `TAG_TONE` in `client/components/ui.tsx`. No role holds a new tag until an administrator grants it |
 | Add or change a role | the Roles page, signed in as an administrator. No code and no build | `STARTER_ROLES` in `server/backend/accounts.py` only decides what a new, empty install starts with |
 | Change what an account or a role holds, or how sign-in works | `server/backend/accounts.py` | run the tests. A new column needs a migration in `init()`, or `server/state/accounts.db` deleted |
