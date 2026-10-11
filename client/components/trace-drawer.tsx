@@ -48,7 +48,7 @@ export function TraceDrawer() {
         <div className="overflow-auto px-[18px] pb-10 pt-4">
           {!current ? <Spinner /> : problem ? <Notice kind="bad">{problem}</Notice> : t && (
             <>
-              <p className="text-ink-2">Seen as {person}, {roleName}. Raw rows are shown exactly as the source system exported them.</p>
+              <p className="text-ink-2">Seen as {person}, {roleName}.</p>
               {t.crosswalk && (
                 <>
                   <h3>How each system&apos;s id was matched to <code>{trace.value}</code></h3>

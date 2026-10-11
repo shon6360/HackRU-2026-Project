@@ -17,8 +17,7 @@ export default function AccessPage() {
   return (
     <>
       <PageHead title="Access">
-        The policy is {tags.length} tags and {roles.length} roles, and every account holds one role. A table carrying a tag the role lacks does not exist for that role; a column carrying one comes back empty.
-        A role queries a read-only database that physically contains only what its grants may see, so the rule holds for hand-written SQL and model-written SQL alike.
+        {tags.length} tags, {roles.length} roles, one role per account. A table tagged with something a role lacks does not exist for it; a tagged column comes back empty.
       </PageHead>
 
       <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 xl:grid-cols-4">
@@ -36,7 +35,7 @@ export default function AccessPage() {
       </div>
 
       <Card pad className="mt-3.5">
-        <h3>What the tags mean</h3>
+        <h3>Tags</h3>
         <PlainTable>
           <tbody>
             {tags.map(([t, tag]) => <tr key={t}><Td className="whitespace-nowrap"><TagPill tag={t} /></Td><Td>{tag.description}</Td></tr>)}
@@ -45,7 +44,7 @@ export default function AccessPage() {
       </Card>
 
       <Card className="mt-3.5">
-        <div className="px-[18px] pb-1.5 pt-4"><h3>Every tagged table, and what each role gets</h3></div>
+        <div className="px-[18px] pb-1.5 pt-4"><h3>Tagged tables, by role</h3></div>
         <div className="overflow-auto">
           <PlainTable>
             <thead><tr><Th>Table</Th><Th>Tagged</Th>{roles.map(([id, r]) => <Th key={id}>{r.name}</Th>)}</tr></thead>

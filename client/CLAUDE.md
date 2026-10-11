@@ -104,8 +104,8 @@ Until the person chooses one, `mode` is `"ask"` when there is a Gemini key to as
 - **Ask a question** (`mode: "ask"`): the question box. It calls `/api/ask` and shows `answer`.
   `modelKey` says whose Gemini key a typed question would use: `"account"`
   (`user.has_gemini_key`), `"server"` (`meta.model.available`) or null. With null the tab
-  is grayed out and cannot be opened, and a line under the tabs says that it needs a key, where to
-  add one, and that Filter and Write SQL need none. There are no reviewed questions to click.
+  is grayed out and cannot be opened, and a line under the tabs says that it needs a key and where to
+  add one. There are no reviewed questions to click.
 - **Filter** (`mode: "filter"`, `filter-form.tsx`): a site, a subject, a category of data, and
   any number of filters on that category's fields. The form is drawn from `/api/filters`, which the
   server builds for the signed-in role, so a control's kind (`choice`, `text`, `number`, `date`,
@@ -127,6 +127,9 @@ out goes the same way. One account's answer is never left on screen for the next
 
 ## Rules
 
+- **Keep the words on a page few.** One short sentence under a page title, a label on a control, and a
+  notice only when something was refused, withheld, stale or failed. Do not explain how the platform
+  works on the page: that is what the README and `docs/` are for.
 - **The UI does not enforce anything.** It only displays the `decisions`, `denied`, `masked` and
   `hidden` fields the server returns. The databases the server queries are the access control.
 - **Show what is withheld, never hide it silently.** A refused query, a masked column, a withheld

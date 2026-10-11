@@ -44,11 +44,10 @@ function CatalogList() {
   return (
     <>
       <PageHead title="Data catalog">
-        Every table in the platform, from raw export to query-ready, with what it means, who owns it, how fresh it is and who may see it.
-        Metadata is visible to everyone; the data itself follows the access policy.
+        Every table, with what it means, who owns it and who may see it.
       </PageHead>
       <div className="mb-3.5 flex flex-wrap items-center gap-2">
-        <input type="text" className="max-w-[380px]" placeholder="Search tables and columns: overdue, onset, kit, site_key…" value={f.q} onChange={(e) => setCatalogFilter({ ...f, q: e.target.value })} />
+        <input type="text" className="max-w-[380px]" placeholder="Search tables and columns…" value={f.q} onChange={(e) => setCatalogFilter({ ...f, q: e.target.value })} />
         <div className="inline-flex rounded-lg bg-surface-2 p-0.5">
           {LAYER_FILTERS.map((l) => (
             <button key={l} type="button" onClick={() => setCatalogFilter({ ...f, layer: l })}

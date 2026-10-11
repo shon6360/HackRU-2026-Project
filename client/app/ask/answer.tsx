@@ -16,7 +16,7 @@ import type { Answer, Comparison, Role } from "@/lib/types";
    the SQL editor. `busy` says what is on its way: a question for the model to write, or a query that is running. */
 export function AnswerPanel({ a, busy }: { a: Answer | null; busy: "ask" | "run" | null }) {
   const { tab, setTab, setMode, meta, role, person } = useApp();
-  if (busy === "ask") return <Card pad><Spinner /> &nbsp;Working out which systems hold the answer…</Card>;
+  if (busy === "ask") return <Card pad><Spinner /> &nbsp;Writing the query…</Card>;
   if (!a) return busy ? <Card pad><Spinner /> &nbsp;Running as {person}…</Card> : null;
 
   if (!a.sql && !a.error) {  // no key, the model could not be reached, or it declined: nothing was run
@@ -28,7 +28,6 @@ export function AnswerPanel({ a, busy }: { a: Answer | null; busy: "ask" | "run"
         <div className="mt-3 flex flex-wrap items-center gap-2">
           <Btn size="sm" onClick={() => setMode("filter")}>Use Filter</Btn>
           <Btn size="sm" onClick={() => setMode("sql")}>Write SQL</Btn>
-          <span className="text-[12.5px] text-ink-3">Neither involves a language model.</span>
         </div>
       </Card>
     );
@@ -95,14 +94,13 @@ function PolicyNotices({ a, ran, person }: { a: Answer; ran: Role; person: strin
     <>
       {denies.length > 0 && (
         <Notice kind="bad" icon={<Lock />}>
-          <b>{person} cannot run this question.</b> It needs data the {ran.name} role is not allowed to see, so nothing was executed.
+          <b>{person} cannot run this.</b> The {ran.name} role is not allowed to see:
           <NoticeList>{denies.map((d) => <li key={d.object}><code>{d.object}</code> is {d.reason}.</li>)}</NoticeList>
         </Notice>
       )}
       {masks.length > 0 && (
         <Notice kind="policy" icon={<Lock />}>
-          <b>{masks.length} {plural(masks.length, "column")} withheld from {person}.</b>{" "}
-          The query ran, but these come back empty for this role{a.row_count === 0 ? ", which is why a filter on them matches nothing" : ""}.
+          <b>{masks.length} {plural(masks.length, "column")} withheld from {person}</b>, so {masks.length === 1 ? "it comes" : "they come"} back empty{a.row_count === 0 ? " and a filter on them matches nothing" : ""}.
           <NoticeList>{masks.map((d) => <li key={d.object}><code>{d.object}</code> is {d.reason}.</li>)}</NoticeList>
         </Notice>
       )}
@@ -133,15 +131,15 @@ function TrustNotices({ a }: { a: Answer }) {
 
 /* ------------------------------------------------------------------ tabs */
 function ResultTab({ a }: { a: Answer }) {
-  if (a.denied) return <Empty>Nothing to show. Open <b>Compare roles</b> to see which roles can run this.</Empty>;
-  if (a.error) return <Empty>{a.mode === "sql" ? "Fix the query above and run it again." : <>The query is under the <b>SQL</b> tab. Open it in <b>Write SQL</b> from there to fix it and run it again.</>}</Empty>;
-  if (!a.rows?.length) return <Empty>The query ran and returned no rows.</Empty>;
+  if (a.denied) return <Empty>Nothing to show. <b>Compare roles</b> shows who can run this.</Empty>;
+  if (a.error) return <Empty>{a.mode === "sql" ? "Fix the query above and run it again." : <>Open the <b>SQL</b> tab to fix it and run it again.</>}</Empty>;
+  if (!a.rows?.length) return <Empty>No rows.</Empty>;
   const traceable = a.traceable ?? [];
   return (
     <>
       <DataTable columns={a.columns ?? []} rows={a.rows} masked={a.masked_columns} traceable={traceable} />
       <p className="mx-0.5 mb-0 mt-2 text-[12.5px] text-ink-3">
-        {traceable.length > 0 && <>Click any underlined <Joined items={traceable.map((c) => <code key={c}>{c}</code>)} /> to see the source rows behind it. </>}
+        {traceable.length > 0 && "Click an underlined key to see its source rows. "}
         {a.truncated && "Showing the first 500 rows."}
       </p>
     </>
@@ -154,10 +152,6 @@ function SqlTab({ a }: { a: Answer }) {
   const tables = a.tables ?? [];
   return (
     <>
-      <p className="text-[12.5px] text-ink-2">
-        This is exactly what ran, in a database that holds only what your role is granted.
-        {a.mode !== "sql" && <> To change it, open it under <b>Write SQL</b>: your SQL goes through the same policy check.</>}
-      </p>
       <SqlBlock sql={a.sql ?? ""} />
       <div className="mt-2 flex flex-wrap items-center gap-2">
         {a.mode !== "sql" && <Btn size="sm" onClick={() => editSql(a.sql ?? "")}>Open in Write SQL</Btn>}
@@ -172,7 +166,6 @@ function LineageTab({ a }: { a: Answer }) {
   return (
     <>
       <p className="text-[12.5px] text-ink-2">
-        Every table and source file this answer was built from.{" "}
         <Joined sep=" · " items={a.context.feeds.map((f) => (
           <span key={f.system}><SysBadge system={f.system} /> extracted {fmtStamp(f.extracted_at)}{f.is_stale && <> <Pill tone="warn">stale</Pill></>}</span>
         ))} />
@@ -206,7 +199,7 @@ function CompareTab({ a }: { a: Answer }) {
   return (
     <>
       <p className="text-[12.5px] text-ink-2">
-        What the policy decides about this SQL for each role. Only your own role&apos;s answer is run: to see another role&apos;s rows you sign in to an account that holds it.
+        What the policy decides for each role. Only your own role&apos;s answer is run.
       </p>
       {done?.a !== a ? <Spinner /> : done.result.error ? <Empty>{done.result.error}</Empty> : (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">

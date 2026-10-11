@@ -16,14 +16,13 @@ export default function CrosswalkPage() {
   return (
     <>
       <PageHead title="Crosswalk">
-        The same site is <code>SITE-0701</code> in CTMS, <code>701</code> in EDC, <code>US701</code> in IRT, a free-text name in the safety database and a vendor&apos;s legal name in finance.
-        This is the map that lets one question reach all five. Every match records its method, a confidence and the evidence; hover any id to read it.
+        How each system&apos;s ids for the same site were matched. Hover an id for the evidence.
       </PageHead>
 
       <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 md:grid-cols-4">
-        <Stat value={x.sites.length} label="sites, each with one master key" />
-        <Stat value={x.counts.auto} label="identifiers matched automatically" />
-        <Stat value={x.counts.review} label="matched, queued for a steward" color="text-warn" />
+        <Stat value={x.sites.length} label="sites" />
+        <Stat value={x.counts.auto} label="matched automatically" />
+        <Stat value={x.counts.review} label="queued for a steward" color="text-warn" />
         <Stat value={x.counts.unresolved} label="could not be matched" color="text-bad" />
       </div>
 
@@ -72,7 +71,7 @@ export default function CrosswalkPage() {
               <div className="text-[12.5px] text-ink-2">{r.evidence}</div>
             </div>
           ))}
-          <p className="text-[12.5px] text-ink-3">Two sites in the same city with near-identical names: the match is used, and flagged wherever it matters, until a person confirms it.</p>
+          <p className="text-[12.5px] text-ink-3">Used, and flagged, until a person confirms the match.</p>
         </Card>
         <Card pad>
           <h3>Could not be matched</h3>
@@ -82,7 +81,7 @@ export default function CrosswalkPage() {
               <div className="text-[12.5px] text-ink-2">{r.evidence}</div>
             </div>
           ))}
-          <p className="text-[12.5px] text-ink-3">Unmatched identifiers are never guessed. Their rows stay out of site totals and show up as findings on the Quality page.</p>
+          <p className="text-[12.5px] text-ink-3">Never guessed: their rows stay out of site totals.</p>
         </Card>
       </div>
 

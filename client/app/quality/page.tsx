@@ -19,15 +19,14 @@ export default function QualityPage() {
   return (
     <>
       <PageHead title="Data quality">
-        {q.totals.rules} rules run on every build. Each finding names the record, says what is wrong in plain words and points at the file and row it came from.
-        The feeds were seeded with a documented set of problems so the rules can be scored against an answer key.
+        {q.totals.rules} rules run on every build, scored against an answer key of planted problems.
       </PageHead>
 
       <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 md:grid-cols-4">
         <Stat value={`${k.n_caught}/${k.n_planted}`} label="planted problems caught" color="text-good" />
-        <Stat value={k.n_additional} label="further findings nobody planted" />
+        <Stat value={k.n_additional} label="findings nobody planted" />
         <Stat value={q.totals.findings} label={`findings in all, from ${q.totals.rules - q.totals.passing} of ${q.totals.rules} rules`} />
-        <Stat value={`${q.feeds.filter((f) => f.is_stale).length}/${q.feeds.length}`} label="feeds past their freshness SLA" />
+        <Stat value={`${q.feeds.filter((f) => f.is_stale).length}/${q.feeds.length}`} label="stale feeds" />
       </div>
 
       <div className="mt-3.5 grid grid-cols-1 gap-3.5 sm:grid-cols-2">
@@ -72,7 +71,7 @@ export default function QualityPage() {
       {extra.length > 0 && (
         <Notice kind="info" icon="i" className="mt-3.5">
           <b>{k.n_additional} findings beyond the answer key.</b>{" "}
-          Most are partial onset dates in the real CDISC pilot data, which are warnings and not errors: each is dated to the first day of what was collected. The rest are knock-on effects of a planted problem seen from a second system, and the two look-alike sites queued for a steward.
+          Mostly partial onset dates in the real CDISC data, shown as warnings.
           <NoticeList>{extra.map((e) => <li key={e.title}>{e.n} under “{e.title}”</li>)}</NoticeList>
         </Notice>
       )}

@@ -18,7 +18,7 @@ export function Legend() {
           {l === "source" ? "source file" : l}
         </span>
       ))}
-      <span className="text-ink-3">Click a table to light up everything upstream and downstream; click it again to open it.</span>
+      <span className="text-ink-3">Click a table to highlight its lineage; click again to open it.</span>
     </div>
   );
 }

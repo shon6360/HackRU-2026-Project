@@ -49,8 +49,7 @@ export function AskView() {
         </div>
         {!modelKey && (
           <p className="mb-0 mt-2 text-[12.5px] text-ink-3">
-            <b>Ask a question</b> is off: it needs a Gemini API key, and neither your account nor this server has one.{" "}
-            <Link href="/profile">Add yours on your profile</Link> to turn it on. Filter and Write SQL need no key.
+            <b>Ask a question</b> needs a Gemini API key. <Link href="/profile">Add one on your profile</Link>.
           </p>
         )}
         {mode === "ask" ? <QuestionForm q={q} setQ={setQ} pick={pick} /> : mode === "filter" ? <FilterForm /> : <SqlForm />}
@@ -83,15 +82,14 @@ function FreeForm() {
   return (
     <p className="mb-0 mt-2.5 text-[12.5px] text-ink-3">
       <Pill tone="good">Free-form asking is on</Pill>{" "}
-      Anything you type is written into SQL by {meta.model.id}, using {modelKey === "account" ? "your own Gemini API key" : "this server's Gemini API key"}.
-      The SQL it writes is shown with the answer.
+      SQL written by {meta.model.id}, with {modelKey === "account" ? "your own key" : "this server's key"}.
     </p>
   );
 }
 
 /* ------------------------------------------------------------------ write SQL */
 function SqlForm() {
-  const { person, roleName, sqlDraft, setSqlDraft, runSql, running } = useApp();
+  const { person, sqlDraft, setSqlDraft, runSql, running } = useApp();
   const run = () => runSql(sqlDraft.trim() || EXAMPLE_SQL);
   return (
     <form className="mt-3" onSubmit={(e) => { e.preventDefault(); run(); }}>
@@ -103,8 +101,7 @@ function SqlForm() {
         <span className="text-[12.5px] text-ink-3">Ctrl or ⌘ + Enter runs it too.</span>
       </div>
       <p className="mb-0 mt-2.5 text-[12.5px] text-ink-3">
-        One <code>SELECT</code> over the tables in the <Link href="/catalog">catalog</Link>. No language model is involved: the query goes through
-        the same policy check as a question, and runs in a database that holds only what the {roleName} role is granted.
+        One <code>SELECT</code> over the tables in the <Link href="/catalog">catalog</Link>.
       </p>
     </form>
   );

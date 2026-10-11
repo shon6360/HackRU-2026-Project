@@ -12,7 +12,7 @@ import type { FilterCategory, FilterCondition, FilterField, FilterOptions, Filte
    the role may not see is shown with the lock and the server's reason. What is picked lives in the provider,
    so it is still here after a visit to another page. */
 export function FilterForm() {
-  const { person, roleName, picked, setPicked, runFilter, filtering } = useApp();
+  const { person, picked, setPicked, runFilter, filtering } = useApp();
   const { data: form, error } = useApi<FilterOptions>("/api/filters");
   if (error) return <Notice kind="bad" icon="×" className="mt-3"><b>Could not load the filters.</b> {error}</Notice>;
   if (!form) return <div className="mt-3"><Spinner /></div>;
@@ -66,12 +66,11 @@ export function FilterForm() {
       {category.denied ? (
         <Notice kind="bad" icon={<Lock />} className="mt-3">
           <b>{person} cannot see {category.label.toLowerCase()}.</b> <code>{category.table}</code> is {category.denied}.
-          Running it anyway shows the refusal, and under <b>Compare roles</b> which roles it runs for.
         </Notice>
       ) : (
         <>
           <h3 className="mt-4">Filters</h3>
-          {picked.conditions.length === 0 && <p className="text-[12.5px] text-ink-3">None yet, so every row of {category.label.toLowerCase()} for the site and subject above comes back.</p>}
+          {picked.conditions.length === 0 && <p className="text-[12.5px] text-ink-3">None yet: every row comes back.</p>}
           <div className="space-y-2">
             {picked.conditions.map((c, i) => (
               <ConditionRow key={i} category={category} c={c} onChange={(next) => setCondition(i, next)}
@@ -88,10 +87,6 @@ export function FilterForm() {
           <Btn onClick={() => set({ site_key: null, subject_key: null, conditions: [] })}>Clear</Btn>
         )}
       </div>
-      <p className="mb-0 mt-2.5 text-[12.5px] text-ink-3">
-        No language model is involved: the query is written from what you pick, goes through the same policy check as a question,
-        and runs in a database that holds only what the {roleName} role is granted.
-      </p>
     </form>
   );
 }

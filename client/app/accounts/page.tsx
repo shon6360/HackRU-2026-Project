@@ -16,7 +16,7 @@ export default function AccountsPage() {
   if (canManageAccounts) return <Manage />;
   return (
     <>
-      <PageHead title="Accounts">Everyone who can sign in to Concord, and the role each account holds.</PageHead>
+      <PageHead title="Accounts">Who can sign in, and with which role.</PageHead>
       <Notice kind="policy" icon={<Lock />}><b>Only an administrator can manage accounts.</b> Your role is {roleName}.</Notice>
     </>
   );
@@ -38,8 +38,7 @@ function Manage() {
   return (
     <>
       <PageHead title="Accounts">
-        Everyone who can sign in to Concord. An account holds one role, and the role decides what data it can see. What each role is granted is set on the <Link href="/roles">Roles page</Link>.
-        A change of role takes effect on the person&apos;s next request; a new password or a deactivation signs them out.
+        Who can sign in, and with which role. Roles are set on the <Link href="/roles">Roles page</Link>.
       </PageHead>
 
       {open === "new"
@@ -127,7 +126,7 @@ function AccountForm({ account, onDone, onCancel }: { account?: Account; onDone:
         <Field label="Name">
           <input type="text" maxLength={60} required autoFocus value={name} onChange={(e) => setName(e.target.value)} />
         </Field>
-        <Field label="Username" hint="What the person signs in with. Lower-case letters, digits, dots, hyphens and underscores.">
+        <Field label="Username" hint="Lower-case letters, digits, dots, hyphens and underscores.">
           <input type="text" autoComplete="off" autoCapitalize="none" spellCheck={false} maxLength={32} required value={username} onChange={(e) => setUsername(e.target.value)} />
         </Field>
         <Field label="Role" hint={meta.roles[role]?.blurb}>
@@ -136,9 +135,9 @@ function AccountForm({ account, onDone, onCancel }: { account?: Account; onDone:
           </select>
         </Field>
         {own ? (
-          <Field label="Password"><span className="block py-[9px] text-[12.5px] text-ink-2">This is your own account. Change its password on your profile page, which keeps you signed in.</span></Field>
+          <Field label="Password"><span className="block py-[9px] text-[12.5px] text-ink-2">Change your own password on your profile page.</span></Field>
         ) : (
-          <Field label={account ? "New password" : "Password"} hint={account ? "Leave empty to keep the current one. Setting one signs the person out." : "At least 8 characters. The person can change it on their profile page."}>
+          <Field label={account ? "New password" : "Password"} hint={account ? "Leave empty to keep the current one." : "At least 8 characters."}>
             <input type="password" autoComplete="new-password" minLength={8} required={!account} value={password} onChange={(e) => setPassword(e.target.value)} />
           </Field>
         )}
@@ -147,7 +146,7 @@ function AccountForm({ account, onDone, onCancel }: { account?: Account; onDone:
       {account && (
         <label className="mt-3 flex items-center gap-2 text-[13px]">
           <input type="checkbox" className="size-4 accent-accent" checked={active} onChange={(e) => setActive(e.target.checked)} />
-          Active. A deactivated account is kept but cannot sign in.
+          Active. A deactivated account cannot sign in.
         </label>
       )}
 
@@ -160,7 +159,7 @@ function AccountForm({ account, onDone, onCancel }: { account?: Account; onDone:
         {account && !confirming && <Btn danger onClick={() => setConfirming(true)} disabled={busy}>Delete account</Btn>}
         {account && confirming && (
           <>
-            <span className="text-[13px]">Delete <b>{account.name}</b> for good? This cannot be undone.</span>
+            <span className="text-[13px]">Delete <b>{account.name}</b> for good?</span>
             <Btn danger onClick={() => void remove()} disabled={busy}>Yes, delete</Btn>
             <Btn onClick={() => setConfirming(false)} disabled={busy}>Keep</Btn>
           </>

@@ -110,7 +110,7 @@ export function DatasetView({ fqn }: { fqn: string }) {
 
       {d.rules.length > 0 && (
         <Card pad className="mt-3.5">
-          <h3>Quality rules on this table</h3>
+          <h3>Quality rules</h3>
           <PlainTable>
             <tbody>
               {d.rules.map((r) => (
@@ -129,7 +129,7 @@ export function DatasetView({ fqn }: { fqn: string }) {
       {d.sql && (
         <Card pad className="mt-3.5">
           <details open>
-            <summary className="py-1 font-semibold">How it is built (SQL)</summary>
+            <summary className="py-1 font-semibold">SQL</summary>
             <SqlBlock sql={d.sql} />
           </details>
         </Card>

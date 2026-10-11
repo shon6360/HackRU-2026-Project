@@ -37,7 +37,7 @@ function SiteView({ site }: { site: SiteRef }) {
     <>
       <h2 className="mb-0.5">{site.site_name}</h2>
       <p className="text-ink-2">
-        <TraceLink column="site_key" value={site.site_key} />{place && ` · ${place}`}. Open the key to see its source rows exactly as each system exported them.
+        <TraceLink column="site_key" value={site.site_key} />{place && ` · ${place}`}
       </p>
 
       <h3 className="mt-4">Its id in each system</h3>
@@ -70,7 +70,7 @@ function SiteView({ site }: { site: SiteRef }) {
       <Legend />
       <LineageGraph graph={d.graph} markTargets />
       <div className="mt-2.5 text-[12.5px] text-ink-2">
-        Only the tables that hold rows for this site, the files those rows were read from, and what lies between. Hover over a table or a file for how many of its rows are this site&apos;s.
+        Hover a table or a file for how many of its rows are this site&apos;s.
       </div>
     </>
   );
@@ -97,12 +97,12 @@ export default function LineagePage() {
   return (
     <>
       <PageHead title="Lineage">
-        How every table is built, from the files each system exports to the tables people query. The graph is read out of the SQL itself, so it cannot drift from what actually runs.
+        How every table is built, from source files to the tables people query.
       </PageHead>
       <div className="mb-[18px]">
         <form className="flex flex-wrap items-center gap-2" onSubmit={(e) => { e.preventDefault(); if (found.length) pick(found[0]); }}>
           <input type="text" className="max-w-[440px]" aria-label="Search by site name" disabled={!!listed.denied}
-            placeholder="Search by site name to see that site's lineage: Merritt Island, Neurology…" value={q} onChange={(e) => setQ(e.target.value)} />
+            placeholder="Search by site name…" value={q} onChange={(e) => setQ(e.target.value)} />
           {searching && <span className="text-[12.5px] text-ink-3">{found.length} of {listed.sites.length} sites</span>}
           {site && <Btn onClick={() => { setSite(null); setQ(""); setInfo(null); }}>Show the whole graph</Btn>}
         </form>

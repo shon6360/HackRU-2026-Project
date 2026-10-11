@@ -23,7 +23,6 @@ export function SignIn() {
   return (
     <Card className="mx-auto mt-6 max-w-[400px] px-[22px] py-[22px] sm:mt-[8vh]">
       <h1>Sign in to Concord</h1>
-      <p className="text-ink-2">What you can see depends on the role your account holds.</p>
       <form className="mt-4 space-y-3" onSubmit={submit}>
         <Field label="Username">
           <input type="text" autoComplete="username" autoCapitalize="none" spellCheck={false} autoFocus required value={username} onChange={(e) => setUsername(e.target.value)} />
