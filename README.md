@@ -50,7 +50,7 @@ reach the host on port 8040, so they need to be on the same network and the host
 connection in. Change the starter password below first, and see [What this is not](#what-this-is-not)
 before putting it anywhere but a network you trust.
 
-The first start creates four accounts, all with the password `concord-demo`:
+The first start creates four accounts, all with the password `concord-demo`: (placeholder names are used)
 
 | Username | Role | Sees |
 |---|---|---|
